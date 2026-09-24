@@ -1,0 +1,1 @@
+[{"version":"V0.110.0","type":"Beta Patch","date":"2026-07-30","changes":["Description: Gain 6 Vigor. → Gain 7 Vigor.","Powers applied[0].amount: 6 → 7","Upgrade.vigorpower: +2 → +3","Upgrade description: Gain 8 Vigor. → Gain 10 Vigor.","Vars.vigor: 6 → 7","Vars.vigorpower: 6 → 7"]}]

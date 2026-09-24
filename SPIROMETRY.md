@@ -76,7 +76,12 @@ affiliated with Mega Crit.
   while changelogs are Spire Codex site releases whose game-data diffs line up with
   *stable* rollouts (e.g. site 1.2.0 = stable v0.107.1, 2026-06-18) and include
   re-extraction noise. Reworks and numeric tweaks are distinguishable from the field diffs.
-  A version → branch → date table has to be built by hand.
+  A version → branch → date table has to be built by hand. Description text is
+  **truncated in both endpoints** (the changelog's `description` / `description_raw` /
+  `upgrade_description` values are cut at ~80 characters too, not full text), so text is
+  never used to classify changes. Only changelogs 1.1.0 (stable v0.103.2) and 1.2.0
+  (stable v0.107.1) are game releases; the other card diffs are parser fixes. Built into
+  `reference/` — see Reference data below.
 - Rate tiers: no key 15/min, registered 60/min, **academia 100/min (on request)**.
   Unknown whether the academia tier also raises the export's 120/h budget.
 - Size: the community stats page claims ~1.8M submitted runs.
@@ -116,6 +121,34 @@ Top level: `acts`, `ascension`, `build_id`, `is_beta`, `schema_version`, `seed`,
 **What's missing:** nothing about what cards did in combat (damage per card, plays per
 turn). "Was this card good in this run" can't be read directly off the file.
 
+## Reference data (`reference/`)
+
+Built by `python -m spirometry.patch_history` (fetches into `reference/raw/`, cached and
+committed — no player data — then builds the CSVs from the cache; at most 10 requests/min,
+~60 min for a cold cache). Cards only so far.
+
+- `builds.csv` — one row per game version (from update-history, changelog text, and the run
+  data): `build_id` (lowercase, as in run files), `branch`, `release_date`, `source`,
+  `notes`. Blank where no source says; `notes` explains. Stable dates are Spire Codex
+  changelog dates (an upper bound on the Steam release); beta dates are update-history dates.
+- `card_changes.csv` — one row per (card, field, stable patch): `old`/`new` from the
+  changelog, `beta_build`/`beta_date` (first beta where update-history shows that field
+  changing), `stable_build`/`stable_date`, `change_kind` (tweak, rework, cost_change,
+  rarity_change, text_only, added, removed; `+`-joined, e.g. `rework+cost_change`),
+  `changed_fields` (every field in that card-patch, for reclassifying), `source`.
+  Two stable patches so far: v0.103.2 (85 card-patches) and v0.107.1 (43).
+- `text_only_changes.csv` — the text_only card-patches, for manual review.
+- `excluded_fields.csv` — every card field left out, with counts and the reason (not in
+  the gameplay whitelist, a `*_key` mirror, or from a site/parser changelog).
+- `history_unmatched.csv` — update-history entries up to v0.107.1 that no changelog row
+  explains (reverted beta changes, parser fixes that history dates as game changes, the
+  V0.98.0-beta/V0.99.0-beta flip pairs).
+
+Caveats: update-history types every entry "Beta Patch" (including stable v0.103.2) and has
+no entries for stable-only hotfixes (v0.98.1–v0.98.3, v0.99.1, v0.103.1); run files say
+`is_beta=false` even on versions the changelog calls beta. Details in
+`notes/patch_history.md`.
+
 ## Known data issues
 
 - **Self-selection.** Uploaders install a companion app or mod; likely more dedicated and
@@ -124,7 +157,7 @@ turn). "Was this card good in this run" can't be read directly off the file.
 - **Co-op duplicates.** A multiplayer run gets uploaded once per player (seen in a sample:
   two records with the same run time, same death, timestamps 40 ms apart). The first 5
   pages had 4,641 records and 4,279 distinct (seed, start_time): about 8% co-op
-  duplicates. `snapshot_export.py` reports a `dedup` column on this key; raw `runs` counts
+  duplicates. `scripts/snapshot_export.py` reports a `dedup` column on this key; raw `runs` counts
   are upper bounds. Whether the unit of analysis is the run or the player-run gets decided
   at parsing (a co-op run has one outcome but several players' choices).
 - **Player IDs.** Solo runs use `player_id: 1`. Multiplayer runs carry real 64-bit Steam
@@ -172,13 +205,17 @@ close to randomized. That supports:
 
 ## Repo and environment
 
-- Current contents: `snapshot_export.py`, `SPIROMETRY.md`, `pyproject.toml`, `.gitignore`,
-  `.claude/settings.json`, `notes/` (endpoint investigations, raw API samples).
+- Current contents: see the repository table in `README.md` (`src/spirometry/`,
+  `scripts/snapshot_export.py`, `reference/`, `tests/`, `notes/`, plus PLAN/README/CLAUDE).
+- Snapshot command (moved from the repo root; behaviour, output folder `sts2_snapshot/`
+  and checkpoint `sts2_snapshot/cursor.txt` unchanged — paths are relative to the working
+  directory, so run it from the repo root): `python scripts/snapshot_export.py`. A download
+  started with the old path keeps running; resume it with the new path.
 - Environment: dependencies live only in `pyproject.toml` (`requests` as the only core
   dependency; an `analysis` extra — duckdb, pandas, pyarrow, numpy, matplotlib, jupyter —
   for later). Locally a mamba env with `pip install -e .`; plain `pip install -e .` in
-  cloud sessions and CI. No separate environment.yml / requirements.txt. Move to the
-  `src/` layout when the parsing pipeline starts.
+  cloud sessions and CI. No separate environment.yml / requirements.txt. `src/` layout
+  (`[tool.setuptools.packages.find] where = ["src"]`).
 - Cloud session check passed: spire-codex.com reachable, `pip install -e .` works,
   Python 3.11.
 - Data (`sts2_snapshot/`, `data/`, `*.duckdb`) is git-ignored and stays local (see network
@@ -193,7 +230,7 @@ close to randomized. That supports:
   results myself, and these are the parts I need to be able to explain in interviews.
 - **Network fallback:** the raw snapshot stays local and is never published. Cloud
   sessions develop against a page or two of the export that they fetch themselves
-  (`python snapshot_export.py --pages 1`), and the finished pipeline runs locally on the
+  (`python scripts/snapshot_export.py --pages 1`), and the finished pipeline runs locally on the
   full snapshot.
 
 ## Open questions / next steps
@@ -201,10 +238,11 @@ close to randomized. That supports:
 1. Run the full snapshot (in progress locally): runs per build (after dedup), and whether
    early builds have enough runs. (The <1000/page shortfall is explained: occasional
    short pages, see Data sources.)
-2. ~~Verify the patch history endpoints.~~ Done — `notes/patch_history.md`. Next: pull all
-   changelog details + update-history for changed entities, build the change table and
-   the version → branch → date table, and check coverage of v0.98–v0.99 and stable
-   hotfixes.
+2. ~~Verify the patch history endpoints.~~ Done — `notes/patch_history.md`.
+   ~~Build the card change table and the version → branch → date table.~~ Done —
+   `reference/`. Next: review `excluded_fields.csv`, `text_only_changes.csv` and
+   `history_unmatched.csv`; decide how to treat `cost_change`; extend to relics, monsters,
+   and encounters.
 3. ~~Estimate total snapshot size and rate-budget cost per page.~~ Done — see Data sources.
 4. Message the Spire Codex maintainer: describe the project, ask about the academia tier
    and whether it raises the export budget, confirm they're fine with the use.

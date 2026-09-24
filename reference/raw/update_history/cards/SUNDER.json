@@ -1,0 +1,1 @@
+[{"version":"V0.109.0","type":"Beta Patch","date":"2026-07-16","changes":["Damage: 24 → 26","Description: Deal 24 damage. If this kills an enemy, gain . → Deal 26 damage. If this kills an enemy, gain .","Upgrade description: Deal 32 damage. If this kills an enemy, gain . → Deal 34 damage. If this kills an enemy, gain .","Vars.damage: 24 → 26"]}]

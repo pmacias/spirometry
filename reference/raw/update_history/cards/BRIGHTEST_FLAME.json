@@ -1,0 +1,1 @@
+[{"version":"V0.111.0","type":"Beta Patch","date":"2026-08-13","changes":["Description: Gain . Draw 2 cards. Lose 1 Max HP. → Gain . Draw 2 cards. Lose 2 Max HP.","Upgrade description: Gain . Draw 3 cards. Lose 1 Max HP. → Gain . Draw 3 cards. Lose 2 Max HP.","Vars.maxhp: 1 → 2"]}]

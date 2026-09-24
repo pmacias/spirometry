@@ -1,0 +1,1 @@
+[{"version":"V0.108.0","type":"Beta Patch","date":"2026-07-02","changes":["Description: Whenever you play a Soul, a random enemy loses 6 HP. → Whenever you play a Soul, a random enemy loses 7 HP.","Hp loss: 6 → 7","Upgrade description: Whenever you play a Soul, a random enemy loses 8 HP. → Whenever you play a Soul, a random enemy loses 9 HP.","Vars.hploss: 6 → 7"]}]

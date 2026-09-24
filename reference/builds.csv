@@ -1,0 +1,25 @@
+build_id,branch,release_date,source,notes
+v0.98.0-beta,beta,2026-03-05,update-history,update-history type Beta Patch (13 cards); '-beta' version; relation to the plain version unknown
+v0.98.0,,,run data,"branch unknown: no endpoint states it; date unknown: not in update-history and no changelog dates it; run files (first 5 export pages) report is_beta=false for every version, including v0.100.0-v0.103.1, which changelog 1.1.0 calls beta; is_beta is not used for branch"
+v0.98.1,,,run data,"branch unknown: no endpoint states it; date unknown: not in update-history and no changelog dates it; run files (first 5 export pages) report is_beta=false for every version, including v0.100.0-v0.103.1, which changelog 1.1.0 calls beta; is_beta is not used for branch"
+v0.98.2,,,run data,"branch unknown: no endpoint states it; date unknown: not in update-history and no changelog dates it; run files (first 5 export pages) report is_beta=false for every version, including v0.100.0-v0.103.1, which changelog 1.1.0 calls beta; is_beta is not used for branch"
+v0.98.3,,,run data,"branch unknown: no endpoint states it; date unknown: not in update-history and no changelog dates it; run files (first 5 export pages) report is_beta=false for every version, including v0.100.0-v0.103.1, which changelog 1.1.0 calls beta; is_beta is not used for branch"
+v0.99.0-beta,beta,2026-03-12,update-history,update-history type Beta Patch (13 cards); '-beta' version; relation to the plain version unknown
+v0.99.1,,,changelog 1.1.2 text (mention); run data,"branch unknown: no endpoint states it; date unknown: not in update-history and no changelog dates it; run files (first 5 export pages) report is_beta=false for every version, including v0.100.0-v0.103.1, which changelog 1.1.0 calls beta; is_beta is not used for branch"
+v0.100.0,beta,2026-03-19,update-history; changelog 1.1.0 text; run data,"update-history type Beta Patch (61 cards); run files (first 5 export pages) report is_beta=false for every version, including v0.100.0-v0.103.1, which changelog 1.1.0 calls beta; is_beta is not used for branch"
+v0.101.0,beta,2026-03-26,update-history; changelog 1.1.0 text; run data,"update-history type Beta Patch (17 cards); run files (first 5 export pages) report is_beta=false for every version, including v0.100.0-v0.103.1, which changelog 1.1.0 calls beta; is_beta is not used for branch"
+v0.102.0,beta,2026-04-02,update-history; changelog 1.1.0 text; run data,"update-history type Beta Patch (6 cards); run files (first 5 export pages) report is_beta=false for every version, including v0.100.0-v0.103.1, which changelog 1.1.0 calls beta; is_beta is not used for branch"
+v0.103.0,beta,2026-04-09,update-history; changelog 1.1.0 text; run data,"update-history type Beta Patch (12 cards); run files (first 5 export pages) report is_beta=false for every version, including v0.100.0-v0.103.1, which changelog 1.1.0 calls beta; is_beta is not used for branch"
+v0.103.1,beta,,changelog 1.1.0 text; changelog 1.1.2 text (mention); run data,"date unknown: not in update-history and no changelog dates it; run files (first 5 export pages) report is_beta=false for every version, including v0.100.0-v0.103.1, which changelog 1.1.0 calls beta; is_beta is not used for branch"
+v0.103.2,stable,2026-04-16,update-history; changelog 1.1.0 text; changelog 1.1.2 text (mention); run data,"update-history type Beta Patch (37 cards); update-history calls it beta; changelog 1.1.0 says stable; stable release date = Spire Codex changelog date; run files (first 5 export pages) report is_beta=false for every version, including v0.100.0-v0.103.1, which changelog 1.1.0 calls beta; is_beta is not used for branch"
+v0.104.0,beta,2026-04-23,update-history; changelog 1.1.3 text (mention),update-history type Beta Patch (23 cards)
+v0.105.0,beta,2026-05-07,update-history,update-history type Beta Patch (10 cards)
+v0.106.0,beta,2026-05-21,update-history; changelog 1.1.3 text (mention),update-history type Beta Patch (18 cards)
+v0.106.1,beta,2026-05-22,update-history,update-history type Beta Patch (6 cards)
+v0.107.0,beta,2026-06-04,update-history; changelog 1.2.1 text,update-history type Beta Patch (6 cards)
+v0.107.1,stable,2026-06-18,changelog 1.2.0 text; changelog 1.2.1 text (mention),"main-site game-data release (Steam build_id 23811903); stable release date = Spire Codex changelog date. Changelog 1.2.1 also lists v0.107.1 among versions ingested on the beta channel, so it was on beta too"
+v0.108.0,beta,2026-07-02,update-history; changelog 1.2.1 text,update-history type Beta Patch (27 cards)
+v0.109.0,beta,2026-07-16,update-history; changelog 1.3.0 text,update-history type Beta Patch (19 cards)
+v0.109.1,beta,,changelog 1.3.0 text,date unknown: not in update-history and no changelog dates it
+v0.110.0,beta,2026-07-30,update-history; changelog 1.3.0 text,update-history type Beta Patch (21 cards)
+v0.111.0,beta,2026-08-13,update-history; changelog 1.3.0 text,update-history type Beta Patch (18 cards)

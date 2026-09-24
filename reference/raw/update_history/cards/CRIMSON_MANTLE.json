@@ -1,0 +1,1 @@
+[{"version":"V0.108.0","type":"Beta Patch","date":"2026-07-02","changes":["Description: At the start of your turn, lose 1 HP and gain 8 Block. → At the start of your turn, lose 1 HP and gain 7 Block.","Powers applied[0].amount: 8 → 7","Upgrade.crimsonmantlepower: +2 → +3","Vars.crimsonmantle: 8 → 7","Vars.crimsonmantlepower: 8 → 7"]}]

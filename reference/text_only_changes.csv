@@ -1,0 +1,120 @@
+card_id,field,old,new,beta_build,beta_date,stable_build,stable_date,change_kind,changed_fields,source
+BOMBARDMENT,description,"Deal 18 damage.
+At the start of your turn, plays from the [gold]Exhaust Pile[...","Deal 18 damage.
+At the start of your turn, if this is in your [gold]Exhaust P...",v0.100.0,2026-03-19,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history field match
+BOMBARDMENT,description_raw,"Deal {Damage:diff()} damage.
+At the start of your turn, plays from the [gold]...","Deal {Damage:diff()} damage.
+At the start of your turn, if this is in your [g...",v0.100.0,2026-03-19,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history card match (only entry in window)
+BOMBARDMENT,upgrade_description,"Deal 24 damage.
+At the start of your turn, plays from the [gold]Exhaust Pile[...","Deal 24 damage.
+At the start of your turn, if this is in your [gold]Exhaust P...",v0.100.0,2026-03-19,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history field match
+DISCOVERY,description,Choose 1 of 3 random cards to add into your [gold]Hand[/gold]. It costs 0 [en...,Choose 1 of 3 random cards to add into your [gold]Hand[/gold]. It's free to p...,v0.100.0,2026-03-19,v0.103.2,2026-04-16,text_only,description|description_raw,changelog 1.1.0; beta: update-history field match
+DISCOVERY,description_raw,Choose 1 of 3 random cards to add into your [gold]Hand[/gold]. It costs 0 {en...,Choose 1 of 3 random cards to add into your [gold]Hand[/gold]. It's free to p...,v0.100.0,2026-03-19,v0.103.2,2026-04-16,text_only,description|description_raw,changelog 1.1.0; beta: update-history card match (only entry in window)
+EXPECT_A_FIGHT,description,Gain [energy:1] for each Attack in your [gold]Hand[/gold].,"Gain [energy:1] for each Attack in your [gold]Hand[/gold].
+You cannot gain
+ad...",v0.100.0,2026-03-19,v0.103.2,2026-04-16,text_only,compendium_order|description|description_raw,changelog 1.1.0; beta: update-history field match
+EXPECT_A_FIGHT,description_raw,Gain {energyPrefix:energyIcons(1)} for each Attack in your [gold]Hand[/gold]....,Gain {energyPrefix:energyIcons(1)} for each Attack in your [gold]Hand[/gold]....,v0.100.0,2026-03-19,v0.103.2,2026-04-16,text_only,compendium_order|description|description_raw,changelog 1.1.0; beta: update-history card match (only entry in window)
+FLAK_CANNON,description,"[gold]Exhaust[/gold] ALL your [gold]Status[/gold] cards.
+Deal 8 damage to a r...","[gold]Exhaust[/gold] ALL your Status cards.
+Deal 8 damage to a random enemy f...",v0.103.0,2026-04-09,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history field match
+FLAK_CANNON,description_raw,"[gold]Exhaust[/gold] ALL your [gold]Status[/gold] cards.
+Deal {Damage:diff()}...","[gold]Exhaust[/gold] ALL your Status cards.
+Deal {Damage:diff()} damage to a ...",v0.103.0,2026-04-09,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history card match (only entry in window)
+FLAK_CANNON,upgrade_description,"[gold]Exhaust[/gold] ALL your [gold]Status[/gold] cards.
+Deal 11 damage to a ...","[gold]Exhaust[/gold] ALL your Status cards.
+Deal 11 damage to a random enemy ...",v0.103.0,2026-04-09,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history field match
+FLANKING,description,The enemy takes double damage from other players this turn.,The enemy takes double attack damage from other players this turn.,v0.103.0,2026-04-09,v0.103.2,2026-04-16,text_only,compendium_order|description|description_raw,changelog 1.1.0; beta: update-history field match
+FLANKING,description_raw,The enemy takes double damage from other players this turn.,The enemy takes double attack damage from other players this turn.,v0.103.0,2026-04-09,v0.103.2,2026-04-16,text_only,compendium_order|description|description_raw,changelog 1.1.0; beta: update-history card match (only entry in window)
+GUIDING_STAR,description,"Deal 12 damage.
+Next turn, draw 2 cards.","Deal 12 damage.
+Draw 2 cards.",v0.101.0,2026-03-26,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history field match
+GUIDING_STAR,description_raw,"Deal {Damage:diff()} damage.
+Next turn, draw {Cards:diff()} {Cards:plural:car...","Deal {Damage:diff()} damage.
+Draw {Cards:diff()} {Cards:plural:card|cards}.",v0.101.0,2026-03-26,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history card match (only entry in window)
+GUIDING_STAR,upgrade_description,"Deal 13 damage.
+Next turn, draw 3 cards.","Deal 13 damage.
+Draw 3 cards.",v0.101.0,2026-03-26,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history field match
+HIDDEN_GEM,description,A random card in your [gold]Draw Pile[/gold] gains [gold]Replay[/gold] 2.,A random card without [gold]Replay[/gold] in your [gold]Draw Pile[/gold] gain...,v0.100.0,2026-03-19,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history field match
+HIDDEN_GEM,description_raw,A random card in your [gold]Draw Pile[/gold] gains [gold]Replay[/gold] {Repla...,A random card without [gold]Replay[/gold] in your [gold]Draw Pile[/gold] gain...,v0.100.0,2026-03-19,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history card match (only entry in window)
+HIDDEN_GEM,upgrade_description,A random card in your [gold]Draw Pile[/gold] gains [gold]Replay[/gold] 3.,A random card without [gold]Replay[/gold] in your [gold]Draw Pile[/gold] gain...,v0.100.0,2026-03-19,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history field match
+HOWL_FROM_BEYOND,description,"Deal 16 damage to ALL enemies.
+At the start of your turn, plays from the [gol...","Deal 16 damage to ALL enemies.
+At the start of your turn, if this is in your ...",v0.100.0,2026-03-19,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history field match
+HOWL_FROM_BEYOND,description_raw,"Deal {Damage:diff()} damage to ALL enemies.
+At the start of your turn, plays ...","Deal {Damage:diff()} damage to ALL enemies.
+At the start of your turn, if thi...",v0.100.0,2026-03-19,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history card match (only entry in window)
+HOWL_FROM_BEYOND,upgrade_description,"Deal 21 damage to ALL enemies.
+At the start of your turn, plays from the [gol...","Deal 21 damage to ALL enemies.
+At the start of your turn, if this is in your ...",v0.100.0,2026-03-19,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history field match
+ITERATION,description,"The first time you draw a Status card each turn, draw 2 cards.","The first time you draw a Status each turn, draw 2 cards.",v0.103.0,2026-04-09,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history field match
+ITERATION,description_raw,"The first time you draw a Status card each turn, draw {IterationPower:diff()}...","The first time you draw a Status each turn, draw {IterationPower:diff()} {Ite...",v0.103.0,2026-04-09,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history card match (only entry in window)
+ITERATION,upgrade_description,"The first time you draw a Status card each turn, draw 3 cards.","The first time you draw a Status each turn, draw 3 cards.",v0.103.0,2026-04-09,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history field match
+MAD_SCIENCE,description_raw,{CardType:choose(Attack|Skill|Power):Deal {Damage:diff()} damage{Violence: {V...,{CardType:choose(Attack|Skill|Power):Deal {Damage:diff()} damage{Violence: {V...,v0.101.0,2026-03-26,v0.103.2,2026-04-16,text_only,compendium_order|description_raw|type_variants.skill.riders[CHAOS].description,changelog 1.1.0; beta: update-history card match (only entry in window)
+ROCKET_PUNCH,description,"Deal 13 damage.
+Draw 1 card.
+When a Status card is created, reduce this card'...","Deal 13 damage.
+Draw 1 card.
+Whenever you create a Status, reduce this card's...",v0.100.0,2026-03-19,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history field match; field also changed in v0.103.0
+ROCKET_PUNCH,description_raw,"Deal {Damage:diff()} damage.
+Draw {Cards:diff()} {Cards:plural:card|cards}.
+W...","Deal {Damage:diff()} damage.
+Draw {Cards:diff()} {Cards:plural:card|cards}.
+W...",,,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: no update-history field match (2 entries in window)
+ROCKET_PUNCH,upgrade_description,"Deal 14 damage.
+Draw 2 cards.
+When a Status card is created, reduce this card...","Deal 14 damage.
+Draw 2 cards.
+Whenever you create a Status, reduce this card'...",v0.100.0,2026-03-19,v0.103.2,2026-04-16,text_only,description|description_raw|upgrade_description,changelog 1.1.0; beta: update-history field match; field also changed in v0.103.0
+STACK,description_raw,Gain [gold]Block[/gold] equal to the number of cards in your [gold]Discard Pi...,Gain [gold]Block[/gold] equal to the number of cards in your [gold]Discard Pi...,v0.103.2,2026-04-16,v0.103.2,2026-04-16,text_only,description_raw,changelog 1.1.0; beta: update-history card match (only entry in window)
+SWORD_SAGE,description,Increase the cost of [gold]Sovereign Blade[/gold] by 1. [gold]Sovereign Blade...,[gold]Sovereign Blade[/gold] now hits an additional time.,v0.101.0,2026-03-26,v0.103.2,2026-04-16,text_only,description|description_raw,changelog 1.1.0; beta: update-history field match
+SWORD_SAGE,description_raw,Increase the cost of [gold]Sovereign Blade[/gold] by 1. [gold]Sovereign Blade...,[gold]Sovereign Blade[/gold] now hits an additional time.,v0.101.0,2026-03-26,v0.103.2,2026-04-16,text_only,description|description_raw,changelog 1.1.0; beta: update-history card match (only entry in window)
+TEAR_ASUNDER,description_raw,"Deal {Damage:diff()} damage.
+Hits an additional time for each time you lost H...","Deal {Damage:diff()} damage.
+Hits an additional time for each time you lost H...",,,v0.103.2,2026-04-16,text_only,description_raw,changelog 1.1.0; beta: no update-history field match (0 entries in window)
+TRASH_TO_TREASURE,description,"Whenever you create a Status card, [gold]Channel[/gold] 1 random Orb.","Whenever you create a Status, [gold]Channel[/gold] 1 random Orb.",v0.103.0,2026-04-09,v0.103.2,2026-04-16,text_only,description|description_raw,changelog 1.1.0; beta: update-history field match
+TRASH_TO_TREASURE,description_raw,"Whenever you create a Status card, [gold]Channel[/gold] 1 random Orb.","Whenever you create a Status, [gold]Channel[/gold] 1 random Orb.",v0.103.0,2026-04-09,v0.103.2,2026-04-16,text_only,description|description_raw,changelog 1.1.0; beta: update-history card match (only entry in window)
+EXTERMINATE,description,Deal 3 damage 4 times to ALL enemies.,Deal 3 damage to ALL enemies 4 times.,v0.106.0,2026-05-21,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history field match
+EXTERMINATE,description_raw,Deal {Damage:diff()} damage {Repeat:diff()} times to ALL enemies.,Deal {Damage:diff()} damage to ALL enemies {Repeat:diff()} times.,v0.106.0,2026-05-21,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history card match (only entry in window)
+EXTERMINATE,upgrade_description,Deal 4 damage 4 times to ALL enemies.,Deal 4 damage to ALL enemies 4 times.,v0.106.0,2026-05-21,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history field match
+HOWL_FROM_BEYOND,description,"Deal 16 damage to ALL enemies.
+At the start of your turn, if this is in your ...","Deal 16 damage to ALL enemies.
+At the end of your turn, if this is in your [g...",v0.106.0,2026-05-21,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history field match
+HOWL_FROM_BEYOND,description_raw,"Deal {Damage:diff()} damage to ALL enemies.
+At the start of your turn, if thi...","Deal {Damage:diff()} damage to ALL enemies.
+At the end of your turn, if this ...",v0.106.0,2026-05-21,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history card match (only entry in window)
+HOWL_FROM_BEYOND,upgrade_description,"Deal 21 damage to ALL enemies.
+At the start of your turn, if this is in your ...","Deal 21 damage to ALL enemies.
+At the end of your turn, if this is in your [g...",v0.106.0,2026-05-21,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history field match
+MAD_SCIENCE,description_raw,{CardType:choose(Attack|Skill|Power):Deal {Damage:diff()} damage{Violence: {V...,{CardType:choose(Attack|Skill|Power):Deal {Damage:diff()} damage{Violence: {V...,v0.106.1,2026-05-22,v0.107.1,2026-06-18,text_only,description_raw,changelog 1.2.0; beta: update-history card match (only entry in window)
+NEOWS_FURY,description,"Deal 10 damage.
+Put 2 random cards from your [gold]Discard Pile[/gold] into y...","Deal 10 damage.
+Put up to 2 cards from your [gold]Discard Pile[/gold] into yo...",v0.104.0,2026-04-23,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history field match
+NEOWS_FURY,description_raw,"Deal {Damage:diff()} damage.
+Put {Cards:plural:a random card|{:diff()} random...","Deal {Damage:diff()} damage.
+Put up to {Cards:diff()} {Cards:plural:card|card...",v0.104.0,2026-04-23,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history card match (only entry in window)
+NEOWS_FURY,upgrade_description,"Deal 14 damage.
+Put 3 random cards from your [gold]Discard Pile[/gold] into y...","Deal 14 damage.
+Put up to 3 cards from your [gold]Discard Pile[/gold] into yo...",v0.104.0,2026-04-23,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history field match
+PACTS_END,description,Can only be played if you have 3 or more cards in your [gold]Exhaust Pile[/go...,"If you have 3 or more cards in your [gold]Exhaust Pile[/gold],
+deal 17 damage...",v0.104.0,2026-04-23,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history field match
+PACTS_END,description_raw,Can only be played if you have {Cards:diff()} or more {Cards:plural:card|card...,If you have {Cards:diff()} or more {Cards:plural:card|cards} in your [gold]Ex...,v0.104.0,2026-04-23,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history card match (only entry in window)
+PACTS_END,upgrade_description,Can only be played if you have 3 or more cards in your [gold]Exhaust Pile[/go...,"If you have 3 or more cards in your [gold]Exhaust Pile[/gold],
+deal 23 damage...",v0.104.0,2026-04-23,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history field match
+PARRY,description,"Whenever you play [gold]Sovereign Blade[/gold], gain 10 [gold]Block[/gold].",[gold]Sovereign Blade[/gold] now gains 10 [gold]Block[/gold].,v0.104.0,2026-04-23,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history field match
+PARRY,description_raw,"Whenever you play [gold]Sovereign Blade[/gold], gain {ParryPower:diff()} [gol...",[gold]Sovereign Blade[/gold] now gains {ParryPower:diff()} [gold]Block[/gold].,v0.104.0,2026-04-23,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history card match (only entry in window)
+PARRY,upgrade_description,"Whenever you play [gold]Sovereign Blade[/gold], gain 14 [gold]Block[/gold].",[gold]Sovereign Blade[/gold] now gains 14 [gold]Block[/gold].,v0.104.0,2026-04-23,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history field match
+REAPER_FORM,description,"Whenever Attacks deal damage, they also apply that much [gold]Doom[/gold].","Whenever Attacks deal damage, apply that much [gold]Doom[/gold].",v0.104.0,2026-04-23,v0.107.1,2026-06-18,text_only,description|description_raw,changelog 1.2.0; beta: update-history field match
+REAPER_FORM,description_raw,"Whenever Attacks deal damage, they also apply that much [gold]Doom[/gold].","Whenever Attacks deal damage, apply that much [gold]Doom[/gold].",v0.104.0,2026-04-23,v0.107.1,2026-06-18,text_only,description|description_raw,changelog 1.2.0; beta: update-history card match (only entry in window)
+SEVEN_STARS,description_raw,Deal {Damage:diff()} damage to ALL enemies {Repeat:plural:{} time|{} times}.,Deal {Damage:diff()} damage to ALL enemies {Repeat:diff()} {Repeat:plural:tim...,,,v0.107.1,2026-06-18,text_only,description_raw,changelog 1.2.0; beta: no update-history field match (0 entries in window)
+SOVEREIGN_BLADE,description_raw,Deal {Damage:diff()} damage{SeekingEdgeAmount:cond:>0? to ALL enemies|}{Repea...,Deal {Damage:diff()} damage{TargetType:choose(AllEnemies): to ALL enemies|}{R...,v0.104.0,2026-04-23,v0.107.1,2026-06-18,text_only,compendium_order|description_raw,changelog 1.2.0; beta: update-history card match (only entry in window)
+SUMMON_FORTH,description,"[gold]Forge[/gold] 8.
+Put [gold]Sovereign Blade[/gold] into your [gold]Hand[/...","Put [gold]Sovereign Blade[/gold] into your [gold]Hand[/gold] from anywhere.
+[...",v0.104.0,2026-04-23,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history field match
+SUMMON_FORTH,description_raw,"[gold]Forge[/gold] {Forge:diff()}.
+Put [gold]Sovereign Blade[/gold] into your...","Put [gold]Sovereign Blade[/gold] into your [gold]Hand[/gold] from anywhere.
+[...",,,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: no update-history field match (2 entries in window)
+SUMMON_FORTH,upgrade_description,"[gold]Forge[/gold] 11.
+Put [gold]Sovereign Blade[/gold] into your [gold]Hand[...","Put [gold]Sovereign Blade[/gold] into your [gold]Hand[/gold] from anywhere.
+[...",v0.104.0,2026-04-23,v0.107.1,2026-06-18,text_only,description|description_raw|upgrade_description,changelog 1.2.0; beta: update-history field match
+SWORD_SAGE,description,[gold]Sovereign Blade[/gold] now hits an additional time.,[gold]Sovereign Blade[/gold] gains [gold]Replay[/gold] 1.,v0.105.0,2026-05-07,v0.107.1,2026-06-18,text_only,description|description_raw,changelog 1.2.0; beta: update-history field match
+SWORD_SAGE,description_raw,[gold]Sovereign Blade[/gold] now hits an additional time.,[gold]Sovereign Blade[/gold] gains [gold]Replay[/gold] {SwordSagePower:diff()}.,v0.105.0,2026-05-07,v0.107.1,2026-06-18,text_only,description|description_raw,changelog 1.2.0; beta: update-history card match (only entry in window)

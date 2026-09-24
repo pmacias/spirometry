@@ -59,8 +59,9 @@ A list of `{version, type, date, changes[]}`, newest first.
   markup is stripped. For Debilitate V0.106.0, the before and after descriptions look
   identical because the difference falls after the cut. One entry is lossy:
   `"Vars: 3 fields → 3 fields"`. `description_raw` diffs are left out.
-- The same diffs appear in the changelogs as structured `{field, old, new}` with full
-  (longer) text. Conflagration and Drum of Battle's V0.104.0 changes and Debilitate's
+- The same diffs appear in the changelogs as structured `{field, old, new}`. **Correction
+  (later check):** changelog text values are truncated as well (cut at ~80 characters with
+  `...`), so neither endpoint has full description text. Conflagration and Drum of Battle's V0.104.0 changes and Debilitate's
   V0.106.0 change are all in changelog 1.2.0 (stable). Debilitate's V0.100.0 buff is in
   changelog 1.1.0 (2026-04-16, "Major Update #1 drops on stable"), about 4 weeks after its beta
   date.
@@ -85,9 +86,41 @@ Borderline cases need a hand check: cost-only changes (Monarch's Gaze, Fusion), 
 (Predator, Acrobatics; these also change the offer rate, so they matter for the offer-rate
 check), and upgrade-only changes (Untouchable, Royalties).
 
+## Follow-up: full pull (all 579 cards, all 27 changelogs)
+
+Built into `reference/` by `src/spirometry/patch_history.py`; see SPIROMETRY.md.
+
+- **Game vs. parser changelogs.** Only 1.1.0 (stable v0.103.2, "Major Update #1": "full
+  rollup of beta content from v0.100.0 through v0.103.1 landing on stable") and 1.2.0
+  (stable v0.107.1) carry game changes. The 1.0.x and 1.1.2 card diffs are parser fixes.
+  1.3.0 says the changelog endpoint now mirrors Steam patch notes and that beta versions have
+  their own changelogs — those aren't in the `/api/changelogs` list.
+- **Entity typing.** Changelog details group entities under `categories[].id` (cards,
+  relics, monsters, powers, events, encounters, enchantments, afflictions, potions, epochs,
+  orbs, characters, intents, modifiers, stories). `FAKE_*` ids are all under relics
+  (`FAKE_ANCHOR`, ...) and monsters (`FAKE_MERCHANT_MONSTER`).
+- **update-history.** 218 of 579 cards have entries; the rest return 404 `No update
+  history`. All 307 entries are typed "Beta Patch", including V0.103.2, the stable release.
+  Labels sometimes name the whole dict (`Vars: 3 fields → 3 fields`) instead of the field.
+  Card additions/removals appear as `Added.` / `Removed.`.
+- **Stable hotfixes are not tracked.** No history entry for v0.98.1–v0.98.3, v0.99.1,
+  v0.103.1, or v0.107.1. v0.103.1 and v0.99.1 are only mentioned in changelog prose.
+- **Earliest version:** `V0.98.0-beta` (2026-03-05), then `V0.99.0-beta` (2026-03-12),
+  13 cards each. On every one of those cards the V0.99.0-beta entry exactly reverses the
+  V0.98.0-beta entry (e.g. Beat Into Shape damage 5 → 10, then 10 → 5), so they net to zero.
+  Real history starts at V0.100.0 (2026-03-19).
+- **Text truncation, corrected.** Changelog description values are truncated too: 1,624 of
+  4,208 description values end in `...` at exactly 80 characters.
+- **Inconsistencies.** Update-history dates the 1.1.2 parser fixes as game changes:
+  35 `upgrade_description`-only entries at V0.103.2 (e.g. Bash upgrade "Apply 2 → 3
+  Vulnerable", a text fix) and 13 `can_be_generated_in_combat: none → no` entries at
+  V0.104.0 (2026-04-23), though changelog 1.1.2 introduced that field on 2026-04-20.
+  Sacrifice's 1.2.0 `vars.CalculationBase` / `CalculationExtra` `none → 0/1` has no history
+  entry at all (probably parser-side).
+
 ## Implications for the pipeline
 
-- Build the change table from the **changelog details** (structured, full text, every entity
+- Build the change table from the **changelog details** (structured, every entity
   type). Use **update-history** to date each change to its beta version.
 - Build a small hand-checked table: game version → branch (beta/stable) → release date.
   Stable versions come from changelog titles and the run data's `is_beta` + `build_id`.

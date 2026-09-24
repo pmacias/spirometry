@@ -1,0 +1,89 @@
+card_id,version,date,fields
+ADAPTIVE_STRIKE,v0.98.0-beta,2026-03-05,description|upgrade description
+ADAPTIVE_STRIKE,v0.99.0-beta,2026-03-12,description|upgrade description
+ALCHEMIZE,v0.104.0,2026-04-23,can be generated in combat
+ANTICIPATE,v0.103.2,2026-04-16,upgrade description
+ASCENDERS_BANE,v0.106.1,2026-05-22,keywords key[0]|keywords key[1]|keywords key[2]|keywords[0]|keywords[1]|keywords[2]
+ASSASSINATE,v0.103.2,2026-04-16,upgrade description
+BASH,v0.103.2,2026-04-16,upgrade description
+BEAM_CELL,v0.103.2,2026-04-16,upgrade description
+BEAT_INTO_SHAPE,v0.98.0-beta,2026-03-05,damage|description|upgrade|upgrade description|vars
+BEAT_INTO_SHAPE,v0.99.0-beta,2026-03-12,damage|description|upgrade|upgrade description|vars
+BRAND,v0.103.2,2026-04-16,upgrade description
+BREAK,v0.103.2,2026-04-16,upgrade description
+BUBBLE_BUBBLE,v0.103.2,2026-04-16,upgrade description
+BULK_UP,v0.103.2,2026-04-16,upgrade description
+CAPTURE_SPIRIT,v0.100.0,2026-03-19,cards draw|damage|description|upgrade description|vars
+CAPTURE_SPIRIT,v0.101.0,2026-03-26,cards draw|damage|description|upgrade description|vars
+COORDINATE,v0.103.2,2026-04-16,upgrade description
+DEADLY_POISON,v0.103.2,2026-04-16,upgrade description
+DEATHBRINGER,v0.103.2,2026-04-16,upgrade description
+DEMONIC_SHIELD,v0.98.0-beta,2026-03-05,cost|description|hp loss|vars
+DEMONIC_SHIELD,v0.99.0-beta,2026-03-12,cost|description|hp loss|vars
+DISINTEGRATION,v0.104.0,2026-04-23,can be generated in combat
+DUAL_WIELD,v0.103.2,2026-04-16,description|upgrade description
+END_OF_DAYS,v0.103.2,2026-04-16,upgrade description
+FEAR,v0.103.2,2026-04-16,upgrade description
+FEED,v0.104.0,2026-04-23,can be generated in combat
+FEEDING_FRENZY,v0.103.2,2026-04-16,upgrade description
+FIGHT_ME,v0.103.2,2026-04-16,upgrade description
+FIGHT_THROUGH,v0.98.0-beta,2026-03-05,description|upgrade description
+FIGHT_THROUGH,v0.99.0-beta,2026-03-12,description|upgrade description
+FOLLY,v0.106.1,2026-05-22,keywords key[0]|keywords key[1]|keywords key[2]|keywords key[3]|keywords[0]|keywords[1]|keywords[2]|keywords[3]
+FOOTWORK,v0.103.2,2026-04-16,upgrade description
+FRANTIC_ESCAPE,v0.104.0,2026-04-23,can be generated in combat
+GENETIC_ALGORITHM,v0.106.1,2026-05-22,block|description|upgrade description|vars.block
+GENETIC_ALGORITHM,v0.107.0,2026-06-04,description|upgrade description
+GO_FOR_THE_EYES,v0.103.2,2026-04-16,upgrade description
+HAND_OF_GREED,v0.104.0,2026-04-23,can be generated in combat
+HAZE,v0.103.2,2026-04-16,upgrade description
+HIDDEN_GEM,v0.104.0,2026-04-23,can be generated in combat
+HIGH_FIVE,v0.103.2,2026-04-16,upgrade description
+JUGGLING,v0.98.0-beta,2026-03-05,description
+JUGGLING,v0.99.0-beta,2026-03-12,description
+KNIFE_TRAP,v0.98.0-beta,2026-03-05,cost|damage|description|type|type key|upgrade|upgrade description|vars
+KNIFE_TRAP,v0.99.0-beta,2026-03-12,cost|damage|description|type|type key|upgrade|upgrade description|vars
+LEG_SWEEP,v0.103.2,2026-04-16,upgrade description
+LIFT,v0.98.0-beta,2026-03-05,block|description|upgrade description|vars
+LIFT,v0.99.0-beta,2026-03-12,block|description|upgrade description|vars
+MAD_SCIENCE,v0.98.0-beta,2026-03-05,type variants
+MAD_SCIENCE,v0.99.0-beta,2026-03-12,type variants
+MIND_ROT,v0.104.0,2026-04-23,can be generated in combat
+MOMENTUM_STRIKE,v0.98.0-beta,2026-03-05,description|upgrade description
+MOMENTUM_STRIKE,v0.99.0-beta,2026-03-12,description|upgrade description
+MURDER,v0.98.0-beta,2026-03-05,cost|upgrade
+MURDER,v0.99.0-beta,2026-03-12,cost|upgrade
+NEGATIVE_PULSE,v0.103.2,2026-04-16,upgrade description
+NEUTRALIZE,v0.103.2,2026-04-16,upgrade description
+NOT_YET,v0.104.0,2026-04-23,can be generated in combat
+NULL,v0.103.2,2026-04-16,upgrade description
+OBLIVION,v0.103.2,2026-04-16,upgrade description
+OUTBREAK,v0.98.0-beta,2026-03-05,description|powers applied|upgrade|upgrade description|vars
+OUTBREAK,v0.99.0-beta,2026-03-12,description|powers applied|upgrade|upgrade description|vars
+POISONED_STAB,v0.103.2,2026-04-16,upgrade description
+PREPARED,v0.100.0,2026-03-19,removed.
+PREPARED,v0.101.0,2026-03-26,added.
+PROWESS,v0.103.2,2026-04-16,upgrade description
+ROCKET_PUNCH,v0.98.0-beta,2026-03-05,description|upgrade description
+ROCKET_PUNCH,v0.99.0-beta,2026-03-12,description|upgrade description
+ROYALTIES,v0.104.0,2026-04-23,can be generated in combat
+RUPTURE,v0.103.2,2026-04-16,upgrade description
+SCOURGE,v0.103.2,2026-04-16,upgrade description
+SETUP_STRIKE,v0.103.2,2026-04-16,upgrade description
+SEVERANCE,v0.98.0-beta,2026-03-05,description|upgrade description
+SEVERANCE,v0.99.0-beta,2026-03-12,description|upgrade description
+SHATTER,v0.105.0,2026-05-07,description|upgrade description
+SLOTH,v0.104.0,2026-04-23,can be generated in combat
+SNAKEBITE,v0.103.2,2026-04-16,upgrade description
+SOOT,v0.104.0,2026-04-23,can be generated in combat
+SPEEDSTER,v0.102.0,2026-04-02,description|powers applied|upgrade description|vars
+SQUASH,v0.103.2,2026-04-16,upgrade description
+SUCKER_PUNCH,v0.103.2,2026-04-16,upgrade description
+SUMMON_FORTH,v0.106.1,2026-05-22,spawns cards[0]
+SUPPRESS,v0.103.2,2026-04-16,upgrade description
+TAUNT,v0.103.2,2026-04-16,upgrade description
+THE_HUNT,v0.104.0,2026-04-23,can be generated in combat
+THE_SCYTHE,v0.106.1,2026-05-22,damage|description|upgrade description|vars.damage
+TREMBLE,v0.103.2,2026-04-16,upgrade description
+WASTE_AWAY,v0.104.0,2026-04-23,can be generated in combat
+WITHER,v0.106.0,2026-05-21,cost|damage|description|keywords key[0]|keywords key[1]|keywords[0]|keywords[1]|upgrade description|upgrade.damage|vars.damage

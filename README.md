@@ -26,7 +26,10 @@ See [PLAN.md](PLAN.md) for the research questions and methods.
 | [SPIROMETRY.md](SPIROMETRY.md) | Reference: data sources, record structure, known data issues |
 | [CLAUDE.md](CLAUDE.md) | Standing instructions for Claude Code sessions |
 | `notes/` | Investigation notes (e.g. how the patch history endpoints behave) |
-| `snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
+| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset |
+| `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
+| `reference/` | Small committed reference tables: game builds, card changes (+ raw API cache in `reference/raw/`) |
+| `tests/` | pytest tests |
 
 ## Setup
 
@@ -35,13 +38,23 @@ mamba create -n spirometry python=3.11
 mamba activate spirometry
 pip install -e .                  # core
 pip install -e ".[analysis]"      # notebooks and analysis
+pip install -e ".[dev]"           # tests
+python -m pytest
 ```
 
 Download the run snapshot (about 15 hours at the export's rate limit; resumable):
 
 ```bash
-python snapshot_export.py
-python snapshot_export.py --count-only   # runs per build from what's saved
+python scripts/snapshot_export.py              # run from the repo root
+python scripts/snapshot_export.py --count-only # runs per build from what's saved
+```
+
+Rebuild the card patch dataset in `reference/` (reads the committed API cache; fetches only
+what's missing, at most 10 requests per minute):
+
+```bash
+python -m spirometry.patch_history          # fetch missing + build
+python -m spirometry.patch_history build    # build from the cache only
 ```
 
 ## Data

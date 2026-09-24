@@ -1,0 +1,1 @@
+[{"version":"V0.109.0","type":"Beta Patch","date":"2026-07-16","changes":["Cards draw: 6 → 2","Description: Draw cards until you have 6 in your Hand. → Draw 2 cards. They gain Retain this turn.","Upgrade description: Draw cards until you have 7 in your Hand. → Draw 3 cards. They gain Retain this turn.","Vars.cards: 6 → 2"]}]

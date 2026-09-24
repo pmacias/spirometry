@@ -1,0 +1,1 @@
+[{"version":"V0.109.0","type":"Beta Patch","date":"2026-07-16","changes":["Description: At the start of your turn, gain 2 Strength. → At the start of your turn, gain 3 Strength.","Powers applied[0].amount: 2 → 3","Upgrade description: At the start of your turn, gain 3 Strength. → At the start of your turn, gain 4 Strength.","Vars.strength: 2 → 3","Vars.strengthpower: 2 → 3"]}]

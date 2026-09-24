@@ -1,0 +1,1 @@
+[{"version":"V0.108.0","type":"Beta Patch","date":"2026-07-02","changes":["Description: Take double damage from enemies. Allies take half damage from enemies. → Take 50% more damage from enemies. Allies take 50% less damage from enemies.","Vars.damagedecrease: none → 0.5","Vars.damageincrease: none → 1.5"]}]

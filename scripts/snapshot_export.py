@@ -2,12 +2,13 @@
 
 Saves each page as-is (gzipped JSONL) to ./sts2_snapshot/, keeps a cursor
 checkpoint so it can be stopped and resumed, and backs off on rate limits.
+Paths are relative to the working directory: run it from the repo root.
 
 Usage:
-    python snapshot_export.py --pages 5      # quick test: first 5 pages
-    python snapshot_export.py                # keep going until the export ends
-    python snapshot_export.py --count-only   # just tally what's already saved
-    python snapshot_export.py --count-only --per-page   # also runs per saved page
+    python scripts/snapshot_export.py --pages 5      # quick test: first 5 pages
+    python scripts/snapshot_export.py                # keep going until the export ends
+    python scripts/snapshot_export.py --count-only   # just tally what's already saved
+    python scripts/snapshot_export.py --count-only --per-page   # also runs per saved page
 """
 import argparse, collections, gzip, json, pathlib, time
 import requests

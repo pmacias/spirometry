@@ -55,6 +55,8 @@ set up, patch history endpoints checked (`notes/patch_history.md`).
 - [ ] Card patch dataset (CC): `reference/builds.csv`, `reference/card_changes.csv`,
       excluded fields, text-only changes. Done when merged and Phil has reviewed the
       whitelist, the text-only list, and the build mapping.
+      *Status: built, in review (PR). 128 card-patches across two stable patches (v0.103.2,
+      v0.107.1); 26 text-only for review; 5 card-patches with no beta build.*
 
 ### 2. Data audit — Phil
 Look at the data before building anything on it. Notebook `01_data_audit`.
@@ -116,3 +118,13 @@ README with results, portfolio card on pmacias.github.io.
   both endpoints. Cost changes and text-only changes get their own labels for manual review.
 - Unit of analysis for the causal designs is the card offer; pick-rate DiD on numeric tweaks
   is the first result.
+- Only changelogs 1.1.0 (stable v0.103.2) and 1.2.0 (stable v0.107.1) count as game
+  releases; other changelogs' card diffs are parser fixes and are excluded (listed in
+  `excluded_fields.csv`).
+- Stable release dates are Spire Codex changelog dates; beta dates are update-history dates.
+  Branch is never taken from run files' `is_beta` (it says false even for beta versions).
+- update-history's V0.98.0-beta / V0.99.0-beta entries are ignored for beta timing: on every
+  card they are a change and its exact reversal.
+- `change_kind` labels combine with `+` (e.g. `rework+cost_change`); `rarity_change` added
+  alongside the requested labels, and whole-card `added` / `removed` rows are included.
+- `snapshot_export.py` moved to `scripts/` (unchanged behaviour; run from the repo root).

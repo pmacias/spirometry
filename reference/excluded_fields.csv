@@ -1,0 +1,21 @@
+field,reason,count,changelogs,example_cards
+compendium_order,"site/parser changelog, not a game release",576,1.0.4,ABRASIVE ACCELERANT ACCURACY ACROBATICS ADAPTIVE_STRIKE
+upgrade_description,"site/parser changelog, not a game release",459,1.0.14 1.0.20 1.1.2,ANTICIPATE ASSASSINATE BASH BEAM_CELL BRAND
+upgrade,"site/parser changelog, not a game release",210,1.0.1 1.0.14,ARMAMENTS CASCADE CHARGE DARKNESS ENLIGHTENMENT
+vars,"site/parser changelog, not a game release",176,1.0.1 1.0.9 1.0.12,ASHEN_STRIKE BODY_SLAM BULLY CONFLAGRATION CRESCENT_SPEAR
+description,"site/parser changelog, not a game release",112,1.0.1 1.0.2 1.0.9 1.0.12 1.0.20 1.1.2,DUAL_WIELD STACK FRIENDSHIP PRECISE_CUT ASHEN_STRIKE
+compendium_order,display order in the compendium,90,1.1.0 1.2.0,ACROBATICS ANTICIPATE APOTHEOSIS APPARITION BACKFLIP
+damage,"site/parser changelog, not a game release",41,1.0.1 1.0.12,ASHEN_STRIKE BODY_SLAM BULLY CONFLAGRATION CRESCENT_SPEAR
+spawns_cards,"site/parser changelog, not a game release",37,1.0.2,ACCURACY BEGONE BLADE_DANCE BOOST_AWAY CAPTURE_SPIRIT
+can_be_generated_in_combat,"site/parser changelog, not a game release",14,1.1.2,ALCHEMIZE DISINTEGRATION FEED FRANTIC_ESCAPE HAND_OF_GREED
+keywords_key[i],mirror of keywords,11,1.1.0 1.2.0,DIRGE FOLLY FORGOTTEN_RITUAL HOTFIX HUDDLE_UP
+hit_count,"site/parser changelog, not a game release",10,1.0.12,CELESTIAL_MIGHT EXTERMINATE FIGHT_ME GUNK_UP PECK
+rarity_key,mirror of rarity,5,1.1.0 1.2.0,ACROBATICS COLOSSUS FOLLOW_THROUGH RIP_AND_TEAR PREDATOR
+powers_applied[i].power_key,mirror of power,5,1.1.0 1.2.0,BLADE_OF_INK BORROWED_TIME DOMINATE FOLLOW_THROUGH DRUM_OF_BATTLE
+is_x_cost,"site/parser changelog, not a game release",5,1.0.10,ALL_FOR_ONE BULLET_TIME JACKPOT SCRAPE TRANSFIGURE
+upgrade.description_changed,"flag that the upgrade text differs, not a value",3,1.1.0,BEGONE SEANCE STOKE
+type_key,mirror of type,2,1.1.0 1.2.0,BEGONE DRUM_OF_BATTLE
+type_variants,"site/parser changelog, not a game release",2,1.0.9 1.0.20,MAD_SCIENCE
+description_raw,"site/parser changelog, not a game release",2,1.0.17 1.0.18,BURST
+type_variants.skill.riders[i].description,not in whitelist,1,1.1.0,MAD_SCIENCE
+block,"site/parser changelog, not a game release",1,1.0.1,GENETIC_ALGORITHM

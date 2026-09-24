@@ -11,6 +11,8 @@ starting. Treat anything `SPIROMETRY.md` marks "not yet verified" as unverified.
 ## Data
 - Never touch `sts2_snapshot/`, `data/`, or any `*.duckdb` file. The full snapshot lives only
   on Phil's machine.
+- Don't read files under `reference/raw/` unless the task is about the cache itself;
+  use the derived tables in `reference/` instead.
 - For development, fetch at most a page or two from `/api/exports/runs` (each page costs one
   credit of a 120/hour budget that the local snapshot also uses). Keep fetched runs out of git.
 - Other Spire Codex endpoints: at most 10 requests per minute. Cache raw responses and reuse

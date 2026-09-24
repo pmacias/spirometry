@@ -1,0 +1,27 @@
+card_id,stable_build,label,basis,note
+BOMBARDMENT,v0.103.2,wording,patch notes v0.100.0,"""Improved wording clarity for Bombardment and Howl from Beyond"""
+DISCOVERY,v0.103.2,mechanic,patch notes v0.100.0,"""It costs 0 [E]"" -> ""It's free to play"": generated cards with a Star cost now also cost 0"
+EXPECT_A_FIGHT,v0.103.2,mechanic,patch notes v0.100.0,"Listed as a rework: adds ""You cannot gain additional [E] this turn"""
+EXTERMINATE,v0.107.1,wording,text diff,Same clause reordered
+FLAK_CANNON,v0.103.2,wording,patch notes v0.103.0,"""Status"" now highlighted in gold"
+FLANKING,v0.103.2,wording,patch notes v0.103.0,"Text ""now properly specifies"" it only doubles attack damage; behavior unchanged"
+GUIDING_STAR,v0.103.2,mechanic,text diff,"""Next turn, draw 2 cards"" -> ""Draw 2 cards"" (immediate draw)"
+HIDDEN_GEM,v0.103.2,mechanic,patch notes v0.100.0,Reworked: only targets cards without Replay
+HOWL_FROM_BEYOND,v0.103.2,wording,patch notes v0.100.0,Same wording-clarity note as Bombardment
+HOWL_FROM_BEYOND,v0.107.1,mechanic,text diff,Trigger moved from start of turn to end of turn (beta v0.106.0)
+ITERATION,v0.103.2,wording,patch notes v0.103.0,"""Status card"" -> ""Status"""
+MAD_SCIENCE,v0.103.2,exclude,judgment,Customizable card with many variants; patches mostly fix interactions with other cards and relics. Drop the card from all analyses (beta v0.101.0)
+MAD_SCIENCE,v0.107.1,exclude,judgment,Same as above (beta v0.106.1)
+NEOWS_FURY,v0.107.1,mechanic,patch notes v0.104.0,Player now chooses up to 2 cards instead of 2 random
+PACTS_END,v0.107.1,mechanic,wiki v0.104.0 (not in official notes),"""Can only be played if"" -> ""If ..., deal damage"": now playable without the condition; minor"
+PARRY,v0.107.1,mechanic,patch notes v0.104.0,Reworked: Block now on Sovereign Blade and affected by Dexterity and Frail
+REAPER_FORM,v0.107.1,wording,patch notes v0.104.0,Clarifies that the power applies the Doom
+ROCKET_PUNCH,v0.103.2,mechanic,patch notes v0.100.0,Cost reduction now lasts until played instead of until end of turn; v0.103.0 also reworded Status
+SEVEN_STARS,v0.107.1,wording,text diff,Plural formatting in template only; no update-history entry (likely parser)
+SOVEREIGN_BLADE,v0.107.1,wording,text diff,Template restructured to display Parry's Block; card is generated rather than offered
+STACK,v0.103.2,wording,text diff,Visible text identical and beta build equals stable build; likely a misdated parser fix
+SUMMON_FORTH,v0.107.1,mechanic,patch notes v0.104.0,Bug fix: existing Sovereign Blades now go to hand before Forging; minor
+SWORD_SAGE,v0.103.2,mechanic,text diff,Drops the Sovereign Blade cost increase (beta v0.101.0)
+SWORD_SAGE,v0.107.1,mechanic,text diff,Extra hit replaced by Replay 1 (beta v0.105.0)
+TEAR_ASUNDER,v0.103.2,wording,wiki card history,Wiki shows no card changes since 2025 (before early access); visible text identical and no update-history entry; treated as a parser artifact
+TRASH_TO_TREASURE,v0.103.2,wording,patch notes v0.103.0,"""Status card"" -> ""Status"""

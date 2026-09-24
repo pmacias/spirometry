@@ -1,0 +1,19 @@
+[project]
+name = "spirometry"
+version = "0.1.0"
+description = "Causal analysis of Slay the Spire 2 early-access balance patches from community run data"
+requires-python = ">=3.11"
+dependencies = [
+    "requests",
+]
+
+[project.optional-dependencies]
+# Added as the pipeline and analysis stages come online.
+analysis = [
+    "duckdb",
+    "pandas",
+    "pyarrow",
+    "numpy",
+    "matplotlib",
+    "jupyter",
+]

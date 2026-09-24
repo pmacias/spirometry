@@ -1,0 +1,20 @@
+# Raw data: never commit (multi-GB, and contains player IDs)
+sts2_snapshot/
+data/
+*.jsonl.gz
+*.json.gz
+*.duckdb
+*.duckdb.wal
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

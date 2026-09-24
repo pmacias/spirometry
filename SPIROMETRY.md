@@ -2,8 +2,9 @@
 
 Measuring what Slay the Spire 2's balance patches actually did.
 
-Status: scoping. Data access confirmed; 5-page test done (4,641 runs, v0.98.0–v0.103.2,
-no beta). Full snapshot pending.
+Status: scoping. Data access confirmed from my Mac and from CC cloud sessions; 5-page test
+done (4,641 runs, v0.98.0–v0.103.2, no beta); patch history endpoints checked (see
+`notes/patch_history.md`). Full snapshot running locally.
 
 ---
 
@@ -52,12 +53,14 @@ affiliated with Mega Crit.
 - **Raw runs:** `GET /api/exports/runs` — gzipped JSONL, one full raw game run file per
   line, as submitted by players. Params: `limit`, `start` / `end` (ISO-8601 bounds on
   `submitted_at`), `cursor` (from the `X-Next-Cursor` response header). Own rate budget
-  of 120 credits/hour. **Verified working** from my Mac.
+  of 120 credits/hour. **Verified working** from my Mac and from a CC cloud session.
   - Cost: 1 credit per page (`limit=1000`), ~2.3 MB gzipped per page.
-  - Pages return fewer than `limit` runs (4,641 in 5 pages; cause TBD — check with
-    `--count-only --per-page`).
-  - Export is ordered oldest submission first. The first 5 pages covered
-    v0.98.0–v0.103.2, all stable (no beta).
+  - Most pages are full (1,000 runs). Now and then a page comes back short: 1 of the first
+    5 had 641 runs (4,641 total). Probably server-side filtering after the page is cut;
+    the cursor still advances normally.
+  - Export is ordered oldest submission first, and the order is the same from any client
+    (Mac and cloud session agree). The first 5 pages covered v0.98.0–v0.103.2, all stable
+    (no beta).
   - Projected full snapshot: ~1,800 pages, ~4 GB, ~15 h of rate budget at 120/h
     (assuming ~1.8M runs and ~1000 runs/page).
 - **Run summaries:** `GET /api/runs/list` — one row per run, filterable by build, card,
@@ -67,9 +70,13 @@ affiliated with Mega Crit.
 - **Game data:** cards, relics, monsters, events, encounters, etc., extracted from the
   game files, in 15 languages. Also a bulk ZIP per language (`/api/exports/{lang}`).
 - **Patch history:** `GET /api/update-history/{entity_type}/{entity_id}` (per-entity
-  game-patch history) and `/api/changelogs`. **Not yet verified** that this gives exact
-  dates and before/after values for every change — needs checking early, since the whole
-  design depends on it.
+  game-patch history) and `/api/changelogs` (+ `/api/changelogs/{tag}`). **Checked** — see
+  `notes/patch_history.md`. Summary: both give before/after values; update-history dates
+  each change to the *beta* version it first appeared in (e.g. `V0.104.0`, 2026-04-23),
+  while changelogs are Spire Codex site releases whose game-data diffs line up with
+  *stable* rollouts (e.g. site 1.2.0 = stable v0.107.1, 2026-06-18) and include
+  re-extraction noise. Reworks and numeric tweaks are distinguishable from the field diffs.
+  A version → branch → date table has to be built by hand.
 - Rate tiers: no key 15/min, registered 60/min, **academia 100/min (on request)**.
   Unknown whether the academia tier also raises the export's 120/h budget.
 - Size: the community stats page claims ~1.8M submitted runs.
@@ -115,9 +122,11 @@ turn). "Was this card good in this run" can't be read directly off the file.
   more skilled than the average player. State as a limitation; check whether the uploader
   mix shifts over time.
 - **Co-op duplicates.** A multiplayer run gets uploaded once per player (seen in a sample:
-  two records with the same run time, same death, timestamps 40 ms apart). Deduplicate on
-  seed + start_time, or similar. `snapshot_export.py` reports a `dedup` column on this key
-  as a first pass; raw `runs` counts are upper bounds.
+  two records with the same run time, same death, timestamps 40 ms apart). The first 5
+  pages had 4,641 records and 4,279 distinct (seed, start_time): about 8% co-op
+  duplicates. `snapshot_export.py` reports a `dedup` column on this key; raw `runs` counts
+  are upper bounds. Whether the unit of analysis is the run or the player-run gets decided
+  at parsing (a co-op run has one outcome but several players' choices).
 - **Player IDs.** Solo runs use `player_id: 1`. Multiplayer runs carry real 64-bit Steam
   IDs. Hash these in the pipeline; publish aggregates only. Not planning player-level
   analysis. Raw snapshot data is git-ignored and never committed.
@@ -163,12 +172,17 @@ close to randomized. That supports:
 
 ## Repo and environment
 
-- Current contents: `snapshot_export.py`, `SPIROMETRY.md`, `pyproject.toml`, `.gitignore`.
-- Environment: `pyproject.toml` with `requests` as the only core dependency; an
-  `analysis` extra (duckdb, pandas, pyarrow, numpy, matplotlib, jupyter) for later.
-  Move to the `src/` layout when the parsing pipeline starts.
-- Data (`sts2_snapshot/`, `*.duckdb`) is git-ignored. Sessions that need it pull it from
-  wherever the snapshot gets published (see network fallback below).
+- Current contents: `snapshot_export.py`, `SPIROMETRY.md`, `pyproject.toml`, `.gitignore`,
+  `.claude/settings.json`, `notes/` (endpoint investigations, raw API samples).
+- Environment: dependencies live only in `pyproject.toml` (`requests` as the only core
+  dependency; an `analysis` extra — duckdb, pandas, pyarrow, numpy, matplotlib, jupyter —
+  for later). Locally a mamba env with `pip install -e .`; plain `pip install -e .` in
+  cloud sessions and CI. No separate environment.yml / requirements.txt. Move to the
+  `src/` layout when the parsing pipeline starts.
+- Cloud session check passed: spire-codex.com reachable, `pip install -e .` works,
+  Python 3.11.
+- Data (`sts2_snapshot/`, `data/`, `*.duckdb`) is git-ignored and stays local (see network
+  fallback below).
 
 ## How the work gets split
 
@@ -177,20 +191,24 @@ close to randomized. That supports:
   patch history, a GitHub Actions workflow for refreshes, dashboard scaffolding.
 - **Me, on regular usage:** the analysis and the plots. I want to run and look at the
   results myself, and these are the parts I need to be able to explain in interviews.
-- **Network fallback:** if cloud sessions can't reach spire-codex.com, snapshot locally
-  (or via GitHub Actions) and publish to a GitHub Release or cloud storage for sessions
-  to pull.
+- **Network fallback:** the raw snapshot stays local and is never published. Cloud
+  sessions develop against a page or two of the export that they fetch themselves
+  (`python snapshot_export.py --pages 1`), and the finished pipeline runs locally on the
+  full snapshot.
 
 ## Open questions / next steps
 
-1. Check runs per saved page (`--count-only --per-page`) to explain the <1000/page
-   shortfall. Then run the full snapshot: runs per build (after dedup), and whether early
-   builds have enough runs.
-2. Verify the patch history endpoint gives dates and before/after values per change.
+1. Run the full snapshot (in progress locally): runs per build (after dedup), and whether
+   early builds have enough runs. (The <1000/page shortfall is explained: occasional
+   short pages, see Data sources.)
+2. ~~Verify the patch history endpoints.~~ Done — `notes/patch_history.md`. Next: pull all
+   changelog details + update-history for changed entities, build the change table and
+   the version → branch → date table, and check coverage of v0.98–v0.99 and stable
+   hotfixes.
 3. ~~Estimate total snapshot size and rate-budget cost per page.~~ Done — see Data sources.
 4. Message the Spire Codex maintainer: describe the project, ask about the academia tier
    and whether it raises the export budget, confirm they're fine with the use.
-5. Push the repo to GitHub, then test whether a CC cloud session can clone it and reach
-   spire-codex.com.
+5. ~~Push the repo to GitHub, then test whether a CC cloud session can clone it and reach
+   spire-codex.com.~~ Done — passed.
 6. ~~Claim the cloud credit (`/claim-credit` in CC) before October 7, 2026.~~ Done.
 7. Keep Clickworthy moving in parallel (currently on Stage 1).

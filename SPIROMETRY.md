@@ -174,7 +174,9 @@ turn). "Was this card good in this run" can't be read directly off the file.
 
 Built by `python -m spirometry.patch_history` (fetches into `reference/raw/`, cached and
 committed — no player data — then builds the CSVs from the cache; at most 10 requests/min,
-~60 min for a cold cache). Cards only so far.
+~60 min for a cold cache). Cards only so far. The cache also holds the game's enchantment
+list (`raw/enchantments.json`, from `/api/enchantments`), which `spirometry.runs` uses to
+flag mod enchantments.
 
 - `builds.csv` — one row per game version (from update-history, changelog text, and the run
   data): `build_id` (lowercase, as in run files), `branch`, `release_date`, `source`,
@@ -237,11 +239,16 @@ Built locally by `python -m spirometry.runs build` from `sts2_snapshot/` (git-ig
 Parquet file per snapshot page per table, plus `runs.duckdb`, which only holds views over
 those files (absolute paths: rebuild if the folder moves) and a `build_info` table (parser
 version, build time, record and duplicate counts, share of combat lists that couldn't be
-split into screens, the hashing key's fingerprint). Columns follow `notes/run_schema.md`.
+split into screens, the hashing key's fingerprint, and skipped pages with their errors).
+Columns and their types follow `notes/run_schema.md`: SMALLINT only for values the game
+bounds (act, position and length within one floor's list), INTEGER for values copied from
+the record or counted over lists (a mod or edited save can inflate them), BIGINT for
+`run_time_s`. A page that fails to parse or write is skipped and reported (file, exception,
+run_hash); the build finishes the other pages and exits 1.
 
 - `runs`: one row per record (co-op copies kept). `branch` from `builds.csv`, NULL where
   blank or missing. Flags: `is_custom` (any modifier), `is_modded` (mod markers, including a
-  character outside the five real ones), `was_abandoned`, `abandoned_at_neow`, `released`
+  character outside the five real ones and an enchantment outside the game's list), `was_abandoned`, `abandoned_at_neow`, `released`
   (`build_id` in `builds.csv`), `before_release` (UTC start date before the build's
   `release_date`; false where the date is blank), `neow_start` (first floor has
   `EVENT.NEOW`). Uploader fields: `uploader_tag` (raw `_sts`, e.g. `slay-the-stats/v1.2.2`),
@@ -251,7 +258,8 @@ split into screens, the hashing key's fingerprint). Columns follow `notes/run_sc
 - `run_players`: one row per record × player (`player_hash`, `character`).
 - `card_offers`: one row per `card_choices` entry, every source, with `source`, `set_idx`
   (combat/elite/boss/`event_combat` screens; NULL when the list can't be split), `set_picked_any`,
-  `upgraded`, `enchantment`, `in_card_list`, `is_mod_card`. `card_id` has no `CARD.` prefix.
+  `upgraded`, `enchantment`, `enchantment_amount` (as recorded, unclipped), `in_card_list`,
+  `is_mod_card`, `is_mod_enchantment`. `card_id` has no `CARD.` prefix.
 - `shop_offers`: solo shops as the list plus purchases (`origin = 'gained'`, `picked` =
   bought); co-op shops as recorded, `usable = false`.
 - Views: `runs_dedup` (first record per `run_key`, with `n_copies`), `card_offers_dedup`,
@@ -389,8 +397,15 @@ ascension per week).
   a `-`, BaseLib keys). Some mods leave only a mod character (`CHARACTER.HERMIT-HERMIT`,
   1 run on 2 pages), so the parser flags any quoted id with a `-`. Mod characters don't
   always have a `-` (`CHARACTER.WATCHER`); the audit found non-vanilla characters on 824
-  records, so the check is a list of the five real characters (parser 1.1.0 does this). `MIDAS` is a game modifier,
-  not a mod marker. Audit counts (records, 949 pages): `save_dict_*` 13,164, mod modifier
+  records, so the check is a list of the five real characters (parser 1.1.0 does this).
+  Mod enchantments don't always have a `-` either: `ENCHANTMENT.RUNE_OF_CORRUPTION`, with
+  amounts of 110,111–123,013, is on three modded runs in the last ~50 local pages (905,
+  928, 942; they crashed parser 1.1.0's first full build). The game has 22 enchantments
+  (`/api/enchantments`, cached in `reference/raw/enchantments.json`), and game
+  enchantments' amounts are 0–25 on those pages, so any other enchantment id is a mod marker
+  (parser 1.2.0). On 2 pages fetched 2026-09-25, 3 records carry a non-game enchantment
+  (`MULTIPLAYEREXPANDED-FATED`, `UNCAPPEDSPIRE-MULTI_ENCHANTMENT`), all already flagged by
+  the `-` rule. `MIDAS` is a game modifier, not a mod marker. Audit counts (records, 949 pages): `save_dict_*` 13,164, mod modifier
   5,233, mod card 2,532, mod character 824, mod acts 1,008.
 - **Treatment timing.** Assign builds from each run's own `build_id` and `start_time`, not
   `submitted_at` — players often upload their whole history folder at once (the

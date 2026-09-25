@@ -34,7 +34,7 @@ import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-PARSER_VERSION = "1.1.0"
+PARSER_VERSION = "1.2.0"
 REF = pathlib.Path("reference")
 SALT_ENV = "SPIROMETRY_SALT"
 SALT_FILE = pathlib.Path(".spirometry_salt")
@@ -47,50 +47,56 @@ LASTING_CANDY = "RELIC.LASTING_CANDY"
 # primary_offers takes the same sources. A tuple, so its repr is a SQL list.
 COMBAT_SOURCES = ("combat", "elite", "boss", "event_combat")
 # Mod markers: a quoted id with a '-' ("CARD.MULTIPLAYEREXPANDED-VULTURE"), BaseLib's
-# save_dict_* keys, a mod modifier, or a character outside the five real ones
-# (CHARACTER.WATCHER has no '-').
+# save_dict_* keys, a mod modifier, a character outside the five real ones
+# (CHARACTER.WATCHER has no '-'), or an enchantment outside the game's list
+# (ENCHANTMENT.RUNE_OF_CORRUPTION), on any card or in cards_enchanted.
 VANILLA_CHARACTERS = {"CHARACTER.IRONCLAD", "CHARACTER.SILENT", "CHARACTER.DEFECT",
                       "CHARACTER.REGENT", "CHARACTER.NECROBINDER"}
 MOD_ID_RE = re.compile(r'"[A-Z][A-Z_]*\.[A-Za-z0-9_]*-')
+ENCHANTMENT_RE = re.compile(r'"ENCHANTMENT\.([^"]*)"')
 MPT_SOURCE = {"monster": "combat", "elite": "elite", "boss": "boss", "ancient": "ancient",
               "shop": "shop", "rest_site": "rest_site", "treasure": "treasure"}
 ROOM_SOURCE = {"monster": "combat", "elite": "elite", "boss": "boss", "event": "event",
                "shop": "shop", "rest_site": "rest_site", "treasure": "treasure"}
 
-S = pa.string(); I16 = pa.int16(); I32 = pa.int32(); B = pa.bool_()
+# Integer types: SMALLINT only where the game bounds the value (act, and position / length
+# within one floor's list). Values copied from the record, or counted over lists a mod or an
+# edited save can grow, are INTEGER; run_time_s is BIGINT (raw seconds, no known bound).
+S = pa.string(); I16 = pa.int16(); I32 = pa.int32(); I64 = pa.int64(); B = pa.bool_()
 SCHEMAS = {
     "runs": pa.schema([
         ("run_hash", S), ("run_key", S), ("source_page", I32), ("source_line", I32),
-        ("build_id", S), ("branch", S), ("schema_version", I16),
-        ("start_time", pa.timestamp("s")), ("run_time_s", I32), ("seed", S),
+        ("build_id", S), ("branch", S), ("schema_version", I32),
+        ("start_time", pa.timestamp("s")), ("run_time_s", I64), ("seed", S),
         ("game_mode", S), ("modifiers", pa.list_(S)), ("is_custom", B), ("is_modded", B),
-        ("ascension", I16), ("n_players", I16), ("win", B), ("was_abandoned", B),
+        ("ascension", I32), ("n_players", I32), ("win", B), ("was_abandoned", B),
         ("abandoned_at_neow", B), ("acts", pa.list_(S)), ("acts_reached", I16),
-        ("floors_reached", I16), ("act1", S), ("killed_by_encounter", S),
+        ("floors_reached", I32), ("act1", S), ("killed_by_encounter", S),
         ("killed_by_event", S), ("released", B), ("before_release", B), ("neow_start", B),
         ("uploader_tag", S), ("has_player_token", B), ("uploader_hash", S),
         ("platform_type", S), ("record_digest", S),
     ]),
     "run_players": pa.schema([
         ("run_hash", S), ("run_key", S), ("source_page", I32), ("source_line", I32),
-        ("player_idx", I16), ("player_hash", S), ("character", S),
-        ("final_deck_size", I16), ("final_relic_count", I16),
+        ("player_idx", I32), ("player_hash", S), ("character", S),
+        ("final_deck_size", I32), ("final_relic_count", I32),
     ]),
     "card_offers": pa.schema([
         ("run_hash", S), ("run_key", S), ("source_page", I32), ("source_line", I32),
-        ("player_idx", I16), ("player_hash", S), ("character", S),
-        ("act", I16), ("floor", I16), ("map_point_type", S), ("room_types", S),
+        ("player_idx", I32), ("player_hash", S), ("character", S),
+        ("act", I16), ("floor", I32), ("map_point_type", S), ("room_types", S),
         ("room_model_id", S), ("source", S), ("list_pos", I16), ("list_len", I16),
         ("list_n_picked", I16), ("screen_size", I16), ("set_idx", I16),
-        ("card_id", S), ("upgraded", B), ("enchantment", S), ("enchantment_amount", I16),
+        ("card_id", S), ("upgraded", B), ("enchantment", S), ("enchantment_amount", I32),
         ("picked", B), ("set_picked_any", B), ("in_card_list", B), ("is_mod_card", B),
+        ("is_mod_enchantment", B),
     ]),
     "shop_offers": pa.schema([
         ("run_hash", S), ("run_key", S), ("source_page", I32), ("source_line", I32),
-        ("player_idx", I16), ("player_hash", S), ("character", S),
-        ("act", I16), ("floor", I16), ("map_point_type", S), ("origin", S),
+        ("player_idx", I32), ("player_hash", S), ("character", S),
+        ("act", I16), ("floor", I32), ("map_point_type", S), ("origin", S),
         ("list_pos", I16), ("card_id", S), ("upgraded", B), ("enchantment", S),
-        ("enchantment_amount", I16), ("colorless", B), ("bought_colorless", B),
+        ("enchantment_amount", I32), ("colorless", B), ("bought_colorless", B),
         ("picked", B), ("usable", B), ("in_card_list", B), ("is_mod_card", B),
     ]),
 }
@@ -151,6 +157,12 @@ def load_builds(path=REF / "builds.csv"):
                 for r in csv.DictReader(f)}
 
 
+def load_enchantments(path=REF / "raw" / "enchantments.json"):
+    """Game enchantment ids as run files write them ('ENCHANTMENT.NIMBLE'), from the cached
+    /api/enchantments list (fetched by `python -m spirometry.patch_history fetch`)."""
+    return {"ENCHANTMENT." + e["id"] for e in json.loads(pathlib.Path(path).read_text())}
+
+
 def load_cards(path=REF / "raw" / "cards.json"):
     """card_id -> color ('colorless', 'ironclad', ...), for the current card list."""
     return {c["id"]: c.get("color") for c in json.loads(pathlib.Path(path).read_text())}
@@ -174,8 +186,10 @@ def screen_sizes(n, candy):
     return sizes[0] if len(sizes) == 1 else None
 
 
-def is_modded(run, line):
+def is_modded(run, line, enchantments):
     return bool(MOD_ID_RE.search(line) or "save_dict_" in line
+                or any("ENCHANTMENT." + e not in enchantments
+                       for e in ENCHANTMENT_RE.findall(line))
                 or any(m.get("id", "").endswith("_MODIFIER") for m in run.get("modifiers", []))
                 or any(p.get("character") not in VANILLA_CHARACTERS
                        for p in run.get("players") or []))
@@ -215,7 +229,7 @@ class Table:
 
 
 def parse_run(run, line, page, line_no, ctx, out):
-    key, builds, cards = ctx["key"], ctx["builds"], ctx["cards"]
+    key, builds, cards, enchs = ctx["key"], ctx["builds"], ctx["cards"], ctx["enchantments"]
     players = run.get("players") or []
     solo = len(players) == 1
     rh, rk = run["run_hash"], run_key(run.get("seed"), run.get("start_time"))
@@ -235,7 +249,7 @@ def parse_run(run, line, page, line_no, ctx, out):
         schema_version=run.get("schema_version"), start_time=run.get("start_time"),
         run_time_s=run.get("run_time"), seed=run.get("seed"), game_mode=run.get("game_mode"),
         modifiers=[m.get("id") for m in run.get("modifiers") or []],
-        is_custom=bool(run.get("modifiers")), is_modded=is_modded(run, line),
+        is_custom=bool(run.get("modifiers")), is_modded=is_modded(run, line, enchs),
         ascension=run.get("ascension"), n_players=len(players), win=run.get("win"),
         was_abandoned=run.get("was_abandoned"),
         abandoned_at_neow=bool(run.get("was_abandoned")) and n_floors <= 1,
@@ -303,7 +317,9 @@ def parse_run(run, line, page, line_no, ctx, out):
                         picked=picks[pos],
                         set_picked_any=any(picks[set_idx * size:(set_idx + 1) * size])
                         if size else None,
-                        in_card_list=cid in cards, is_mod_card="-" in cid)
+                        in_card_list=cid in cards, is_mod_card="-" in cid,
+                        is_mod_enchantment=ench.get("id") is not None
+                        and ench.get("id") not in enchs)
                 if src == "shop":
                     shop_rows(out["shop_offers"], base, who, loc, st, cc, solo, cards)
                 if LASTING_CANDY in (st.get("relics_removed") or []):
@@ -349,18 +365,43 @@ def shop_rows(tab, base, who, loc, st, cc, solo, cards):
 _CTX = {}
 
 
-def _init_worker(key, builds, cards, out_dir):
-    _CTX.update(key=key, builds=builds, cards=cards, out_dir=pathlib.Path(out_dir))
+def _init_worker(key, builds, cards, enchantments, out_dir):
+    _CTX.update(key=key, builds=builds, cards=cards, enchantments=enchantments,
+                out_dir=pathlib.Path(out_dir))
+
+
+def locate_bad_value(tab):
+    """After to_arrow() failed: the first (column, run_hash, value) that won't convert."""
+    schema = SCHEMAS[tab.name]
+    for name, vals in tab.cols.items():
+        try:
+            pa.array(vals, type=schema.field(name).type)
+            continue
+        except (pa.ArrowInvalid, pa.ArrowTypeError, OverflowError, TypeError, ValueError):
+            pass
+        for i, v in enumerate(vals):
+            try:
+                pa.array([v], type=schema.field(name).type)
+            except (pa.ArrowInvalid, pa.ArrowTypeError, OverflowError, TypeError, ValueError):
+                return name, tab.cols["run_hash"][i], v
+    return None, None, None
+
+
+def page_files(out_dir, page):
+    return [out_dir / t / f"page_{page:05d}.parquet" for t in TABLES]
 
 
 def parse_page(path, ctx=None):
-    """Parse one page and write its four Parquet files. Returns counts and timing."""
+    """Parse one page and write its four Parquet files. Returns counts and timing. Any
+    failure (unreadable gzip, a record the parser can't handle, a value that doesn't fit its
+    column) skips the whole page: nothing is written for it, and stats carry the error and,
+    when known, the run_hash."""
     ctx = ctx or _CTX
     path = pathlib.Path(path)
     page = int(PAGE_RE.search(path.name).group(1))
     t0 = time.perf_counter()
     out = {t: Table(t) for t in TABLES}
-    stats = dict(page=page, file=path.name, records=0, bad_lines=0, error=None)
+    stats = dict(page=page, file=path.name, records=0, bad_lines=0, error=None, run_hash=None)
     try:
         with gzip.open(path, "rt", encoding="utf-8") as f:
             for line_no, line in enumerate(f):
@@ -371,16 +412,29 @@ def parse_page(path, ctx=None):
                 except json.JSONDecodeError:
                     stats["bad_lines"] += 1
                     continue
+                stats["run_hash"] = run.get("run_hash") if isinstance(run, dict) else None
                 parse_run(run, line, page, line_no, ctx, out)
                 stats["records"] += 1
-    except (OSError, EOFError) as e:          # truncated or corrupt gzip: report, keep going
+        stats["run_hash"] = None
+        arrow = {}
+        for t in TABLES:
+            try:
+                arrow[t] = out[t].to_arrow()
+            except Exception:
+                col, rh, val = locate_bad_value(out[t])
+                stats["run_hash"] = rh
+                if col:
+                    stats["column"] = f"{t}.{col} = {val!r}"
+                raise
+        for t, f in zip(TABLES, page_files(ctx["out_dir"], page)):
+            f.parent.mkdir(parents=True, exist_ok=True)
+            pq.write_table(arrow[t], f, compression="zstd")
+            stats[f"rows_{t}"] = arrow[t].num_rows
+    except Exception as e:                    # report, skip the page, keep going
         stats["error"] = f"{type(e).__name__}: {e}"
+        for f in page_files(ctx["out_dir"], page):
+            f.unlink(missing_ok=True)
         return stats
-    for t in TABLES:
-        d = ctx["out_dir"] / t
-        d.mkdir(parents=True, exist_ok=True)
-        pq.write_table(out[t].to_arrow(), d / f"page_{page:05d}.parquet", compression="zstd")
-        stats[f"rows_{t}"] = len(out[t].cols["run_hash"])
     stats["seconds"] = time.perf_counter() - t0
     return stats
 
@@ -509,31 +563,46 @@ def build(snapshot="sts2_snapshot", out="data/runs", workers=None, pages=None, k
     workers = workers or os.cpu_count() or 1
     builds = load_builds(ref / "builds.csv")
     cards = load_cards(ref / "raw" / "cards.json")
+    enchantments = load_enchantments(ref / "raw" / "enchantments.json")
     out_dir.mkdir(parents=True, exist_ok=True)
     clear_output(out_dir)
     say(f"parsing {len(files)} pages from {snapshot} with {workers} worker(s) -> {out_dir}")
 
     results = []
     if workers == 1:
-        ctx = dict(key=key, builds=builds, cards=cards, out_dir=out_dir)
+        ctx = dict(key=key, builds=builds, cards=cards, enchantments=enchantments,
+                   out_dir=out_dir)
         results = [parse_page(f, ctx) for f in files]
     else:
         with concurrent.futures.ProcessPoolExecutor(
                 workers, initializer=_init_worker,
-                initargs=(key, builds, cards, str(out_dir))) as ex:
-            for i, r in enumerate(ex.map(parse_page, files, chunksize=1), 1):
-                results.append(r)
+                initargs=(key, builds, cards, enchantments, str(out_dir))) as ex:
+            futs = {ex.submit(parse_page, f): f for f in files}
+            for i, fut in enumerate(concurrent.futures.as_completed(futs), 1):
+                try:
+                    results.append(fut.result())
+                except Exception as e:        # the worker itself died (e.g. out of memory)
+                    f = futs[fut]
+                    page = int(PAGE_RE.search(f.name).group(1))
+                    for pf in page_files(out_dir, page):
+                        pf.unlink(missing_ok=True)
+                    results.append(dict(page=page, file=f.name, records=0, bad_lines=0,
+                                        run_hash=None, error=f"{type(e).__name__}: {e}"))
                 if i % 50 == 0 or i == len(files):
                     say(f"  {i}/{len(files)} pages")
+        results.sort(key=lambda r: r["page"])
 
     failed = [r for r in results if r["error"]]
+    detail = lambda r: "; ".join(x for x in (
+        r["file"], r["error"], r.get("run_hash") and f"run_hash {r['run_hash']}",
+        r.get("column")) if x)
     for r in failed:
-        say(f"  FAILED {r['file']}: {r['error']}")
+        say(f"  SKIPPED {detail(r)}")
     if len(failed) == len(results):
         sys.exit("every page failed; nothing written")
     dropped, differ = drop_repeats(out_dir)
 
-    tot = lambda k: sum(r.get(k, 0) for r in results)
+    tot = lambda k: sum(r.get(k, 0) for r in results if not r["error"])   # written pages
     ts = table_stats(out_dir)
     lists, lists_null = ts["combat_lists"], ts["combat_lists_set_idx_null"]
     offers, offers_null = ts["combat_offers"], ts["combat_offers_set_idx_null"]
@@ -543,6 +612,7 @@ def build(snapshot="sts2_snapshot", out="data/runs", workers=None, pages=None, k
         "snapshot_dir": str(snapshot.resolve()),
         "pages_parsed": len(results) - len(failed),
         "pages_failed": ",".join(r["file"] for r in failed),
+        "pages_failed_detail": " | ".join(detail(r) for r in failed),
         "first_page": results[0]["page"], "last_page": results[-1]["page"],
         "records_read": tot("records"),
         "unparseable_lines": tot("bad_lines"),
@@ -562,7 +632,7 @@ def build(snapshot="sts2_snapshot", out="data/runs", workers=None, pages=None, k
         say(f"combat reward lists with set_idx NULL: {lists_null:,} of {lists:,} "
             f"({lists_null / lists:.2%}); offers {offers_null:,} of {offers:,} "
             f"({offers_null / offers:.2%})")
-    say(f"pages failed: {len(failed)}; wall time {info['wall_seconds']} s -> {out_dir / 'runs.duckdb'}")
+    say(f"pages failed (skipped): {len(failed)}; wall time {info['wall_seconds']} s -> {out_dir / 'runs.duckdb'}")
     return info, results
 
 

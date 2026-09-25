@@ -305,6 +305,55 @@ def test_uploader_fields(tmp_path):
             meta["runs_player_token_present"]) == ("1", "1", "1")
 
 
+def test_mod_enchantment_huge_amount(tmp_path):
+    # Edited sample run: a non-game enchantment with an amount past SMALLINT on an offer,
+    # as seen on page_00905 (RUNE_OF_CORRUPTION 110111), and one on a deck card only.
+    offer = variant(5, "a" * 16)
+    cc = next(st["card_choices"] for a in offer["map_point_history"] for f in a
+              for st in f["player_stats"] if st.get("card_choices"))
+    cc[0]["card"]["enchantment"] = {"id": "ENCHANTMENT.RUNE_OF_CORRUPTION", "amount": 110111}
+    deck = variant(5, "b" * 16)
+    deck["players"][0]["deck"][0]["enchantment"] = {"id": "ENCHANTMENT.RUNE_OF_CORRUPTION",
+                                                    "amount": 123013}
+    info, con = build(tmp_path, [[json.dumps(offer), json.dumps(deck), lines()[5]]])
+    assert info["pages_failed"] == ""
+    assert rows(con, "SELECT run_hash, is_modded FROM runs ORDER BY 1") == [
+        ("a" * 16, True), (SCHEMA10, False), ("b" * 16, True)]
+    assert rows(con, "SELECT run_hash, card_id, enchantment, enchantment_amount FROM card_offers "
+                     "WHERE is_mod_enchantment") == [
+        ("a" * 16, cc[0]["card"]["id"][5:], "ENCHANTMENT.RUNE_OF_CORRUPTION", 110111)]
+    assert rows(con, "SELECT DISTINCT run_hash FROM primary_offers") == [(SCHEMA10,)]
+    # game enchantments are not mod markers
+    assert rows(con, "SELECT count(*) FROM card_offers WHERE enchantment IS NOT NULL "
+                     "AND is_mod_enchantment") == [(1,)]
+
+
+def test_failing_pages_skipped_and_reported(tmp_path, monkeypatch):
+    recs = lines()
+    too_big = variant(0, "a" * 16, run_time=2 ** 70)          # fails at the Parquet write
+    broken = variant(0, "b" * 16, players=5)                  # fails while parsing
+    snap, out = tmp_path / "snap", tmp_path / "out"
+    write_page(snap, 0, recs[:3])
+    write_page(snap, 1, [recs[3], json.dumps(too_big)])
+    write_page(snap, 2, [json.dumps(broken)])
+    write_page(snap, 3, recs[4:])
+    monkeypatch.chdir(REF.parent)
+    monkeypatch.setenv(runs.SALT_ENV, "test")
+    with pytest.raises(SystemExit) as e:
+        runs.main(["build", "--snapshot", str(snap), "--out", str(out), "--workers", "2"])
+    assert e.value.code == 1
+    con = duckdb.connect(str(out / "runs.duckdb"), read_only=True)
+    meta = dict(rows(con, "SELECT key, value FROM build_info"))
+    assert meta["pages_parsed"] == "2" and meta["records_read"] == "5"
+    assert meta["pages_failed"] == "page_00001.jsonl.gz,page_00002.jsonl.gz"
+    d1, d2 = meta["pages_failed_detail"].split(" | ")
+    assert "run_hash " + "a" * 16 in d1 and "runs.run_time_s" in d1
+    assert d2.startswith("page_00002.jsonl.gz; TypeError") and "b" * 16 in d2
+    assert rows(con, "SELECT source_page, count(*) FROM runs GROUP BY 1 ORDER BY 1") \
+        == [(0, 3), (3, 2)]
+    assert not (out / "runs" / "page_00001.parquet").exists()
+
+
 def test_truncated_page_reported(tmp_path):
     snap = tmp_path / "snap"
     write_page(snap, 0, lines())

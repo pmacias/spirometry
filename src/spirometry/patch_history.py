@@ -114,6 +114,10 @@ def cards_path():
     return RAW / "cards.json"
 
 
+def enchantments_path():
+    return RAW / "enchantments.json"
+
+
 def changelog_index_path():
     return RAW / "changelogs.json"
 
@@ -138,6 +142,7 @@ def changelog_card_ids(changelog):
 
 def fetch():
     cards = get_cached(cards_path(), f"{API}/cards")
+    get_cached(enchantments_path(), f"{API}/enchantments")     # for spirometry.runs' mod check
     index = get_cached(changelog_index_path(), f"{API}/changelogs")
     changelogs = [get_cached(changelog_path(e["tag"]), f"{API}/changelogs/{e['tag']}")
                   for e in index]

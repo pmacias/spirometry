@@ -138,7 +138,7 @@ Present when non-empty:
 |---|---|---|
 | `id` | str | `CARD.COLLISION_COURSE` |
 | `current_upgrade_level` | int | `1`; absent = unupgraded. Never seen above 1 |
-| `enchantment` | {id, amount, props?} | `{"id":"ENCHANTMENT.NIMBLE","amount":2}` |
+| `enchantment` | {id, amount, props?} | `{"id":"ENCHANTMENT.NIMBLE","amount":2}`. Game enchantments: 22 ids (`reference/raw/enchantments.json`); mods add others, some without a `-` (`RUNE_OF_CORRUPTION`, amounts over 100,000) |
 | `props` | {ints?, bools?} | card state, e.g. Genetic Algorithm `{"ints":[{"name":"CurrentBlock","value":1},{"name":"IncreasedBlock","value":0}]}` |
 | `floor_added_to_deck` | int | in `card_choices`, present **iff picked** (43,639 picks, all have it; 109 unpicked entries have it too, all where the same card was picked from another set on that floor) |
 | `save_dict_List[BaseLib.Abstracts.CardModifier+ModifierSave]` | dict | only in modded runs (p3, 21 runs): the BaseLib mod loader |
@@ -350,7 +350,13 @@ is the only per-card combat information in any record, and it's on 2% of p3.
 
 ## Proposal: `runs` and `card_offers` columns
 
-Not code. Types are DuckDB types.
+Not code. Types are DuckDB types. *Types as built (parser 1.2.0) differ from this
+proposal: SMALLINT only for `act`, `acts_reached` and positions/lengths within one floor's
+list (`list_pos`, `list_len`, `list_n_picked`, `screen_size`, `set_idx`); `schema_version`,
+`ascension`, `n_players`, `floors_reached`, `player_idx`, `floor`, `final_deck_size`,
+`final_relic_count` and `enchantment_amount` are INTEGER; `run_time_s` is BIGINT. A mod
+enchantment's amount reached 123,013 (SMALLINT tops out at 32,767). `card_offers` also has
+`is_mod_enchantment` (enchantment id not in `reference/raw/enchantments.json`).*
 
 ### `runs` — one row per record (keep co-op copies; dedup is a view)
 

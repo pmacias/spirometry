@@ -101,7 +101,10 @@ with views `runs_dedup`, `card_offers_dedup`, `primary_offers`. Tested on the fi
 `released`, `before_release`, `neow_start`, `has_player_token`; mod characters by the
 five-character list; `primary_offers` applies the audit's primary population and keeps
 event-then-fight floors (`event_fight`); counts in `build_info`. Tested on the fixture and
-2 fetched pages. Next: Phil runs it on the full snapshot. `deck_final`, `deaths` and relic/event choices not started.*
+2 fetched pages. The first full build (949 pages) crashed on an enchantment amount too
+large for SMALLINT in three modded runs; fix PR (parser 1.2.0): wider integer types, a
+failing page is skipped and reported instead of aborting the build, and enchantments
+outside the game's list are a mod marker. Next: Phil reruns the full build. `deck_final`, `deaths` and relic/event choices not started.*
 
 ### 4. Treatment table — CC
 Join `card_offers` to the card version live in each run's build: for each (card, build), which
@@ -141,8 +144,8 @@ Selection-corrected card strength metric; dashboard (Streamlit or Observable, un
 README with results, portfolio card on pmacias.github.io.
 
 ## Next up
-1. Review and merge the run-table follow-up PR (flags, event-then-fight floors, uploader
-   fields).
+1. Review and merge the run-table fix PR (integer types, per-page failures, mod
+   enchantments); rerun the full build.
 2. Audit follow-ups: does rising ascension explain the within-build win-rate drift; confirm
    the thin betas pool (no card change between neighbours).
 3. Let the snapshot finish; run `--count-only`. Decide whether to re-download pages 0–948
@@ -239,6 +242,20 @@ README with results, portfolio card on pmacias.github.io.
   same key. `run_key` is a plain SHA-256 of `seed|start_time` (not personal data).
 - Modded = a quoted id with a `-` anywhere in the record (cards, characters, acts,
   monsters, ...), a `save_dict_*` key, or a modifier id ending `_MODIFIER`.
+- Mod enchantments: any `ENCHANTMENT.<id>` in the record (on any card, or in
+  `cards_enchanted`) whose id isn't in the game's list (`/api/enchantments`, cached in
+  `reference/raw/enchantments.json`, 22 ids) is a mod marker, like the five-character rule.
+  `card_offers.is_mod_enchantment` flags the offer. Found because `RUNE_OF_CORRUPTION`
+  (amounts 110,111–123,013) broke the first full build.
+- Run-table integer types (CC's choices, open to review): SMALLINT only where the game
+  bounds the value (`act`, `acts_reached`, and position/length within one floor's list:
+  `list_pos`, `list_len`, `list_n_picked`, `screen_size`, `set_idx`). Values copied from
+  the record or counted over lists a mod or edited save can grow are INTEGER; `run_time_s`
+  is BIGINT. Values are stored unchanged, never clipped.
+- A page that fails to parse or write is skipped whole (no partial files), reported with
+  the exception and run_hash (and the column and value for a type overflow), listed in
+  `build_info` (`pages_failed`, `pages_failed_detail`); the build finishes the other pages
+  and exits 1. `records_read` counts written pages only.
 - Exact repeats (same `run_hash`) are dropped from the base tables, keeping the first by
   (page, line); `build_info` counts them and how many repeats differed in content.
 - Primary population (audit): also drop non-release builds (not in `builds.csv`) and runs

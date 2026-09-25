@@ -52,6 +52,8 @@ set up, patch history endpoints checked (`notes/patch_history.md`).
 ### 1. Data acquisition — in progress
 - [ ] Full run snapshot (local, running). Done when the export reports its end and
       `--count-only` has been run. Record the start date as "snapshot as of."
+      *Status: 949 pages (submissions to ~2026-07-19). Daily request cap found; resumes
+      after each reset. Pages 873–948 are fetched again once (see SPIROMETRY.md).*
 - [ ] Card patch dataset (CC): `reference/builds.csv`, `reference/card_changes.csv`,
       excluded fields, text-only changes. Done when merged and Phil has reviewed the
       whitelist, the text-only list, and the build mapping.
@@ -59,11 +61,11 @@ set up, patch history endpoints checked (`notes/patch_history.md`).
       Cross-checked against the official patch notes (PR): 115 of 128 card-patches are in
       the notes, all 69 with comparable numbers match, 4 `tweak`s look like reworks,
       12 notes-only changes. builds.csv reconciled with the wiki's version list (4
-      versions added, hotfix branches and dates filled). Waiting on Phil's decisions in
-      `notes/patch_notes_crosscheck.md`.*
-- [ ] Run file structure (CC): `notes/run_schema.md`, from 3 export pages.
-      *Status: done, in review (PR). Proposal for `runs` / `card_offers` columns and 9
-      decisions listed there.*
+      versions added, hotfix branches and dates filled). Phil's decisions are in the
+      decision log; applying them to the CSVs (the 4 relabels, notes-only rows) is still
+      to do.*
+- [x] Run file structure (CC): `notes/run_schema.md`, from 3 export pages. Merged;
+      decisions in the decision log.
 
 ### 2. Data audit — Phil
 Look at the data before building anything on it. Notebook `01_data_audit`.
@@ -73,6 +75,14 @@ Look at the data before building anything on it. Notebook `01_data_audit`.
 - Character and ascension mix per build; uploader mix over time (self-selection check).
 - Decide the unit of analysis: run or player-run (co-op).
 Done when the filters and the unit are written into `SPIROMETRY.md`.
+*Status: first pass done on 949 pages, with interim tooling: `scripts/audit_extract.py`
+writes aggregate tables to `data/audit/` (git-ignored), read by
+`notebooks/01_data_audit.ipynb`. Findings so far are in SPIROMETRY.md (Known data issues):
+non-release builds, runs dated before release, `_sts` = SlayTheStats upload stamp and the
+ranking difference between uploader groups, mod-marker counts, cheat candidates. Unit:
+card offer, solo runs (already in the decision log). Open: the v0.103.2 checks (win rate by
+week within one build; uploader ranking before community tooltips). The notebook moves to
+the Phase 3 tables once they're built on the full snapshot.*
 
 ### 3. Run tables — CC builds, Phil runs locally
 Parse raw runs into DuckDB/Parquet. Player IDs hashed.
@@ -81,11 +91,13 @@ Parse raw runs into DuckDB/Parquet. Player IDs hashed.
   the core table for every design below.
 - `deck_final`, `deaths` (encounter, floor), and relic/event choices later.
 Done when tests pass on sample pages and the full snapshot builds locally without errors.
-*Status: parser built, in review (PR): `python -m spirometry.runs build` writes `runs`,
+*Status: parser merged: `python -m spirometry.runs build` writes `runs`,
 `run_players`, `card_offers`, `shop_offers` (Parquet, one file per page) and `runs.duckdb`
 with views `runs_dedup`, `card_offers_dedup`, `primary_offers`. Tested on the fixture and
-2 fetched pages (~1.5 s per page per worker). Next: Phil runs it on the full snapshot.
-`deck_final`, `deaths` and relic/event choices not started.*
+2 fetched pages (~1.5 s per page per worker). Follow-up PR next (CC): flags for
+non-release builds and runs dated before release, the five-character list for mod
+characters, event-then-fight floors kept with a flag, uploader fields. Then Phil runs it on
+the full snapshot. `deck_final`, `deaths` and relic/event choices not started.*
 
 ### 4. Treatment table — CC
 Join `card_offers` to the card version live in each run's build: for each (card, build), which
@@ -125,13 +137,16 @@ Selection-corrected card strength metric; dashboard (Streamlit or Observable, un
 README with results, portfolio card on pmacias.github.io.
 
 ## Next up
-1. Review the run-schema / patch-notes PR; make the decisions listed in
-   `notes/run_schema.md` and `notes/patch_notes_crosscheck.md`.
-2. Let the snapshot finish; run `--count-only`.
-3. Send the maintainer message (budget per IP or per client, short pages, bulk dump,
-   stable-only hotfixes).
-4. Build the run tables on the full snapshot (`python -m spirometry.runs build`).
-5. Phase 2 audit.
+1. Run-table follow-up PR (CC): non-release builds, runs dated before release, mod
+   characters, event-then-fight floors, uploader fields.
+2. Finish the audit's open checks (v0.103.2 by week; uploader ranking in v0.103.2).
+3. Let the snapshot finish; run `--count-only`. Decide whether to re-download pages 0–948
+   for `player_token`.
+4. Send the maintainer message (budget per IP or per client, the daily cap, short pages,
+   bulk dump, stable-only hotfixes, when `player_token` was added).
+5. Build the run tables on the full snapshot (`python -m spirometry.runs build`) and move
+   the audit notebook onto them.
+6. Apply the card-change decisions to the CSVs (4 relabels, notes-only rows).
 
 ## Decision log
 - Spire Codex export is the primary source; sts2runs.com only for cross-checks.
@@ -215,3 +230,20 @@ README with results, portfolio card on pmacias.github.io.
   monsters, ...), a `save_dict_*` key, or a modifier id ending `_MODIFIER`.
 - Exact repeats (same `run_hash`) are dropped from the base tables, keeping the first by
   (page, line); `build_info` counts them and how many repeats differed in content.
+- Primary population (audit): also drop non-release builds (not in `builds.csv`) and runs
+  whose start date is before their build's release date. Parser flags to come in the
+  follow-up PR.
+- Mod characters: anything outside the five real characters is a mod marker (supersedes
+  relying on a `-` in the id; `CHARACTER.WATCHER` has none).
+- Event-then-fight floors (rooms `[event, monster]`) are kept in `primary_offers` with an
+  `event_fight` flag, superseding their exclusion above. In 3 local pages, 118 of 121 solo
+  lists were plain 3-card rewards, the 6-card ones came with Prayer Wheel or Driftwood as
+  on plain combat, and event rewards go to `cards_gained`, not `card_choices`.
+- `_sts` is the SlayTheStats mod's upload stamp (see SPIROMETRY.md). Uploader groups
+  (tagged vs. untagged) rank cards differently, so pick-rate estimates are made within
+  group or with uploader group as a covariate; pooled estimates are a robustness check.
+  Tagged share by play date is not used as a population measure.
+- Audit tooling (`scripts/audit_extract.py`, `notebooks/01_data_audit.ipynb`) is interim:
+  aggregate tables only, no player IDs. Column names follow the run tables where they
+  overlap; the notebook moves to the Phase 3 tables once they exist for the full snapshot.
+- Cheat candidates (fast or impossible wins) are flagged, not filtered: 70 of ~98k wins.

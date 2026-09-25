@@ -28,8 +28,11 @@ See [PLAN.md](PLAN.md) for the research questions and methods.
 | `notes/` | Investigation notes: patch history endpoints (`patch_history.md`), run file structure and table proposal (`run_schema.md`), patch notes vs. card tables (`patch_notes_crosscheck.md`) |
 | `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `runs.py` parses the run snapshot into Parquet + DuckDB run tables |
 | `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
+| `scripts/audit_extract.py` | Interim: compact audit tables from the snapshot (runs, aggregated offer counts) into `data/audit/` |
+| `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power |
 | `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes (+ raw caches in `reference/raw/`: Spire Codex API, wiki pages) |
 | `data/runs/` | Run tables built locally by `spirometry.runs` (git-ignored, never committed) |
+| `data/audit/` | Audit tables built locally by `scripts/audit_extract.py` (git-ignored) |
 | `tests/` | pytest tests; `tests/fixtures/sample_runs.jsonl` holds 6 sample runs (the only run data in git; co-op player IDs replaced) |
 
 ## Setup
@@ -43,7 +46,8 @@ pip install -e ".[dev]"           # tests
 python -m pytest
 ```
 
-Download the run snapshot (about 15 hours at the export's rate limit; resumable):
+Download the run snapshot (resumable; the export allows 120 pages an hour and has a daily
+cap, so it takes a few days; the script sleeps through the limits):
 
 ```bash
 python scripts/snapshot_export.py              # run from the repo root
@@ -60,6 +64,14 @@ python -m spirometry.runs build              # all pages, one worker per CPU
 python -m spirometry.runs build --pages 2    # quick test on the first 2 pages
 # options: --snapshot sts2_snapshot --out data/runs --workers N
 # (or set SPIROMETRY_SALT instead of the file)
+```
+
+Data audit (interim tables from the raw snapshot, then the notebook):
+
+```bash
+python scripts/audit_extract.py              # all pages -> data/audit/*.parquet (a few minutes)
+python scripts/audit_extract.py --pages 20   # quick test
+# then run notebooks/01_data_audit.ipynb
 ```
 
 Rebuild the card patch dataset in `reference/` (reads the committed API cache; fetches only

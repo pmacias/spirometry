@@ -6,7 +6,10 @@ Status: data acquisition. Data access confirmed from my Mac and from CC cloud se
 5-page test done (4,641 runs, v0.98.0–v0.103.2, including beta builds v0.100.0–v0.103.1);
 patch history endpoints checked (`notes/patch_history.md`); card patch dataset built and
 cross-checked against the official patch notes (`notes/patch_notes_crosscheck.md`); run file
-structure documented from 3 pages (`notes/run_schema.md`). Full snapshot running locally.
+structure documented from 3 pages (`notes/run_schema.md`); run-table parser merged
+(`spirometry.runs`). Full snapshot running locally: 949 pages as of 2026-09-25, submissions up
+to about 2026-07-19. Data audit under way (`notebooks/01_data_audit.ipynb`, first pass on
+those 949 pages).
 
 ---
 
@@ -55,10 +58,13 @@ affiliated with Mega Crit.
 - **Raw runs:** `GET /api/exports/runs` — gzipped JSONL, one full raw game run file per
   line, as submitted by players. Params: `limit`, `start` / `end` (ISO-8601 bounds on
   `submitted_at`), `cursor` (from the `X-Next-Cursor` response header). Own rate budget
-  of 120 credits/hour. **Verified working** from my Mac and from a CC cloud session.
+  of 120 credits/hour, **plus a daily cap**: after roughly 1,200–1,300 requests the server
+  answered 429 with `Retry-After` of about 24 h, resetting around 23:08 Pacific (size not
+  documented; estimated from the download log). `snapshot_export.py` obeys `Retry-After`, so
+  it just sleeps. **Verified working** from my Mac and from a CC cloud session.
   - Cost: 1 credit per page (`limit=1000`), ~2.3 MB gzipped per page.
-  - Most pages are full (1,000 runs). Now and then a page comes back short: 1 of the first
-    5 had 641 runs (4,641 total). Probably server-side filtering after the page is cut;
+  - Most pages are full (1,000 runs). Now and then a page comes back short (the smallest
+    of the first 949 had 466 runs). Probably server-side filtering after the page is cut;
     the cursor still advances normally.
   - Export is ordered oldest submission first, and the order is the same from any client
     (Mac and cloud session agree). The first 5 pages covered v0.98.0–v0.103.2. That
@@ -67,8 +73,12 @@ affiliated with Mega Crit.
     the export records don't have (`notes/run_schema.md`).
   - `start` / `end` bound submission time, not play time: a page from `start=2026-09-01`
     still had 16% of its runs on v0.98.x–v0.99.1.
-  - Projected full snapshot: ~1,800 pages, ~4 GB, ~15 h of rate budget at 120/h
-    (assuming ~1.8M runs and ~1000 runs/page).
+  - Snapshot so far (2026-09-25): 949 pages, 947,885 records (727,714 distinct runs),
+    2.9 GB, ~3.1 MB per page, covering submissions up to about 2026-07-19. The total is
+    still unknown; the earlier ~1,800-page projection assumed ~1.8M runs.
+  - Pages 873–948 get downloaded twice: two download processes ran at once, and the
+    restart resumed from the slower one's cursor. The repeats land in pages 950 onward and
+    are dropped on `run_hash` by both the parser and the audit extractor.
 - **Run summaries:** `GET /api/runs/list` — one row per run, filterable by build, card,
   relic, character, ascension, player count. Only covers the most recent ~10,000 runs.
 - **Pre-aggregated stats:** `/api/runs/community-stats`, `/api/charts/...` — useful for
@@ -123,11 +133,16 @@ checked 2026-09-24).
 Top level: `acts`, `ascension`, `build_id`, `schema_version` (8, 9, 10), `seed`,
 `start_time`, `run_time`, `game_mode`, `modifiers`, `win`, `was_abandoned`,
 `killed_by_encounter`, `killed_by_event`, `platform_type`, `players`, `map_point_history`,
-`run_hash`. No `is_beta`. Some recent records also carry `_sts` (uploader tool) and
-`_spirecodex_damage` (added by Spire Codex), which aren't game data. Pages fetched on
+`run_hash`. No `is_beta`. Some records also carry `_sts` (the SlayTheStats mod's upload
+stamp, see Known data issues) and `_spirecodex_damage` (added by Spire Codex), which aren't
+game data. Pages fetched on
 2026-09-25 also have a top-level `player_token` on every record (null on most, a 16-character
-string on 170 of 2,000); it wasn't in the 2026-09-24 pages, so older snapshot pages may lack
-it. It probably identifies the uploader and is hashed like player IDs.
+string on 170 of 2,000); it wasn't in the 2026-09-24 pages, and the local snapshot pages
+checked (0, 500, 948, downloaded 2026-09-24/25) don't have it either, although page 0 holds
+the same records as today's first page. So the export added the field on about 2026-09-25,
+and whether a record has it depends on when its page was downloaded. It probably identifies
+the uploader and is hashed like player IDs. It would allow clustering by uploader;
+re-downloading pages 0–948 (~950 credits, about a day of the daily cap) is undecided.
 
 `map_point_history` is a list of acts, each a list of floors. Each floor has:
 
@@ -241,12 +256,24 @@ couldn't be split; none of the 966 split multi-screen lists had two picks in one
 ## Known data issues
 
 - **Self-selection.** Uploaders install a companion app or mod; likely more dedicated and
-  more skilled than the average player. State as a limitation; check whether the uploader
-  mix shifts over time.
+  more skilled than the average player. State as a limitation.
+- **`_sts` = SlayTheStats mod upload stamp** (`"slay-the-stats/vX"`; added in
+  `SlayTheStats/Community/RunSubmitter.cs`, github.com/giulianoconte/slay-the-stats, not in
+  its README). The mod adds it to every run it uploads (opt-in), starting with v1.2.0 on
+  2026-06-19, and uploads each user's whole local history, oldest first, at most 200 runs
+  per game launch. So tagged runs cover every build but were all submitted after June 19,
+  and the tagged share by play date depends on upload timing and on where the snapshot ends.
+  It isn't a population measure (the mid-May drop in tagged share in the audit is most likely
+  this). Tagged uploaders rank cards differently from untagged ones (v0.107.1: 400 cards,
+  Spearman 0.86, per-card z sd 4.95, mean z −0.54). Whether that is selection or the mod's
+  tooltips is being checked against v0.103.2, which was played before community tooltips
+  existed. Solo runs can't be grouped by player, so part of the gap may be a few heavy
+  uploaders. Analyses stratify by uploader group or include it as a covariate.
 - **Co-op duplicates.** A multiplayer run gets uploaded once per player (seen in a sample:
   two records with the same run time, same death, timestamps 40 ms apart). The first 5
   pages had 4,641 records and 4,279 distinct (seed, start_time): about 8% co-op
-  duplicates. `scripts/snapshot_export.py` reports a `dedup` column on this key; raw `runs` counts
+  duplicates. On the first 949 pages: 947,885 records, 727,714 distinct runs; solo runs
+  are 79% of distinct runs. `scripts/snapshot_export.py` reports a `dedup` column on this key; raw `runs` counts
   are upper bounds. Whether the unit of analysis is the run or the player-run gets decided
   at parsing (a co-op run has one outcome but several players' choices).
 - **Player IDs.** Solo runs use `player_id: 1`. Multiplayer runs carry real 64-bit Steam
@@ -278,12 +305,30 @@ couldn't be split; none of the 966 split multi-screen lists had two picks in one
 - **Custom and modded runs.** Early builds record custom runs as `game_mode: standard`;
   filter on `modifiers` being empty. Recent pages include modded runs (mod card ids with
   a `-`, BaseLib keys). Some mods leave only a mod character (`CHARACTER.HERMIT-HERMIT`,
-  1 run on 2 pages), so the parser flags any quoted id with a `-`.
+  1 run on 2 pages), so the parser flags any quoted id with a `-`. Mod characters don't
+  always have a `-` (`CHARACTER.WATCHER`); the audit found non-vanilla characters on 824
+  records, so the check is a list of the five real characters. `MIDAS` is a game modifier,
+  not a mod marker. Audit counts (records, 949 pages): `save_dict_*` 13,164, mod modifier
+  5,233, mod card 2,532, mod character 824, mod acts 1,008.
 - **Treatment timing.** Assign builds from each run's own `build_id` and `start_time`, not
-  `submitted_at` — players often upload their whole history folder at once. This also
-  means early builds can keep gaining runs late in the export.
-- **Cheated / modded runs.** Need a filter (check `modifiers`, `game_mode`, mod markers,
-  and anything Spire Codex flags).
+  `submitted_at` — players often upload their whole history folder at once (the
+  SlayTheStats mod does exactly that). This also means early builds can keep gaining runs
+  late in the export.
+- **Runs dated before their build's release.** 5,566 runs (~0.6%) start before their build's
+  `release_date`, by 1 day up to ~4 months (median a few days). Most likely saved on the old
+  build and finished after an update, so their early floors may be on the old card
+  versions. Filter: start date (UTC) ≥ release date. Runs that cross an update on the
+  release day itself can't be detected.
+- **Non-release builds.** Pre-early-access playtest builds (v0.84.0–v0.97.0, 25 runs),
+  release candidates (`-rc.N`, 13 runs) and `NON-RELEASE-VERSION` (286 runs) are in the
+  export but not in `builds.csv`. Dropped.
+- **Old builds keep being played.** Every stable build has runs dated months after it was
+  replaced (v0.98.x into July). The build still sets the card versions, so this doesn't
+  affect treatment assignment.
+- **Cheated / modded runs.** No cheat flag in the export. Audit (primary runs): 70 of
+  98,371 wins took under 15 minutes, and two look impossible (7,355 gold with 39 relics; an
+  empty deck). No win before act 3. Too few to matter for pick rates: flagged, not
+  filtered. Modded runs are filtered via the mod markers above.
 
 ## Analysis ideas
 
@@ -349,9 +394,11 @@ close to randomized. That supports:
 
 ## Open questions / next steps
 
-1. Run the full snapshot (in progress locally): runs per build (after dedup), and whether
-   early builds have enough runs. (The <1000/page shortfall is explained: occasional
-   short pages, see Data sources.)
+1. Run the full snapshot (in progress locally; 949 pages so far, see Data sources).
+   First audit pass on those pages: every build from v0.98.1 on except v0.99.0, v0.103.1,
+   v0.105.0 and v0.109.1 has ≥2,000 primary runs; 40 of the 47 numeric-tweak cards have
+   4k–30k primary offers on each side of their stable change (4 are never offered as
+   rewards, 3 have under ~120).
 2. ~~Verify the patch history endpoints.~~ Done — `notes/patch_history.md`.
    ~~Build the card change table and the version → branch → date table.~~ Done —
    `reference/`. ~~Label the text-only changes.~~ Done — `text_only_labels.csv`.

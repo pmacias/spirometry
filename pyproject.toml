@@ -20,6 +20,7 @@ analysis = [
     "numpy",
     "matplotlib",
     "jupyter",
+    "scipy",        # audit notebook: KS / chi-square tests
 ]
 dev = [
     "pytest",

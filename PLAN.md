@@ -55,8 +55,15 @@ set up, patch history endpoints checked (`notes/patch_history.md`).
 - [ ] Card patch dataset (CC): `reference/builds.csv`, `reference/card_changes.csv`,
       excluded fields, text-only changes. Done when merged and Phil has reviewed the
       whitelist, the text-only list, and the build mapping.
-      *Status: built, in review (PR). 128 card-patches across two stable patches (v0.103.2,
-      v0.107.1); 26 text-only for review; 5 card-patches with no beta build.*
+      *Status: built and merged; text-only changes hand-labeled (`text_only_labels.csv`).
+      Cross-checked against the official patch notes (PR): 115 of 128 card-patches are in
+      the notes, all 69 with comparable numbers match, 4 `tweak`s look like reworks,
+      12 notes-only changes. builds.csv reconciled with the wiki's version list (4
+      versions added, hotfix branches and dates filled). Waiting on Phil's decisions in
+      `notes/patch_notes_crosscheck.md`.*
+- [ ] Run file structure (CC): `notes/run_schema.md`, from 3 export pages.
+      *Status: done, in review (PR). Proposal for `runs` / `card_offers` columns and 9
+      decisions listed there.*
 
 ### 2. Data audit — Phil
 Look at the data before building anything on it. Notebook `01_data_audit`.
@@ -74,12 +81,25 @@ Parse raw runs into DuckDB/Parquet. Player IDs hashed.
   the core table for every design below.
 - `deck_final`, `deaths` (encounter, floor), and relic/event choices later.
 Done when tests pass on sample pages and the full snapshot builds locally without errors.
+*Status: not started. Column proposal and open decisions in `notes/run_schema.md`; test
+fixture `tests/fixtures/sample_runs.jsonl` (6 runs, co-op IDs replaced).*
 
 ### 4. Treatment table — CC
 Join `card_offers` to the card version live in each run's build: for each (card, build), which
 version was live and whether it's pre- or post-change. Also list, for each change, the other
 cards of the same character changed in the same patch (candidates to exclude from its control
 group). Done when every offer in a changed card's window has an unambiguous version.
+
+Card versions accumulate along each branch. A beta build carries every earlier beta's
+changes since the last stable (v0.110.0 has v0.108.0's and v0.109.0's changes too), and a
+stable build carries every beta change before it (v0.107.1 = v0.103.2 + v0.104.0–v0.107.0).
+`card_changes.csv` covers only changes that reached stable, netted over each window, so it
+can't say which version a beta run had. That needs a per-build card version table: for
+each (card, build), the card's version on that build, built by applying the beta changes
+in order (`beta_card_changes.csv`, update-history, the notes) and checked against the
+stable diffs. It also has to hold changes that were revised or reverted within beta
+(Parry 8(11) on v0.100.0, 10(14) from v0.101.0) and the bug-fix behavior changes
+(`behavior_changes.csv`) that no card field shows.
 
 ### 5. Analysis — Phil, in this order
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
@@ -102,7 +122,8 @@ Selection-corrected card strength metric; dashboard (Streamlit or Observable, un
 README with results, portfolio card on pmacias.github.io.
 
 ## Next up
-1. Review and merge the card patch dataset PR.
+1. Review the run-schema / patch-notes PR; make the decisions listed in
+   `notes/run_schema.md` and `notes/patch_notes_crosscheck.md`.
 2. Let the snapshot finish; run `--count-only`.
 3. Send the maintainer message (budget per IP or per client, short pages, bulk dump,
    stable-only hotfixes).
@@ -128,6 +149,34 @@ README with results, portfolio card on pmacias.github.io.
 - `change_kind` labels combine with `+` (e.g. `rework+cost_change`); `rarity_change` added
   alongside the requested labels, and whole-card `added` / `removed` rows are included.
 - `snapshot_export.py` moved to `scripts/` (unchanged behaviour; run from the repo root).
+- Correction: run export records have **no** `is_beta` field (3 pages checked,
+  `notes/run_schema.md`); "it says false" above came from counting a missing key. Branch
+  comes only from `builds.csv` via `build_id`.
+- The official patch notes (wiki mirror, CC BY-SA 4.0) are a third source. They fill
+  branch and date for stable-only hotfixes and add versions Spire Codex doesn't list.
+  Where the wiki conflicts with `builds.csv` (four dates, one day apart), the existing
+  value is kept and the conflict noted.
+- Stable-only hotfixes (v0.98.1–v0.98.3, v0.99.1, v0.103.3) are assumed to have made no
+  card changes unless the patch notes say so. Their notes list only bug fixes (v0.99.1's
+  one balance item is an HP cap). v0.103.3 brings some beta bug fixes to stable that change
+  how a card plays (Summon Forth, Scrape), tracked in `behavior_changes.csv`. To be checked
+  in the audit by looking for offer-rate and pick-rate jumps at those builds.
+- Text-only changes are hand-labeled in `text_only_labels.csv`: 12 `mechanic` (treat as a
+  rework), 12 `wording` (no gameplay change), 2 `exclude` (Mad Science, dropped from all
+  analyses). The official patch notes agree with every label they touch.
+- Cost changes stay labeled separately (`cost_change`). How to put them on a common scale
+  with numeric tweaks (before/after only, a fixed energy exchange rate, or an estimated
+  rate with a Strike/Defend-based prior) is decided in the analysis phase. The minimum
+  result uses the pure numeric tweaks only.
+- Patch-note parsing (CC's choices, open to review): one row per card mention plus one
+  per numeric change; only `subject` mentions count in the cross-check; notes are grouped
+  into the same stable windows as `card_changes.csv`; numbers are chained across betas;
+  `Spoils of War` (v0.101.0) and `Sealed Throne` are aliases of Spoils of Battle and The
+  Sealed Throne. v0.99.1 is labeled stable (it had a beta hotfix page three days earlier).
+- Run-file conventions for the table proposal (CC's choices, open to review): floor number
+  = 1-based cumulative index (matches `floor_added_to_deck`); dedup key
+  `(seed, start_time)`; solo shop offers rebuilt as shelf + bought; custom runs detected by
+  non-empty `modifiers`, not `game_mode`.
 - Primary analysis uses card-reward offers only; shop offers are secondary (table keeps them:
   unsold cards plus purchases from `cards_gained`).
 - Primary analysis is solo runs only; deduplicated co-op runs are a later, separate analysis.

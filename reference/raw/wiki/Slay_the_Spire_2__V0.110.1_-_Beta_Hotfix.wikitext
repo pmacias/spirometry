@@ -1,0 +1,13 @@
+{{PatchNav
+|Version = V0.110.1
+|ReleaseDate = 2026-07-31
+|Type = Beta Hotfix
+}}
+A quick hotfix for a multiplayer issue.
+
+=== BUG FIXES: ===
+
+'''Multiplayer:'''
+* The host's screen is no longer blank when hosting a run from save
+
+[[Category:Patch Notes]] [[Category:Beta Content]]

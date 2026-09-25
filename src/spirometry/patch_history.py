@@ -5,6 +5,7 @@ raw responses under reference/raw/ (reruns read the cache instead of refetching)
 then builds the reference CSVs from the cache alone:
 
     reference/builds.csv             one row per game version: branch, release date, source
+                                     (then reconciled with the wiki's patch-note list, if cached)
     reference/card_changes.csv       one row per (card, field, stable patch), with beta timing
     reference/text_only_changes.csv  card-patches where only description text changed
     reference/excluded_fields.csv    card fields left out of card_changes, with counts
@@ -27,9 +28,11 @@ REF = pathlib.Path("reference")
 RAW = REF / "raw"
 MIN_INTERVAL = 6.0          # seconds between requests: at most 10 per minute
 
-# Versions seen in the run export so far (first 5 pages); all is_beta = false there.
+# Versions seen in the run export so far (first 5 pages, plus a page from 2026-09-01; see
+# notes/run_schema.md). Export records have no is_beta field, so they never give a branch.
 RUN_DATA_VERSIONS = ["v0.98.0", "v0.98.1", "v0.98.2", "v0.98.3", "v0.99.1", "v0.100.0",
-                     "v0.101.0", "v0.102.0", "v0.103.0", "v0.103.1", "v0.103.2"]
+                     "v0.101.0", "v0.102.0", "v0.103.0", "v0.103.1", "v0.103.2", "v0.103.3",
+                     "v0.107.1", "v0.111.0"]
 
 # Changelogs whose card diffs are a game release reaching the main (stable) site, with the
 # text that says so. Every other changelog is a site/parser release: its card diffs are
@@ -313,9 +316,8 @@ def build_builds(changelogs, histories):
         if not r["release_date"]:
             why.append("date unknown: not in update-history and no changelog dates it")
         if "run data" in r["source"]:
-            why.append("run files (first 5 export pages) report is_beta=false for every "
-                       "version, including v0.100.0-v0.103.1, which changelog 1.1.0 calls beta; "
-                       "is_beta is not used for branch")
+            why.append("seen in the run export, whose records carry no is_beta field; "
+                       "branch never comes from run files")
         if v_suffix := re.search(r"-\w+$", r["build_id"]):
             why.append(f"'{v_suffix.group(0)}' version; relation to the plain version unknown")
         r["notes"] += why
@@ -451,7 +453,11 @@ def build():
     missing = card_ids - set(histories)
     assert not missing, f"no cached history for {len(missing)} cards; run fetch first"
 
-    write_csv(REF / "builds.csv", build_builds(changelogs, histories),
+    builds = build_builds(changelogs, histories)
+    from spirometry import patch_notes              # wiki version list, if cached
+    if patch_notes.page_path(patch_notes.INDEX_TITLE).exists():
+        builds = patch_notes.reconcile_builds(builds, patch_notes.cached_pages())
+    write_csv(REF / "builds.csv", builds,
               ["build_id", "branch", "release_date", "source", "notes"])
     rows, text_rows, excl, unmatched, non_card = build_changes(changelogs, histories, card_ids)
     change_cols = ["card_id", "field", "old", "new", "beta_build", "beta_date", "stable_build",

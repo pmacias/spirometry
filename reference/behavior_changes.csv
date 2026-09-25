@@ -1,0 +1,65 @@
+card_id,version,branch,date,kind,also_in_notes_as,in_card_changes,text
+BELIEVE_IN_YOU,v0.103.0,beta,2026-04-09,interaction,,yes,Fixed History Course relic playing Believe in You card before the start-of-turn Energy reset
+REFLECT,v0.103.0,beta,2026-04-09,multiplayer,,no,Fixed Reflect card enchanted with Imbued wearing off before the player turn actually begins
+NOT_YET,v0.103.1,beta,2026-04-15,generation,,yes,Not Yet card can no longer be generated in combat by effects like Skill Potion
+BAD_LUCK,v0.103.3,stable,2026-05-29,interaction,,no,Fixed The Boot dealing 5 damage instead of 1 to you from the Bad Luck curse while you have Intangible
+STARDUST,v0.103.3,stable,2026-05-29,interaction,,no,Fixed the Whispering Earring relic replaying Stardust for 0 Stars instead of the correct amount
+SUMMON_FORTH,v0.103.3,stable,2026-05-29,timing,,no,Fixed the Summon Forth card so it now puts your existing Sovereign Blades into your hand before Forging instead of after
+ARSENAL,v0.104.0,beta,2026-04-23,generation,,no,"Pillar of Creation, Supermassive, and Arsenal cards now proc for the player that played Largesse card rather than the player who gets the generated card"
+BOMBARDMENT,v0.104.0,beta,2026-04-23,timing,,no,Bombardment card now plays from the Exhaust pile after you've drawn your hand instead of before
+HOWL_FROM_BEYOND,v0.104.0,beta,2026-04-23,timing,,yes,Howl From Beyond card now plays from the Exhaust pile after you've drawn your hand instead of before
+I_AM_INVINCIBLE,v0.104.0,beta,2026-04-23,timing,,no,I Am Invincible card now properly triggers before you've discarded your hand instead of after
+NOT_YET,v0.104.0,beta,2026-04-23,generation,,no,Not Yet card can no longer be generated via a Skill Potion
+PILLAR_OF_CREATION,v0.104.0,beta,2026-04-23,generation,,no,"Pillar of Creation, Supermassive, and Arsenal cards now proc for the player that played Largesse card rather than the player who gets the generated card"
+REAVE,v0.104.0,beta,2026-04-23,rule,,no,Fixed Reave card always bottom-decking the Soul card it creates
+SPOILS_MAP,v0.104.0,beta,2026-04-23,interaction,,no,All Spoils Map cards are now removed if you complete the quest and you somehow have multiple
+SPOILS_MAP,v0.104.0,beta,2026-04-23,interaction,,no,You now get 600 gold for each copy of the Spoils Map quest card you have
+STARDUST,v0.104.0,beta,2026-04-23,rule,,no,Fixed Vakuu's Whispering Earring not correctly playing Stardust card
+SUMMON_FORTH,v0.104.0,beta,2026-04-23,timing,,yes,Summon Forth card now properly puts existing Sovereign Blades into your Hand before Forging instead of after
+SUPERMASSIVE,v0.104.0,beta,2026-04-23,generation,,no,"Pillar of Creation, Supermassive, and Arsenal cards now proc for the player that played Largesse card rather than the player who gets the generated card"
+UNRELENTING,v0.104.0,beta,2026-04-23,interaction,,yes,"Effects that make the next card free to play (Unrelenting card, Void Form card, etc.) now properly take precedence over effects that increase the cost of all cards (Entangled affliction, Spiked Gauntlets relic, Borrowed Time card, etc.)"
+VOID_FORM,v0.104.0,beta,2026-04-23,interaction,,no,"Effects that make the next card free to play (Unrelenting card, Void Form card, etc.) now properly take precedence over effects that increase the cost of all cards (Entangled affliction, Spiked Gauntlets relic, Borrowed Time card, etc.)"
+EQUILIBRIUM,v0.105.0,beta,2026-05-08,interaction,,no,"Bookmark relic is now able to properly apply its cost-reduction effect to a card that has been retained by a ""Retain your Hand"" effect like Equilibrium card"
+SCRAPE,v0.106.0,beta,2026-05-21,rule,,no,Scrape no longer discards cards that cost zero Energy but have a Star cost
+TOOLS_OF_THE_TRADE,v0.106.0,beta,2026-05-21,timing,,no,You can no longer play cards before Tools of the Trade triggers
+WITHER,v0.106.1,beta,2026-05-22,multiplayer,,yes,The player can no longer upgrade Wither status cards
+WITHER,v0.106.1,beta,2026-05-22,interaction,,yes,Wither status cards will no longer stick around in hand if they have Retain from something like the Runic Pyramid relic
+HIDDEN_DAGGERS,v0.107.0,beta,2026-06-04,multiplayer,,no,"Fixed an issue where, if the player had Unceasing Top relic, played Hidden Daggers card, and discarded a Sly card, Unceasing Top could cause the player to incorrectly draw a card before the Shivs were added to their hand"
+REBOOT,v0.107.0,beta,2026-06-04,interaction,,no,Fixed Perfect Fit enchantment not working correctly if you play Reboot card while the enchanted card is in your hand or draw pile
+SPOILS_MAP,v0.107.0,beta,2026-06-04,interaction,,no,First floor of Act 2 can no longer be a Unknown_Location instead of a fight when carrying Spoils Map quest card
+WITHER,v0.107.0,beta,2026-06-04,timing,,yes,Aeonglass's Wither status card no longer briefly returns to your hand before you discard your hand at the end of your turn
+WITHER,v0.107.0,beta,2026-06-04,rule,,yes,Can no longer upgrade Wither status card with Armaments or Drain Power cards
+ARSENAL,v0.107.1,stable,2026-06-19,multiplayer,,no,"Pillar of Creation, Supermassive, and Arsenal cards now proc for the player who played Largesse rather than the recipient"
+BOMBARDMENT,v0.107.1,stable,2026-06-19,timing,,no,Bombardment card now plays from the Exhaust pile after you've drawn your hand instead of before
+ENFEEBLING_TOUCH,v0.107.1,stable,2026-06-19,timing,,no,Fixed Enfeebling Touch power causing Ceremonial Beast to gain Strength after you stun it
+EQUILIBRIUM,v0.107.1,stable,2026-06-19,interaction,,no,"Bookmark relic now applies its cost reduction to a card retained by a ""Retain your Hand"" effect like Equilibrium"
+HOWL_FROM_BEYOND,v0.107.1,stable,2026-06-19,timing,content/balance,yes,Howl from Beyond card now plays from the Exhaust pile after you've drawn your hand instead of before
+I_AM_INVINCIBLE,v0.107.1,stable,2026-06-19,timing,,no,I Am Invincible card now triggers before you've discarded your hand instead of after
+LANTERN_KEY,v0.107.1,stable,2026-06-19,interaction,content/balance,no,"War Historian, Repy event now removes all duplicate Lantern Key cards if you have more than two"
+NOT_YET,v0.107.1,stable,2026-06-19,generation,,no,Not Yet card can no longer be generated via a Skill Potion
+PILLAR_OF_CREATION,v0.107.1,stable,2026-06-19,multiplayer,,no,"Pillar of Creation, Supermassive, and Arsenal cards now proc for the player who played Largesse rather than the recipient"
+REAVE,v0.107.1,stable,2026-06-19,rule,,no,Fixed Reave card always bottom-decking the Soul card it creates
+SCRAPE,v0.107.1,stable,2026-06-19,rule,,no,Scrape no longer discards cards that cost zero Energy but have a Star cost
+SOUL,v0.107.1,stable,2026-06-19,interaction,,no,Funerary Mask relic now shuffles Soul into the Draw Pile before your hand is drawn
+SPOILS_MAP,v0.107.1,stable,2026-06-19,interaction,,no,"All Spoils Map cards are now removed if you complete the quest with multiple copies, and you get 600 gold per copy of the quest card"
+STARDUST,v0.107.1,stable,2026-06-19,interaction,,no,"Fixed Vakuu's Whispering Earring relic not correctly playing Stardust card, auto-playing cards into the next turn after Void Form, and not letting Unceasing Top relic trigger when it plays your last card"
+STRANGLE,v0.107.1,stable,2026-06-19,multiplayer,,no,Strangle power no longer procs off other players' card plays
+SUMMON_FORTH,v0.107.1,stable,2026-06-19,timing,,yes,Summon Forth card now puts existing Sovereign Blades into your hand before Forging instead of after
+SUPERMASSIVE,v0.107.1,stable,2026-06-19,multiplayer,,no,"Pillar of Creation, Supermassive, and Arsenal cards now proc for the player who played Largesse rather than the recipient"
+UNRELENTING,v0.107.1,stable,2026-06-19,rule,content/balance,yes,"Effects that make the next card free (Unrelenting, Void Form, etc.) now correctly take precedence over effects that increase all card costs (Entangled, Spiked Gauntlets, Borrowed Time, etc.)"
+VOID_FORM,v0.107.1,stable,2026-06-19,rule,,no,"Effects that make the next card free (Unrelenting, Void Form, etc.) now correctly take precedence over effects that increase all card costs (Entangled, Spiked Gauntlets, Borrowed Time, etc.)"
+FERAL,v0.108.0,beta,2026-07-03,rule,,no,Feral card no longer puts History Course copy of Helix Drill card back into your hand
+FORBIDDEN_GRIMOIRE,v0.108.0,beta,2026-07-03,timing,,no,Forbidden Grimoire card's card removal reward will now show up after Battleworn Dummy fight if you are successful
+HELLRAISER,v0.108.0,beta,2026-07-03,interaction,,no,Hellraiser card no longer infinitely plays Shining Strike card when it's enchanted with Swift
+NIGHTMARE,v0.108.0,beta,2026-07-03,generation,,no,Nightmare card can no longer be generated during combat
+TRANSFIGURE,v0.108.0,beta,2026-07-03,generation,,no,Transfigure card can no longer be generated during combat
+EXPOSE,v0.109.0,beta,2026-07-17,interaction,,no,Expose card now properly triggers Hand Drill relic
+HIBERNATE,v0.109.0,beta,2026-07-17,multiplayer,,no,Hibernate card no longer gives block to dead players
+HUDDLE_UP,v0.109.0,beta,2026-07-17,multiplayer,,no,"If Huddle Up triggers a choice for another player, the playing player is no longer blocked from playing cards"
+IMITATION_LEARNING,v0.109.0,beta,2026-07-17,multiplayer,,no,"Imitation Learning card now clones cards before they are played instead of after, allowing enchantments like Swift to apply to the cloning player"
+SOULBOUND,v0.109.0,beta,2026-07-17,rule,,no,Soulbound card now shuffles souls into Draw Pile instead of putting them on the bottom
+THE_BALL,v0.109.0,beta,2026-07-17,multiplayer,content/balance,no,"The Ball now triggers the playing player's relics, not the receiving player's"
+UNDERWORLD,v0.109.0,beta,2026-07-17,multiplayer,,no,Underworld card no longer causes Doom to be applied to players when enemies deal attack damage
+FERAL,v0.110.0,beta,2026-07-30,multiplayer,,no,Feral card now puts The Ball card into your hand instead of another player's
+JUGGLING,v0.110.0,beta,2026-07-30,rule,,no,"Fixed Juggling card so that when your third attack also auto-plays an attack (for example, Uproar card), Juggling now properly copies the original attack instead of the auto-played attack"
+CACOPHONY,v0.111.0,beta,2026-08-13,interaction,,no,Cacophony card no longer triggers a second time if its first trigger causes another card to be drawn (i.e. via Gremlin Horn relic)

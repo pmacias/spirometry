@@ -1,0 +1,142 @@
+card_id,version,stable_build,notes_versions,notes_sections,notes_verbs,in_notes,in_card_changes,change_kind,text_only_label,agreement,detail
+ACROBATICS,v0.103.0,v0.103.2,v0.103.0,content+balance,Changed,yes,yes,rarity_change,,agree: no numbers to compare,Changed
+ALIGNMENT,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,tweak+cost_change,,agree: numbers match,star cost 2 -> 3: matches star_cost
+ANTICIPATE,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,tweak,,agree: numbers match,dexterity 3(5) -> 2(3): matches powers_applied[0].amount
+ARSENAL,v0.101.0,v0.103.2,v0.101.0,content,Reworked,yes,yes,rework,,agree: no numbers to compare,Reworked
+BANSHEES_CRY,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,rework+cost_change,,agree: numbers match,cost 6 -> 9(7): matches cost
+BEACON_OF_HOPE,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,no,,,notes only: missing from card_changes,no numbers in the notes
+BEGONE,v0.100.0,v0.103.2,v0.100.0,balance,Changed,yes,yes,rework,,agree: no numbers to compare,Changed
+BELIEVE_IN_YOU,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,tweak,,agree: numbers match,energy 3(4) -> 2(3): matches energy_gain
+BLADE_OF_INK,v0.102.0,v0.103.2,v0.102.0,content,Reworked,yes,yes,rework,,agree: no numbers to compare,Reworked
+BOMBARDMENT,v0.100.0,v0.103.2,v0.100.0,writing,,yes,yes,text_only,wording,agree: writing note,only in the writing section
+BORROWED_TIME,v0.100.0,v0.103.2,v0.100.0 v0.101.0 v0.102.0,balance content,Nerfed Reverted (Buffed) Reworked,yes,yes,rework+cost_change,,agree: no numbers to compare,Nerfed; Reverted (Buffed); Reworked
+BREAK,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak+cost_change,,agree: numbers match,cost 2 -> 1: matches cost; damage 20(25) -> 20(30): base unchanged
+BUNDLE_OF_JOY,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,cost_change,,agree: numbers match,cost 2 -> 1: matches cost
+CAPTURE_SPIRIT,v0.100.0,v0.103.2,v0.100.0 v0.101.0,balance content,Nerfed Reverted (Buffed),yes,no,,,notes only: reverted within beta,net change is zero
+CELESTIAL_MIGHT,v0.101.0,v0.103.2,v0.101.0,balance,Buffed,yes,yes,rework,,agree: no numbers to compare,Buffed
+CHARGE,v0.100.0,v0.103.2,v0.100.0,balance,Changed,yes,yes,rework,,agree: no numbers to compare,Changed
+CINDER,v0.100.0,v0.103.2,v0.100.0 v0.101.0,balance,Buffed,yes,yes,rework,,agree: numbers match,damage 17(22) -> 18(24): matches damage
+COLLISION_COURSE,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 9(12) -> 11(15): matches damage
+COLOSSUS,v0.103.0,v0.103.2,v0.103.0,content+balance,Changed,yes,yes,rarity_change,,agree: no numbers to compare,Changed
+CORROSIVE_WAVE,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,tweak,,agree: numbers match,poison 3(4) -> 2(3): matches vars.CorrosiveWave
+DANSE_MACABRE,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,block 3(4) -> 4(6): matches powers_applied[0].amount
+DAZED,v0.100.0,v0.103.2,v0.100.0 v0.101.0,balance,Changed Nerfed,yes,no,,,notes only: missing from card_changes,no numbers in the notes
+DEBILITATE,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 7(9) -> 10(12): matches damage
+DEFY,v0.100.0,v0.103.2,v0.100.0,balance,Changed,yes,yes,rework,,agree: no numbers to compare,Changed
+DIRGE,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,rework,,agree: no numbers to compare,Nerfed
+DISCOVERY,v0.100.0,v0.103.2,v0.100.0,balance,Changed,yes,yes,text_only,mechanic,agree: no numbers to compare,Changed
+DOMINATE,v0.100.0,v0.103.2,v0.100.0,content,Reworked,yes,yes,rework,,agree: no numbers to compare,Reworked
+ETERNAL_ARMOR,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,plating 7(9) -> 9(12): matches powers_applied[0].amount
+EXPECT_A_FIGHT,v0.100.0,v0.103.2,v0.100.0,content,Reworked,yes,yes,text_only,mechanic,agree: no numbers to compare,Reworked
+FALLING_STAR,v0.101.0,v0.103.2,v0.101.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 7(11) -> 8(12): matches damage
+FIGHT_ME,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,strength 2(3) -> 3(4): matches powers_applied[0].amount
+FLAK_CANNON,v0.103.0,v0.103.2,v0.103.0,writing,,yes,yes,text_only,wording,agree: writing note,only in the writing section
+FLANKING,v0.103.0,v0.103.2,v0.103.0,writing,,yes,yes,text_only,wording,agree: writing note,only in the writing section
+FLICK_FLACK,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,tweak,,agree: numbers match,damage 7(9) -> 6(8): matches damage
+FOLLOW_THROUGH,v0.103.0,v0.103.2,v0.103.0,content+balance,Reworked,yes,yes,rework+rarity_change,,agree: no numbers to compare,Reworked
+FOLLY,v0.100.0,v0.103.2,,,,no,yes,rework,,table only,no mention in the patch notes for this window
+FORGOTTEN_RITUAL,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,rework,,agree: no numbers to compare,Nerfed
+GATHER_LIGHT,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,block 7(10) -> 8(11): matches block
+GLITTERSTREAM,v0.101.0,v0.103.2,v0.101.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,next turn block 4(6) -> 5(7): matches vars.BlockNextTurn
+GLOW,v0.100.0,v0.103.2,v0.100.0,content,Reworked,yes,yes,tweak,,disagree: kind; agree: no numbers to compare,"table says tweak, notes also say: v0.100.0 Reworked; Reworked"
+GRAND_FINALE,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 50(60) -> 60(75): matches damage
+GRAPPLE,v0.103.0,v0.103.2,v0.103.0,content+balance,Deprecated,yes,yes,removed,,agree: no numbers to compare,Deprecated
+GRAVE_WARDEN,v0.100.0,v0.103.2,v0.100.0,balance,Changed,yes,yes,tweak,,disagree: kind; agree: numbers match,"table says tweak, notes also say: v0.100.0 'no longer upgrades the Soul'; upgrade 8(10) -> 8(11): base unchanged"
+GUIDING_STAR,v0.101.0,v0.103.2,v0.101.0,balance,Buffed,yes,yes,text_only,mechanic,agree: no numbers to compare,Buffed
+HEIRLOOM_HAMMER,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 17(22) -> 20(25): matches damage
+HEMOKINESIS,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 14(19) -> 15(20): matches damage
+HIDDEN_GEM,v0.100.0,v0.103.2,v0.100.0,balance content,Reworked Changed,yes,yes,text_only,mechanic,agree: no numbers to compare,Reworked; Changed
+HOTFIX,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,rework,,agree: no numbers to compare,Nerfed
+HOWL_FROM_BEYOND,v0.100.0,v0.103.2,v0.100.0,writing,,yes,yes,text_only,wording,agree: writing note,only in the writing section
+HUDDLE_UP,v0.100.0,v0.103.2,v0.100.0,balance writing,Nerfed,yes,yes,rework,,agree: no numbers to compare,Nerfed
+ITERATION,v0.103.0,v0.103.2,v0.103.0,writing,,yes,yes,text_only,wording,agree: writing note,only in the writing section
+I_AM_INVINCIBLE,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,block 9(12) -> 10(13): matches block
+KINGLY_KICK,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 24(30) -> 27(35): matches damage
+KINGLY_PUNCH,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,rework,,agree: numbers match,damage 8(8) -> 8(10): base unchanged; scaling damage 3(5) -> 4(6): matches vars.Increase
+LEADING_STRIKE,v0.102.0,v0.103.2,v0.102.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,shivs 1 -> 2: matches vars.Shivs; damage 7 -> 3: matches damage
+MAD_SCIENCE,v0.101.0,v0.103.2,,,,no,yes,text_only,exclude,table only,no mention in the patch notes for this window
+MEMENTO_MORI,v0.103.0,v0.103.2,v0.103.0,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 8(10) -> 9(11): matches damage
+MINION_DIVE_BOMB,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,cost_change,,agree: numbers match,cost 1 -> 0: matches cost
+MINION_STRIKE,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,tweak,,agree: numbers match,damage 7(10) -> 6(9): matches damage
+NEOWS_FURY,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,rework,,agree: numbers match,number cards returned to your hand upgrades 2 -> 3: matches the upgraded card via upgrade.cards (current base from the card list)
+NOT_YET,v0.103.0,v0.103.2,v0.103.0,content+balance,Added,yes,yes,added,,agree: no numbers to compare,Added
+PARRY,v0.100.0,v0.103.2,v0.100.0 v0.101.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,block 6(9) -> 10(14): matches powers_applied[0].amount
+PATTER,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,block 8(10) -> 9(11): matches block
+PINPOINT,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,tweak,,agree: numbers match,damage 17(22) -> 15(19): matches damage
+PREPARE,v0.101.0,v0.103.2,v0.101.0,content,Deprecated,yes,no,,,notes only: missing from card_changes,no numbers in the notes
+PREPARED,v0.100.0,v0.103.2,v0.100.0 v0.101.0,content,Reworked Deprecated,yes,no,,,notes only: missing from card_changes,no numbers in the notes
+PRODUCTION,v0.100.0,v0.103.2,v0.100.0,balance,Changed,yes,yes,rework,,agree: no numbers to compare,Changed
+REFINE_BLADE,v0.101.0,v0.103.2,v0.101.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,forge 6(10) -> 9(13): matches vars.Forge
+RIP_AND_TEAR,v0.100.0,v0.103.2,,,,no,yes,rarity_change,,table only,mentioned only in bug fixes: v0.100.0
+ROCKET_PUNCH,v0.100.0,v0.103.2,v0.100.0 v0.103.0,balance writing,Buffed,yes,yes,text_only,mechanic,agree: no numbers to compare,Buffed
+SCULPTING_STRIKE,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 8(11) -> 9(12): matches damage
+SEANCE,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,cost_change,,agree: numbers match,cost 0 -> 1(0): matches cost
+SEEKER_STRIKE,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 6(9) -> 9(12): matches damage
+SERPENT_FORM,v0.101.0,v0.103.2,v0.101.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 4(5) -> 4(6): base unchanged
+SHIV,v0.102.0,v0.103.2,,,,no,yes,rework,,table only,no mention in the patch notes for this window
+SKEWER,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 7(10) -> 8(11): matches damage
+SOLAR_STRIKE,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 8(9) -> 9(10): matches damage
+SPEEDSTER,v0.103.0,v0.103.2,v0.102.0 v0.103.0,balance content+balance,Nerfed Buffed,yes,yes,rework,,agree: numbers match,damage 2(3) -> 2: base unchanged
+SPITE,v0.100.0,v0.103.2,v0.100.0,content,Reworked,yes,yes,rework,,agree: no numbers to compare,Reworked
+SPOILS_OF_BATTLE,v0.100.0,v0.103.2,v0.100.0 v0.101.0,balance,Buffed Changed,yes,yes,rework,,agree: numbers match,forge 10(15) -> 5(8): matches vars.Forge
+STACK,v0.103.2,v0.103.2,,,,no,yes,text_only,wording,table only,no mention in the patch notes for this window
+STOKE,v0.100.0,v0.103.2,v0.100.0,content,Reworked,yes,yes,rework+cost_change,,agree: no numbers to compare,Reworked
+SWORD_SAGE,v0.101.0,v0.103.2,v0.101.0,balance,Buffed,yes,yes,text_only,mechanic,agree: no numbers to compare,Buffed
+TEAR_ASUNDER,,v0.103.2,,,,no,yes,text_only,wording,table only,no mention in the patch notes for this window
+TRASH_TO_TREASURE,v0.103.0,v0.103.2,v0.103.0,writing,,yes,yes,text_only,wording,agree: writing note,only in the writing section
+TREMBLE,v0.100.0,v0.103.2,v0.100.0 v0.101.0,balance,Buffed Changed,yes,yes,rework,,agree: numbers match,vulnerable 2(3) -> 3(4): matches powers_applied[0].amount
+UNTOUCHABLE,v0.100.0,v0.103.2,v0.100.0 v0.102.0,balance,Nerfed,yes,yes,tweak,,agree: numbers match,block 9(12) -> 6(8): matches block
+VOID_FORM,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,rework,,agree: no numbers to compare,Nerfed
+VOLTAIC,v0.101.0,v0.103.2,v0.101.0,balance,Nerfed,yes,yes,cost_change,,agree: numbers match,cost 2 -> 3: matches cost
+WROUGHT_IN_WAR,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,forge 5(7) -> 7(9): matches vars.Forge
+ASTRAL_PULSE,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Changed,yes,yes,rework,,agree: numbers match,damage 14(18) -> 6(8): matches damage
+BLADE_OF_INK,v0.105.0,v0.107.1,v0.105.0 v0.107.1,content+balance,Nerfed,yes,no,,,notes only: missing from card_changes,inky enchantment damage +2() -> +1()
+BULWARK,v0.105.0,v0.107.1,v0.105.0 v0.107.1,content+balance,Nerfed,yes,yes,tweak,,agree: numbers match,block 13(16) -> 12(15): matches block
+CONFLAGRATION,v0.104.0,v0.107.1,v0.104.0 v0.107.1,content content+balance,Reworked,yes,yes,rework,,agree: no numbers to compare,Reworked
+CRESCENT_SPEAR,v0.105.0,v0.107.1,v0.105.0 v0.107.1,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 6 -> 8: matches damage
+DEATH_MARCH,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,additional damage 3(4) -> 4(6): matches vars.ExtraDamage
+DEBILITATE,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Nerfed,yes,yes,tweak,,agree: numbers match,debuff 3(4) -> 2(3): matches powers_applied[0].amount
+DRUM_OF_BATTLE,v0.104.0,v0.107.1,v0.104.0 v0.106.0 v0.107.1,content content+balance,Reworked Buffed,yes,yes,rework+cost_change,,agree: no numbers to compare,Reworked; Buffed
+ENTRENCH,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Buffed,yes,no,,,notes only: missing from card_changes,no numbers in the notes
+EXTERMINATE,v0.106.0,v0.107.1,v0.106.0 v0.107.1,writing,,yes,yes,text_only,wording,agree: writing note,only in the writing section
+FASTEN,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Nerfed,yes,yes,tweak,,agree: numbers match,additional block 5(7) -> 4(6): matches vars.ExtraBlock
+FOLLOW_THROUGH,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Reworked,yes,yes,removed,,agree: no numbers to compare,Reworked
+FURNACE,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,forge 4(6) -> 5(7): matches vars.Forge
+FUSION,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Changed,yes,yes,rework+cost_change,,agree: numbers match,cost 2(1) -> 1: matches cost
+GOLD_AXE,v0.105.0,v0.107.1,v0.105.0 v0.107.1,content+balance,Buffed,yes,no,,,notes only: missing from card_changes,no numbers in the notes
+HOWL_FROM_BEYOND,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Buffed,yes,yes,text_only,mechanic,agree: no numbers to compare,Buffed
+HYPERBEAM,v0.105.0,v0.107.1,v0.105.0 v0.107.1,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 26(34) -> 28(36): matches damage
+JUGGERNAUT,v0.107.0,v0.107.1,v0.107.0,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 5(7) -> 6(8): matches powers_applied[0].amount
+LANTERN_KEY,v0.105.0,v0.107.1,v0.105.0 v0.107.1,content+balance,,yes,no,,,notes only: missing from card_changes,no numbers in the notes
+MAD_SCIENCE,v0.106.1,v0.107.1,,,,no,yes,text_only,exclude,table only,mentioned only in bug fixes: v0.105.0
+MINION_SACRIFICE,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Nerfed,yes,yes,tweak,,agree: numbers match,block 9(12) -> 8(11): matches block
+MONARCHS_GAZE,v0.107.0,v0.107.1,v0.107.0 v0.107.1,content+balance,Buffed,yes,yes,cost_change,,agree: numbers match,cost 3(2) -> 2(1): matches cost
+NEOWS_FURY,v0.104.0,v0.107.1,v0.104.0 v0.107.1,balance content+balance,Buffed,yes,yes,text_only,mechanic,agree: no numbers to compare,Buffed
+NIGHTMARE,v0.104.0,v0.107.1,v0.104.0 v0.107.1,balance content+balance,Changed,yes,no,,,notes only: missing from card_changes,no numbers in the notes
+PACTS_END,v0.104.0,v0.107.1,v0.104.0,content,Changed,wiki only,yes,text_only,mechanic,agree: no numbers to compare,Changed
+PARRY,v0.104.0,v0.107.1,v0.104.0 v0.107.1,content content+balance,Reworked,yes,yes,text_only,mechanic,agree: no numbers to compare,Reworked
+PATTER,v0.105.0,v0.107.1,v0.105.0 v0.107.1,content+balance,Nerfed,yes,yes,tweak,,agree: numbers match,block 9(11) -> 8(10): matches block
+POUNCE,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 12(18) -> 14(20): matches damage
+PREDATOR,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Changed,yes,yes,rarity_change,,agree: no numbers to compare,Changed
+REAPER_FORM,v0.104.0,v0.107.1,v0.104.0 v0.107.1,writing,,yes,yes,text_only,wording,agree: writing note,only in the writing section
+REFLECT,v0.104.0,v0.107.1,v0.104.0 v0.107.0 v0.107.1,balance content+balance,Nerfed,yes,yes,tweak,,agree: numbers match,block 17(21) -> 15(20): matches block
+ROYALTIES,v0.105.0,v0.107.1,v0.105.0 v0.107.1,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,gold 30(35) -> 30(40): base unchanged
+SACRIFICE,,v0.107.1,,,,no,yes,rework,,table only,no mention in the patch notes for this window
+SCARE,v0.106.0,v0.107.1,,,,no,yes,added,,table only,no mention in the patch notes for this window
+SEVEN_STARS,,v0.107.1,,,,no,yes,text_only,wording,table only,no mention in the patch notes for this window
+SHATTER,v0.106.0,v0.107.1,v0.105.0 v0.106.0 v0.107.1,content+balance,Buffed Nerfed Changed,yes,yes,tweak,,disagree: kind; agree: numbers match,"table says tweak, notes also say: v0.105.0 'now Evokes all of your Orbs twice' | v0.107.1 'now Evokes all of your Orbs twice'; damage 11(15) -> 7(11): matches damage"
+SIC_EM,v0.107.0,v0.107.1,v0.107.0 v0.107.1,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,summon 2(3) -> 3(4): matches powers_applied[0].amount
+SOVEREIGN_BLADE,v0.104.0,v0.107.1,,,,no,yes,text_only,wording,table only,no mention in the patch notes for this window
+STRATAGEM,v0.104.0,v0.107.1,v0.104.0 v0.107.1,balance content+balance,,yes,no,,,notes only: missing from card_changes,no numbers in the notes
+SUMMON_FORTH,v0.104.0,v0.107.1,,,,no,yes,text_only,mechanic,table only,mentioned only in bug fixes: v0.104.0 v0.107.1
+SWORD_SAGE,v0.105.0,v0.107.1,v0.105.0 v0.107.1,content+balance,,yes,yes,text_only,mechanic,agree: no numbers to compare,
+SYNTHESIS,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 12(18) -> 14(20): matches damage
+TAG_TEAM,v0.104.0,v0.107.1,v0.104.0 v0.107.1,balance content+balance,Buffed,yes,no,,,notes only: missing from card_changes,no numbers in the notes
+TESLA_COIL,v0.105.0,v0.107.1,v0.105.0 v0.107.1,content+balance,Buffed Changed,yes,yes,tweak,,disagree: kind; agree: numbers match,"table says tweak, notes also say: v0.105.0 'Lightning Triggers increased from once -> twice' | v0.107.1 'Lightning triggers increased from once -> twice'; damage 6 -> 4: matches the upgraded card via upgrade.damage (current base from the card list)"
+THE_SCYTHE,v0.107.0,v0.107.1,v0.107.0 v0.107.1,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 3(4) -> 4(5): matches vars.Increase
+THE_SEALED_THRONE,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Changed,yes,yes,rework+cost_change,,agree: no numbers to compare,Changed
+TYRANNY,v0.104.0,v0.107.1,v0.104.0 v0.107.1,balance content+balance,Changed,yes,no,,,notes only: missing from card_changes,no numbers in the notes
+UNRELENTING,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 12(18) -> 14(20): matches damage
+UNTOUCHABLE,v0.104.0,v0.107.1,v0.104.0 v0.107.1,balance content+balance,Buffed,yes,yes,tweak,,agree: numbers match,block +2 -> +3: matches upgrade.block
+UPROAR,v0.105.0,v0.107.1,v0.105.0 v0.107.1,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 5(7) -> 6(8): matches damage
+WITHER,v0.105.0,v0.107.1,,,,no,yes,added,,table only,mentioned only in bug fixes: v0.106.1 v0.107.0

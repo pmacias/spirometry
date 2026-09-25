@@ -2,9 +2,11 @@
 
 Measuring what Slay the Spire 2's balance patches actually did.
 
-Status: scoping. Data access confirmed from my Mac and from CC cloud sessions; 5-page test
-done (4,641 runs, v0.98.0–v0.103.2, no beta); patch history endpoints checked (see
-`notes/patch_history.md`). Full snapshot running locally.
+Status: data acquisition. Data access confirmed from my Mac and from CC cloud sessions;
+5-page test done (4,641 runs, v0.98.0–v0.103.2, including beta builds v0.100.0–v0.103.1);
+patch history endpoints checked (`notes/patch_history.md`); card patch dataset built and
+cross-checked against the official patch notes (`notes/patch_notes_crosscheck.md`); run file
+structure documented from 3 pages (`notes/run_schema.md`). Full snapshot running locally.
 
 ---
 
@@ -59,8 +61,12 @@ affiliated with Mega Crit.
     5 had 641 runs (4,641 total). Probably server-side filtering after the page is cut;
     the cursor still advances normally.
   - Export is ordered oldest submission first, and the order is the same from any client
-    (Mac and cloud session agree). The first 5 pages covered v0.98.0–v0.103.2, all stable
-    (no beta).
+    (Mac and cloud session agree). The first 5 pages covered v0.98.0–v0.103.2. That
+    includes beta builds (v0.100.0–v0.103.1 are beta per `reference/builds.csv`; 30% of the
+    first two pages). The earlier "no beta" reading came from counting `is_beta`, a field
+    the export records don't have (`notes/run_schema.md`).
+  - `start` / `end` bound submission time, not play time: a page from `start=2026-09-01`
+    still had 16% of its runs on v0.98.x–v0.99.1.
   - Projected full snapshot: ~1,800 pages, ~4 GB, ~15 h of rate budget at 120/h
     (assuming ~1.8M runs and ~1000 runs/page).
 - **Run summaries:** `GET /api/runs/list` — one row per run, filterable by build, card,
@@ -88,6 +94,20 @@ affiliated with Mega Crit.
 - Privacy policy: submitted runs and persona names are "public by design." Players can
   request deletion.
 
+### Official patch notes (third source) — Slay the Spire Wiki
+
+Mega Crit's patch notes, one wiki page per version, mirrored at
+<https://slaythespire.wiki.gg/wiki/Slay_the_Spire_2:Patch_Notes> (CC BY-SA 4.0). The
+early-access pages (V0.98.1–V0.111.0, 26 pages for 25 versions) are cached as raw wikitext
+in `reference/raw/wiki/` and parsed by `python -m spirometry.patch_notes`. Each page header
+gives version, type (Beta Patch, Beta Hotfix, Hotfix, Patch, Major Update) and release
+date; the notes name cards and usually give before/after numbers ("7(9) -> 10(12)").
+They are the only source for changes that don't show in card fields (trigger order,
+multiplayer rules, bug fixes that change behavior) and for the stable-only hotfixes. The
+wiki occasionally adds editor notes ("(not mentioned in patch notes)"), flagged in the
+parsed table. Cross-checked against the Spire Codex tables in
+`notes/patch_notes_crosscheck.md`.
+
 ### STS2 Runs (secondary) — sts2runs.com
 
 One monthly dump available: `runs-all-before-2026-06.json.gz`, 6,796 runs, ~15 MB,
@@ -97,9 +117,14 @@ early-build coverage.
 
 ## What a run record contains
 
-Top level: `acts`, `ascension`, `build_id`, `is_beta`, `schema_version`, `seed`,
+Full field tree, offer sources, co-op and abandoned runs: `notes/run_schema.md` (3 pages,
+checked 2026-09-24).
+
+Top level: `acts`, `ascension`, `build_id`, `schema_version` (8, 9, 10), `seed`,
 `start_time`, `run_time`, `game_mode`, `modifiers`, `win`, `was_abandoned`,
-`killed_by_encounter`, `killed_by_event`, `platform_type`, `players`, `map_point_history`.
+`killed_by_encounter`, `killed_by_event`, `platform_type`, `players`, `map_point_history`,
+`run_hash`. No `is_beta`. Some recent records also carry `_sts` (uploader tool) and
+`_spirecodex_damage` (added by Spire Codex), which aren't game data.
 
 `map_point_history` is a list of acts, each a list of floors. Each floor has:
 
@@ -107,7 +132,11 @@ Top level: `acts`, `ascension`, `build_id`, `is_beta`, `schema_version`, `seed`,
 - `rooms`: `model_id` (e.g. `ENCOUNTER.NIBBITS_WEAK`, `EVENT.NEOW`), `monster_ids`,
   `room_type`, `turns_taken`
 - `player_stats` (one entry per player):
-  - `card_choices`: every card offered, each with `was_picked`
+  - `card_choices`: every card offered, each with `was_picked` (`CARD.<card_id>`, plus
+    `current_upgrade_level` and `enchantment`). There's no source field: the floor type
+    says where the offer came from, and several reward screens on one floor share one
+    list. In solo shops the list is the unsold shelf, and bought cards are only in
+    `cards_gained` (see `notes/run_schema.md`)
   - `relic_choices`, `potion_choices`, `ancient_choice`: same pattern
   - `event_choices`: option taken (localization key, e.g.
     `BYRDONIS_NEST.pages.INITIAL.options.EAT.title`)
@@ -143,11 +172,44 @@ committed — no player data — then builds the CSVs from the cache; at most 10
 - `history_unmatched.csv` — update-history entries up to v0.107.1 that no changelog row
   explains (reverted beta changes, parser fixes that history dates as game changes, the
   V0.98.0-beta/V0.99.0-beta flip pairs).
+- `text_only_labels.csv` — Phil's hand labels for the 26 text_only card-patches
+  (`card_id`, `stable_build`, `label`, `basis`, `note`). `mechanic` = the text change
+  changes play, treat it as a rework (12); `wording` = no gameplay change (12);
+  `exclude` = drop the card from all analyses (2, Mad Science). Hand-maintained: no
+  script writes it.
+
+From the official patch notes, built by `python -m spirometry.patch_notes` (fetches the wiki
+pages into `reference/raw/wiki/` if missing, at most 10 requests/min, then builds everything
+below from the cache; `python -m spirometry.patch_history build` also re-applies the wiki's
+version list to `builds.csv`):
+
+- `builds.csv` is reconciled with the wiki's version list: missing versions added (v0.99.0,
+  v0.103.3, v0.105.1, v0.110.1), blank branch and date filled from the page header, the
+  wiki recorded in `source`, and conflicts noted in `notes` (prefixed `wiki:`) rather than
+  overwritten.
+- `patch_notes_cards.csv` — one row per card mention in the notes (and one per numeric
+  change when an item gives several): `version`, `page_type`, `branch`, `date`, `section`
+  (content, balance, content+balance, writing, bug fix, or another heading such as art),
+  `subsection`, `verb` as written (Buffed, Nerfed, Changed, Reworked, Added, Deprecated,
+  Removed, Reverted, Adjusted, or blank), `card_name`, `card_id` (from the card list;
+  `in_card_list = no` for beta-only, removed or renamed cards), `role` (`subject` = what
+  the item is about, `context` = mentioned in passing), `wiki_only` (a wiki editor's note,
+  not Mega Crit's), `quantity`, `before_base`, `before_upg`, `after_base`, `after_upg` (as
+  written; blank = not given, never assumed equal), `raw_text`.
+- `crosscheck.csv` — one row per (card, stable window): in the notes, in card_changes, and
+  whether they agree (numbers chained across betas; see `notes/patch_notes_crosscheck.md`).
+- `behavior_changes.csv` — bug-fix items that change how a card plays (timing, generation,
+  interactions, multiplayer), from a keyword heuristic. Candidates to leave out of control
+  groups around that build, not treatments.
+- `beta_card_changes.csv` — card changes that never reached stable as written: everything
+  after v0.107.1, beta values revised or reverted before stable, beta-only cards, from the
+  notes plus update-history.
 
 Caveats: update-history types every entry "Beta Patch" (including stable v0.103.2) and has
-no entries for stable-only hotfixes (v0.98.1–v0.98.3, v0.99.1, v0.103.1); run files say
-`is_beta=false` even on versions the changelog calls beta. Details in
-`notes/patch_history.md`.
+no entries for stable-only hotfixes (v0.98.1–v0.98.3, v0.99.1, v0.103.1). The wiki fills
+their branch and date. Run export records have no `is_beta` field at all, so branch always
+comes from `builds.csv`. Details in `notes/patch_history.md` and
+`notes/patch_notes_crosscheck.md`.
 
 ## Known data issues
 
@@ -165,11 +227,27 @@ no entries for stable-only hotfixes (v0.98.1–v0.98.3, v0.99.1, v0.103.1); run 
   analysis. Raw snapshot data is git-ignored and never committed.
 - **Beta vs. stable.** Two branches run different card versions at the same time
   (e.g. stable v0.107.1 and beta v0.111.0 in September 2026). Always key on `build_id`.
+- **Branch comes from `builds.csv` via `build_id`, never from the run file.** The export's
+  records have no `is_beta` field (earlier notes said it was false; it's absent), so
+  `scripts/snapshot_export.py --count-only`'s `beta` column is always 0. v0.100.0–v0.103.1
+  are beta. v0.99.1 was on beta for three days before stable (2026-03-14 → 03-17), so its
+  runs are mostly but not only stable.
+- **Some behavior changes come only from bug fixes** and appear in no card field (e.g.
+  Bombardment and Howl from Beyond playing from Exhaust after the draw, v0.104.0; Summon
+  Forth's Forge order). Others are in the notes but not in card data (Tyranny's trigger
+  order, Tag Team, Entrench, Stratagem's pool change). Listed in `behavior_changes.csv`
+  and `crosscheck.csv`; without them those cards look unchanged.
+- **Offers aren't uniform.** Shops, events, Neow and relic effects (Prayer Wheel, Lasting
+  Candy, Driftwood, Orrery) all write into `card_choices`, and a floor can hold several
+  screens in one list. Solo shops list only the unsold shelf. See `notes/run_schema.md`.
+- **Custom and modded runs.** Early builds record custom runs as `game_mode: standard`;
+  filter on `modifiers` being empty. Recent pages include modded runs (mod card ids with
+  a `-`, BaseLib keys).
 - **Treatment timing.** Assign builds from each run's own `build_id` and `start_time`, not
   `submitted_at` — players often upload their whole history folder at once. This also
   means early builds can keep gaining runs late in the export.
-- **Cheated / modded runs.** Need a filter (check `modifiers`, `game_mode`, and anything
-  Spire Codex flags).
+- **Cheated / modded runs.** Need a filter (check `modifiers`, `game_mode`, mod markers,
+  and anything Spire Codex flags).
 
 ## Analysis ideas
 
@@ -240,9 +318,14 @@ close to randomized. That supports:
    short pages, see Data sources.)
 2. ~~Verify the patch history endpoints.~~ Done — `notes/patch_history.md`.
    ~~Build the card change table and the version → branch → date table.~~ Done —
-   `reference/`. Next: review `excluded_fields.csv`, `text_only_changes.csv` and
-   `history_unmatched.csv`; decide how to treat `cost_change`; extend to relics, monsters,
-   and encounters.
+   `reference/`. ~~Label the text-only changes.~~ Done — `text_only_labels.csv`.
+   ~~Cross-check against the official patch notes.~~ Done —
+   `notes/patch_notes_crosscheck.md`. Next: decide on the four tweak/rework
+   disagreements, the notes-only changes and the bug-fix behavior changes (decisions
+   listed there); review `excluded_fields.csv` and `history_unmatched.csv`; extend to
+   relics, monsters, and encounters.
+2b. ~~Document the run file structure.~~ Done — `notes/run_schema.md`, with a proposal
+   for the `runs` and `card_offers` columns and the decisions they need.
 3. ~~Estimate total snapshot size and rate-budget cost per page.~~ Done — see Data sources.
 4. Message the Spire Codex maintainer: describe the project, ask about the academia tier
    and whether it raises the export budget, confirm they're fine with the use.

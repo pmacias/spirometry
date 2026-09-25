@@ -1,0 +1,16 @@
+{{PatchNav
+|Version = V0.106.1
+|Type = Beta Hotfix
+|ReleaseDate = 2026-05-22
+}}
+Quick hotfix with a couple of Aeonglass-related fixes and some localization updates!
+
+== WRITING: ==
+Updated translations for various languages
+
+== BUG FIXES: ==
+=== Enemies: ===
+* The player can no longer upgrade Wither status cards
+* Wither status cards will no longer stick around in hand if they have Retain from something like the Runic Pyramid relic
+
+[[Category:Patch Notes]] [[Category:Beta Content]]

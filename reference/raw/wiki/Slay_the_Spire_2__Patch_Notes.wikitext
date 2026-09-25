@@ -1,0 +1,152 @@
+{{Sequel Disambiguation}} __notoc__
+This page is for documenting the patch notes of Slay the Spire 2, including any updates before the early access release, as these are still visible through the in-game patch notes menu.
+
+Patches with a date instead of a version number were patches made before the developers changed the game's engine from Unity to Godot.
+
+== During Early Access ==
+<div class="patch-note-list">
+* {{2|V0.111.0 - Beta Patch}}
+* {{2|V0.110.1 - Beta Hotfix}}
+* {{2|V0.110.0 - Beta Patch}}
+* {{2|V0.109.1 - Beta Hotfix}}
+* {{2|V0.109.0 - Beta Patch}}
+* {{2|V0.108.0 - Beta Patch}}
+* {{2|V0.107.1 - Major Update 2}}
+* {{2|V0.107.0 - Beta Patch}}
+* {{2|V0.103.3 - Patch}}
+* {{2|V0.106.1 - Beta Hotfix}}
+* {{2|V0.106.0 - Beta Patch}}
+* {{2|V0.105.1 - Beta Hotfix}}
+* {{2|V0.105.0 - Beta Patch}}
+* {{2|V0.104.0 - Beta Patch}}
+* {{2|V0.103.2 - Major Update 1}}
+* {{2|V0.103.1 - Beta Hotfix}}
+* {{2|V0.103.0 - Beta Patch}}
+* {{2|V0.102.0 - Beta Patch}}
+* {{2|V0.101.0 - Beta Patch}}
+* {{2|V0.100.0 - Beta Patch}}
+* {{2|V0.99.1 - Patch}}
+* {{2|V0.99.1 - Beta Hotfix}}
+* {{2|V0.99.0 - Beta Patch}}
+* {{2|V0.98.3 - Hotfix}}
+* {{2|V0.98.2 - Hotfix}}
+* {{2|V0.98.1 - Hotfix}}
+</div>
+
+== Before Early Access ==
+<div class="patch-note-list">
+* {{2|V0.96.0 - Pre-release Version}}
+* {{2|V0.95.0 - Pre-release Version}}
+* {{2|V0.94.0 - Pre-release Version}}
+* {{2|V0.93.0 - Pre-release Version}}
+* {{2|V0.92.0 - Pre-release Version}}
+* {{2|V0.91.0 - Pre-release Version}}
+* {{2|V0.90.0 - Pre-release Version}}
+* {{2|V0.89.0 - Pre-release Version}}
+* {{2|V0.88.0 - Pre-release Version}}
+* {{2|V0.87.0 - Pre-release Version}}
+* {{2|V0.86.0 - Pre-release Version}}
+* {{2|V0.85.0 - Pre-release Version}}
+* {{2|V0.84.0 - Pre-release Version}}
+* {{2|V0.83.0 - Pre-release Version}}
+* {{2|V0.82.0 - Pre-release Version}}
+* {{2|V0.81.0 - Pre-release Version}}
+* {{2|V0.80.0 - Pre-release Version}}
+* {{2|V0.79.0 - Pre-release Version}}
+* {{2|V0.78.0 - Pre-release Version}}
+* {{2|V0.77.0 - Pre-release Version}}
+* {{2|V0.76.0 - Pre-release Version}}
+* {{2|V0.75.0 - Pre-release Version}}
+* {{2|V0.74.0 - Pre-release Version}}
+* {{2|V0.73.0 - Pre-release Version}}
+* {{2|V0.72.0 - Pre-release Version}}
+* {{2|V0.71.0 - Pre-release Version}}
+* {{2|V0.70.0 - Pre-release Version}}
+* {{2|V0.69.0 - Pre-release Version}}
+* {{2|V0.68.0 - Pre-release Version}}
+* {{2|V0.67.0 - Pre-release Version}}
+* {{2|V0.66.0 - Pre-release Version}}
+* {{2|V0.65.0 - Pre-release Version}}
+* {{2|V0.63.0 - Pre-release Version}}
+* {{2|V0.62.0 - Pre-release Version}}
+* {{2|V0.61.0 - Pre-release Version}}
+* {{2|V0.60.0 - Pre-release Version}}
+* {{2|V0.59.0 - Pre-release Version}}
+* {{2|V0.58.0 - Pre-release Version}}
+* {{2|V0.57.0 - Pre-release Version}}
+* {{2|V0.56.0 - Pre-release Version}}
+* {{2|V0.55.0 - Pre-release Version}}
+* {{2|V0.54.0 - Pre-release Version}}
+* {{2|V0.53.0 - Pre-release Version}}
+* {{2|V0.52.0 - Pre-release Version}}
+* {{2|V0.51.0 - Pre-release Version}}
+* {{2|V0.50.0 - Pre-release Version}}
+* {{2|V0.49.0 - Pre-release Version}}
+* {{2|V0.48.1 - Pre-release Version}}
+* {{2|V0.48.0 - Pre-release Version}}
+* {{2|V0.47.0 - Pre-release Version}}
+* {{2|V0.46.0 - Pre-release Version}}
+* {{2|V0.45.0 - Pre-release Version}}
+* {{2|V0.44.0 - Pre-release Version}}
+* {{2|V0.43.0 - Pre-release Version}}
+* {{2|V0.42.0 - Pre-release Version}}
+* {{2|V0.41.0 - Pre-release Version}}
+* {{2|V0.40.0 - Pre-release Version}}
+* {{2|V0.39.0 - Pre-release Version}}
+* {{2|V0.38.0 - Pre-release Version}}
+* {{2|V0.37.0 - Pre-release Version}}
+* {{2|V0.36.0 - Pre-release Version}}
+* {{2|V0.35.0 - Pre-release Version}}
+* {{2|V0.34.0 - Pre-release Version}}
+* {{2|V0.33.0 - Pre-release Version}}
+* {{2|V0.32.0 - Pre-release Version}}
+* {{2|V0.31.0 - Pre-release Version}}
+* {{2|V0.30.0 - Pre-release Version}}
+* {{2|V0.29.0 - Pre-release Version}}
+* {{2|V0.28.0 - Pre-release Version}}
+* {{2|V0.27.1 - Pre-release Version}}
+* {{2|V0.27.0 - Pre-release Version}}
+* {{2|V0.26.0 - Pre-release Version}}
+* {{2|V0.25.0 - Pre-release Version}}
+* {{2|V0.24.0 - Pre-release Version}}
+* {{2|V0.23.0 - Pre-release Version}}
+* {{2|V0.22.0 - Pre-release Version}}
+* {{2|V0.21.0 - Pre-release Version}}
+* {{2|V0.19.0 - Pre-release Version}}
+* {{2|V0.18.0 - Pre-release Version}}
+* {{2|V0.17.0 - Pre-release Version}}
+* {{2|V0.16.0 - Pre-release Version}}
+* {{2|V0.15.0 - Pre-release Version}}
+* {{2|V0.14.0 - Pre-release Version}}
+* {{2|V0.13.0 - Pre-release Version}}
+* {{2|V0.12.0 - Pre-release Version}}
+* {{2|V0.11.0 - Pre-release Version}}
+* {{2|V0.10.0 - Pre-release Version}}
+* {{2|V0.9.0 - Pre-release Version}}
+* {{2|V0.8.0 - Pre-release Version}}
+* {{2|V0.6.0 - Pre-release Version}}
+==== Pre-Godot Engine ====
+* {{2|2023-09-15 - Pre-release Version}}
+* {{2|2023-09-08 - Pre-release Version}}
+* {{2|2023-09-01 - Pre-release Version}}
+* {{2|2023-08-25 - Pre-release Version}}
+* {{2|2023-08-04 - Pre-release Version}}
+* {{2|2023-07-21 - Pre-release Version}}
+* {{2|2023-07-14 - Pre-release Version}}
+* {{2|2023-07-07 - Pre-release Version}}
+* {{2|2023-06-30 - Pre-release Version}}
+* {{2|2023-06-16 - Pre-release Version}}
+* {{2|2023-06-09 - Pre-release Version}}
+* {{2|2023-06-02 - Pre-release Version}}
+* {{2|2023-05-26 - Pre-release Version}}
+* {{2|2023-05-19 - Pre-release Version}}
+* {{2|2023-05-12 - Pre-release Version}}
+* {{2|2023-05-05 - Pre-release Version}}
+* {{2|2023-04-29 - Pre-release Version}}
+* {{2|2023-04-21 - Pre-release Version}}
+* {{2|2023-02-17 - Pre-release Version}}
+* {{2|2023-02-09 - Pre-release Version}}
+</div>
+
+
+[[Category:Patch Notes]]

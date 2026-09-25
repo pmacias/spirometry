@@ -1,0 +1,13 @@
+{{PatchNav
+|Version = V0.99.1
+|Type = Beta Hotfix
+|ReleaseDate = 2026-03-14
+}}
+Got a quick hotfix for our players on the beta branch--this is what it's all for, so thank you to everyone providing feedback! If you're interested in accessing the beta branch, please see the {{2|V0.99.0 - Beta Patch|previous patch notes}}.
+
+=== BUG FIXES: ===
+
+* Fixed a softlock that could occur when a player dies to '''Breakthrough''' card's self-HP loss in multiplayer
+* Fixed softlock at the end of the Architect event in multiplayer
+
+[[Category:Patch Notes]] [[Category:Beta Content]]

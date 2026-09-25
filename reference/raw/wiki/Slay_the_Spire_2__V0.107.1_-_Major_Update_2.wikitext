@@ -1,0 +1,465 @@
+{{PatchNav
+|Version = V0.107.1
+|Type = Major Update
+|ReleaseDate = 2026-06-19
+}}
+Hey Slayers, our second major main branch update is here with 4 patches in 1 (not including hotfixes)! While we'll be covering a lot of things that beta players will already be used to, there are also a few big changes that will be totally new for everyone. One of those has been highly requested by the community in the past few days and another has been very highly requested by the community in the past few months, so let's get into it!
+{{TOC limit|2}}
+
+== RNG Rework ==
+Ed here, one of the Mega Crit engineers. It turns out that everyone complaining about receiving {{C2|Debt}} too often from {{R2|Neow's Bones}} was right! We did, in fact, have some unusual RNG problems.
+
+Huge shoutout to tckmn for doing the research - their eight-hour descent into madness was an entertaining watch, and we wouldn't have caught the issue without it. If you're interested in the nitty-gritty, read tckmn's full writeup<ref>https://tck.mn/blog/correlated-randomness-sts2/</ref>. Here is a short version.
+
+Most games, including STS2, use pseudo-random number generators (PRNGs). A PRNG is fed a seed value, and given the same seed value, a PRNG will always generate the same sequence of random numbers.
+
+Each run has one primary “run seed”, a sequence of twelve numbers and letters. However, a run actually contains multiple PRNGs that individually influence your deck draw, your combat rewards, your event choices, and the rest of the random elements in the run. Each one uses a seed derived from the run seed.
+
+[[File:Update 2 rng diagram.png|frame|left|alt=A main seed is used to generate seeds for other types of randomness in the game like Card Draw, Rewards etc.|Seed Generation PRNG]]<br clear="all" />
+
+Since we fed different seeds to each PRNG, we expected their results to be completely unrelated. But we were wrong, and it turns out that our strategy allowed players to predict outcomes given knowledge of unrelated parts of the game.
+
+Let’s visualize one example: the correlation between your first act and the curse you receive from {{R2|Neow's Bones}}. In both cases, we generate a decimal between 0 and 1, but from different PRNGs.
+
+- For your first act, if the decimal generated is less than 0.5, you get {{2|Overgrowth}}; otherwise, you get {{2|Underdocks}}.
+- For {{R2|Neow's Bones}}’ curse, we use the decimal to pick from a list of ten curses. Between 0 and 0.1 you get {{C2|Clumsy}}, between 0.1 and 0.2 you get {{C2|Debt}}, and so on.
+
+Here is a scatterplot of the raw numbers generated given 10000 random run seeds on v0.103.3:
+
+[[File:Update 2 rng scatterplot broken.png|frame|left|alt=Diagram shows distinct pattern, where for each possible Act 1 random roll value, there are only a few possible roll values for Neow's Bones.|Correlation between Act 1 random roll and Neow's Bones random roll.]]<br clear="all" />
+
+There is clear correlation in this result. For example, if our act roll is >0.5 (we’re in the {{2|Underdocks}}), then it’s highly likely that our {{R2|Neow's Bones}} curse roll will be <0.5, which cuts the potential curses you can obtain in half.
+
+Aside from the balance ramifications: once knowledge of this exploit is out there, players are naturally incentivized to use it to play optimally. We don’t want to encourage rote memorization of correlation tables, as it is tedious and unfun.
+
+Thus, in v0.107.1, we replaced our PRNG implementation with a more modern one (xoshiro256** <ref>https://en.wikipedia.org/wiki/Xorshift#xoshiro256** </ref>). The resulting scatterplot is evenly distributed, exhibiting no human-detectable correlation.
+
+
+[[File:Update 2 rng scatterplot after fix.png|frame|left|alt=Diagram that shows high variance and no discernible pattern between the Act 1 random roll and the Neow's Bones random roll.|RNG after fix.]]<br clear="all" />
+
+Rest assured that your suffering is now truly random!
+
+Speaking of updates that will be new to all players, I’ve also been busy working on support for…
+
+== Steam Workshop ==
+We built STS2 with modding in mind, and the game has had an integrated mod loader from day one. It's been awesome seeing the outpouring of creativity from the community! But we purposefully haven't been advertising mod support, as we knew it still needed some work.
+
+Previously, the only supported way to install mods was to download them and place them next to the executable. With this patch, Steam Workshop support has officially been added! Now, you can browse and install mods directly from the workshop, and they will be automatically downloaded to all devices where you play on Steam.
+
+[[File:Update 2 steam workshop.png|frame|left|alt=Overview of the Steam Workshop page.|Steam Workshop page for Slay the Spire 2.]]<br clear="all" />
+
+If you are a mod creator, upload your mods using the tool [https://github.com/megacrit/sts2-mod-uploader here].
+
+And if you're interested in playing some mods, check out the [https://steamcommunity.com/app/2868840/workshop/?snr=1_2108_9__2107 new workshop.]
+
+That’s all the updates from Ed! Passing it off to Casey to introduce…
+
+== The Bestiary ==
+[[File:Update 2 bestiary.gif|frame|left|alt=Bestiary entry of the Ceremonial Beast, alternating between the Stamp and Beast Cry action.|Bestiary demonstration.]]<br clear="all" />
+
+Casey here! This patch brings in the Bestiary, which Beta testers will already be familiar with. This was a much requested feature for the first game, but at the time I didn't want to create it as there wasn't a good delivery mechanism for an overarching story. However, in the world of Slay the Spire 2, we have a lot more on the narrative side, more creature animations, etc. so we've been hard at work creating this final screen in the compendium (outside of the Achievements page, which is to come much later).
+
+[[File:Update 2 menu to access bestiary.jpg|frame|left|alt=Crudely drawn green arrows indicating the placement of the Bestiary in the Compendium Menu.|Bestiary entry in the Compendium Menu.]]<br clear="all" />
+
+Currently, players can find a list of monsters they've encountered here as well as their moves and animations. In the future we plan to include all sorts of information about the game's enemies, including stats and lore.
+
+== Enemy Changes ==
+[[File:Update 2 rip doormaker.png|frame|left|alt=A gravestone from a scence of Spongebob Squarepants, which reads "Here Lies" and a boquet of flowers lying before it. Edited onto the gravestone is a picture of Doormaker, looking through its Portal.|Rest in Peace Doormaker]]<br clear="all" />
+
+As many of you have heard by now, The {{M2|Doormaker}} has been removed from the game. As we said in the patch notes of the beta patch that brought this change: while Doormaker had interesting micro decisions in the fight, he was over the complexity threshold of what we want and had lingering issues. We decided that starting over fresh will let us hit what we actually want for an [[Act 3]] boss.
+
+Thus a new boss, {{M2|Aeonglass}}, is here! We don't want to spoil it too much for non-beta testers, so that's all we're gonna say.
+
+Another big change you'll notice is {{2|Hive}}'s {{M2|Infested Prism}} enemy has been totally reworked--but again, no spoilers here.
+
+Alright, now it's time to get into the nitty gritty notes!
+
+== CONTENT & BALANCE: ==
+=== General: ===
+* The Bestiary is now available in the Compendium
+* Added three more {{2|Badges}}:
+** Damage Leader - Dealt the most damage to enemies in multiplayer
+** Debuffer - Applied the most Debuffs in multiplayer
+** C-c-c-Combo - Played 20 cards in a single turn
+* Terminal run modifier can no longer bring a player below 1 HP
+
+=== Ancients: ===
+* Added new {{2|Neow}} relics:
+** {{R2|Kaleidoscope}} - "Upon pickup, gain 2 card rewards with cards from other characters."
+** {{R2|Fishing Rod}} - "Every 3 normal combats, Upgrade a random card in your Deck."
+** {{R2|Silken Tress}} - "Enchant all cards in the first card reward with Glam. Upon pickup, lose all gold."
+* Reworked {{2|Tezcatara}}'s {{R2|Pumpkin Candle}} relic: now extinguishes after 5 combats and can be Kindled at rest sites (was: extinguishes at the start of Act 3)
+* Buffed {{2|Neow}}'s {{R2|Scroll Boxes}} relic: no longer makes player lose all gold
+* Buffed {{2|Neow}}'s {{R2|Booming Conch}} relic: in addition to drawing extra cards, now gains 1 Energy at the start of Elite combats
+* Buffed {{C2|Neow's Fury}} card: now lets you choose which 2 cards (or fewer) to return from your Discard Pile instead of selecting randomly
+* Buffed {{2|Tezcatara}}'s {{R2|Nutritious Soup}} relic: in addition to making your Strikes cost 0 and giving them Eternal, now makes all your Strikes deal 3 additional damage
+* Moved {{2|Tezcatara}}'s {{R2|Seal of Gold}} relic to option 3 so it shares a pool with {{R2|Pumpkin Candle}}
+* Changed {{R2|Pael's Eye}} relic: if an enemy has Vulnerable and you take an extra turn, the enemy's Vulnerable no longer decrements before your extra turn (also applies to Frail, Intangible, Weak, and other powers that decrement at the end of the enemy's turn)
+
+=== Enemies: ===
+* Replaced the {{2|Act 3}} boss {{M2|Doormaker}} with a brand-new boss, {{M2|Aeonglass}} (its moveset and Wither / Withering Presence mechanics were refined throughout the beta)
+* Reworked {{M2|Infested Prism}}
+* Reworked the {{M|Axebot|Axebots|2}} fight into a single, more challenging Axebot
+* Changed {{M2|Skulking Colony}}:
+** HP increased from 70(75) -> 75(80)
+** {{BD2|Hardened Shell}} increased from 15 -> 20
+** Smash move removed; now uses Zoom on turns 1 and 2
+** No longer gains Block
+** Now gains +1 {{BD2|Strength}} on its Strength-gain turn at high Ascension
+* Changed {{M2|Haunted Ship}}: now applies 3 Weak on Turn 1 instead of when it attacks; Ramming Speed move removed, now alternates between Swipe and Stomp (always starting with Swipe after Haunt)
+* Changed {{M2|Punch Construct}}: Fast Punch now leads into Strong Punch (instead of the reverse), Ready now leads into Fast Punch, and it applies Frail instead of Weak
+* Adjusted enemy HP at the extremes of the Ascension curve (slightly lower at low Ascension, slightly higher at high Ascension):
+** {{M|Scroll of Biting|Scrolls of Biting|2}}: 31(32)-38(39) -> 30(33)-37(39)
+** {{M2|Owl Magistrate}}: 234(243) -> 231(247)
+** {{M2|Slimed Berserker}}: 266(276) -> 261(281)
+* Buffed {{M2|Soul Fysh}}: Scream move damage increased from 11(12) -> 13(15)
+* Nerfed {{M|Assassin Raider|Ruby Raider Assassin|2}}: damage decreased from 11(12) -> 10(11)
+* Nerfed {{M2|Vantom}} at lower Ascensions
+* Nerfed {{M2|Waterfall Giant}}: HP healed at lower Ascension decreased from 15 -> 10(15)
+
+=== Events: ===
+* Changed {{E2|Slippery Bridge}} event: no longer offers to remove the same card multiple times unless it has already offered every other card in your deck at least once
+* Something special now happens if you have multiple {{C2|Lantern Key}} cards (does not apply to multiplayer)
+
+=== Potions & Relics: ===
+* Buffed {{R2|The Boot}} relic: damage increase now also applies to {{KW2|Osty}}'s attacks
+
+=== Colorless: ===
+* Buffed {{C2|Gold Axe}} card: in multiplayer, now deals damage equal to the number of cards played by ALL players, not just its owner
+* Nerfed {{C2|Fasten}} card: additional Block decreased from 5(7) -> 4(6)
+
+=== Ironclad: ===
+* Reworked {{C2|Conflagration}} card: now deals 2 damage to ALL enemies 4(5) times (was: 8(9) AOE damage plus 2(3) per other Attack played this turn)
+* Reworked {{C2|Drum of Battle}} card: now a 1-cost Uncommon Skill that draws 2 cards and grants 2(3) Energy when Exhausted (the Energy gain respects Replay and card-duplication effects like Duplicator potion)
+* Buffed {{C2|Howl from Beyond}} card: trigger moved from start of turn -> end of turn
+* Buffed {{C2|Entrench}} card: can now gain extra Block from enchantments like Nimble
+* Buffed {{C2|Unrelenting}} card: damage increased from 12(18) -> 14(20)
+
+=== Silent: ===
+* Reworked and renamed {{C2|Follow Through}} card -> Scare (rarity increased from Common -> Uncommon)
+* Changed {{C2|Nightmare}} card: if you select a card with an Affliction on it, that Affliction is now removed from the copies added to your hand the following turn
+* Changed {{C2|Predator}} card: rarity decreased from Uncommon -> Common
+* Buffed {{C2|Untouchable}} card: upgraded Block gain increased from +2 -> +3
+* Buffed {{C2|Pounce}} card: damage increased from 12(18) -> 14(20)
+* Nerfed {{C2|Blade of Ink}} card: Inky enchantment damage decreased from +2 -> +1
+
+=== Regent: ===
+* Reworked {{C2|Parry}} card: instead of granting Block when you play Sovereign Blade, Sovereign Blade now gains 10(14) Block directly, so the Block shows on the Blade and is affected by powers like Dexterity and Frail
+* Slightly reworked {{C2|Sword Sage}} card: Sovereign Blade now gains Replay 1 (was: hits an additional time), which gives it synergy with Parry
+* Changed {{C2|Astral Pulse}} card: changed damage from 14(18) -> 6(8)x2
+* Changed {{C2|Tyranny}} card: now triggers before Bombardment card (so if Tyranny Exhausts Bombardment, Bombardment is played immediately after)
+* Changed {{C2|The Sealed Throne}} card: upgrade changed from {{KW2|Innate}} -> lowering Energy cost by 1
+* Buffed {{C2|Crescent Spear}} card: base damage increased from 6 -> 8
+* Buffed {{C2|Royalties}} card: Gold gain increased from 30(35) -> 30(40)
+* Buffed {{C2|Furnace}} card: Forge increased from 4(6) -> 5(7)
+* Buffed {{C2|Monarch's Gaze}} card: Energy cost decreased from 3(2) -> 2(1)
+* Nerfed {{C2|Reflect}} card: Block gain decreased from 17(21) -> 15(20)
+* Nerfed {{C2|Bulwark}} card: Block decreased from 13(16) -> 12(15)
+* Nerfed {{C2|Patter}} card: Block gain decreased from 9(11) -> 8(10)
+* Nerfed {{C2|Minion Sacrifice}} card: Block decreased from 9(12) -> 8(11)
+
+=== Necrobinder: ===
+* Buffed {{C2|Death March}} card: additional damage increased from 3(4) -> 4(6)
+* Buffed {{C2|Sic 'Em}} card: Summon increased from 2(3) -> 3(4)
+* Buffed {{C2|The Scythe}} card: damage increased from 3(4) -> 4(5)
+* Nerfed {{C2|Debilitate}} card: debuff decreased from 3(4) turns -> 2(3) turns
+
+=== Defect: ===
+* Changed {{C2|Fusion}} card: Energy cost decreased from 2(1) -> 1; now Exhausts, and loses Exhaust on upgrade
+* Changed {{C2|Shatter}} card: now Evokes all of your Orbs twice; damage decreased from 11(15) -> 7(11)
+* Changed {{C2|Tesla Coil|Tesla Coil+}} card: damage decreased from 6 -> 4, but Lightning triggers increased from once -> twice
+* Buffed {{C2|Hyperbeam}} card: damage increased from 26(34) -> 28(36)
+* Buffed {{C2|Synthesis}} card: damage increased from 12(18) -> 14(20)
+* Buffed {{C2|Uproar}} card: damage increased from 5(7) -> 6(8)
+* Buffed {{R2|Infused Core}} relic: now also grants "Lightning Orbs deal 1 additional damage"
+
+=== Multiplayer: ===
+* Nerfed multiplayer scaling for enemy {{BD2|Artifact}}, {{BD2|Slippery}}, and {{BD2|Skittish}} powers
+* {{C2|Stratagem}} card is no longer banned from the colorless card pool in multiplayer (the original ban was due to a now-fixed bug)
+* Buffed {{C2|Tag Team}} card: Replay effect now triggers on "deal damage to ALL enemies" attacks too
+* Changed {{M2|Fossil Stalker}}: in multiplayer, now gains a set amount of Strength if it hits any player instead of gaining Strength for each player hit
+
+== QUALITY OF LIFE: ==
+* During the {{M2|Gremlin Merc}} fight, if Gremlin Merc didn't steal any gold but {{M2|Fat Gremlin}} escaped, you now receive 50% of the normal gold reward instead of 0%
+
+== USER INTERFACE & EXPERIENCE: ==
+=== General: ===
+* Added an Ascension first-time tutorial popup for single player and multiplayer
+* If errors occur on run start, a popup is now displayed instead of a black screen
+* An error is now displayed when Steam crashes
+* The feedback tool now displays an error if your feedback was not received, and added a translation-issue option to the in-game feedback form
+* Implemented preferred Ascension for the random character option
+* Loading a current_run.save with a modded character back into an unmodded game now shows an error instead of a black screen
+* The player's hand now animates out of the way during the enemy turn
+* Limited the number of cards rendered during the rest site Clone animation to 15
+* Updated Ancient card text backgrounds to fit more text and be slightly darker and embossed
+
+=== Leaderboards: ===
+* Added a global rank paginator and adjusted arrow positions
+* You can now see other players' scores near your own
+* Moved the game over screen leaderboards higher to make room for the toggle
+
+=== Controller: ===
+* Added controller navigation for Badges in the game over and run history screens, the player info icons in run history, and the modifier icons on the top bar
+* Improved controller navigation in the Fake Merchant shop
+* Pause menu button navigation now wraps
+
+=== Ancients: ===
+* {{R2|Pael's Flesh}} relic now visually increases the max energy shown in your Energy counter
+* When {{2|Vakuu}} tells you how many times you've visited, the number is now accurate
+* Hovering over a stale dialogue at Ancients now makes all dialogues opaque
+
+=== Enemies: ===
+* {{M2|Skulking Colony}}'s health bar now changes color to indicate it cannot take more damage this turn
+* Improved {{M2|Byrdonis}}'s hovertips ({{BD2|Territorial}} now names Byrdonis, and hovering Byrdonis shows the {{BD2|Strength}} hovertip)
+
+=== Necrobinder: ===
+* {{C2|Sacrifice}} card now previews how much Block it will gain
+
+=== Multiplayer: ===
+* Added a more informative error popup for the Steam BadCert multiplayer error
+
+== ART: ==
+=== General: ===
+* Added Epoch art for:
+** {{2|Timeline#Friendship|Friendship}}
+** {{2|Timeline#Booting Up|Booting Up}}
+** {{2|Timeline#Soup|Soup}}
+** {{2|Timeline#Poisoner|Poisoner}}
+** {{2|Timeline#Scribbles|Scribbles}}
+** {{2|Timeline#The Calm|The Calm}}
+** {{2|Timeline#Devastation|Devastation}}
+** {{2|Timeline#The Twelve|The 12}}
+** {{2|Timeline#The Giant|The Giant}}
+* Updated Epoch art for:
+** {{2|Timeline#Hello Hello!|Hello Hello!}}
+** {{2|Timeline#Friendship|Friendship}}
+
+=== Characters: ===
+* Added portrait art for the following cards:
+** {{C2|Feral}}
+** {{C2|Not Yet}}
+** {{C2|Spite}}
+** {{C2|Fight Through}}
+** {{C2|Hailstorm}}
+** {{C2|Synchronize}}
+** {{C2|Iteration}}
+** {{C2|Voltaic}}
+** {{C2|Apparition}}
+** {{C2|Abrasive}}
+* Added new character animations:
+** Ironclad heavy attack
+** Necrobinder cast
+** Regent Sovereign Blade
+** Defect power up
+
+=== Ancients: ===
+* Added {{2|Vakuu}} background art and VFX
+* Revised {{C2|Neow's Fury}} artwork (now centered)
+
+=== Enemies: ===
+* Added new power art for {{BD2|Smoggy}}
+* Updated enemy art for:
+** {{M2|Tunneler}}
+** {{M2|Entomancer}}
+** {{M2|Mawler}}
+* Added a multi-hit animation for {{M2|Corpse Slug}}
+* Added an unstun animation for {{M|Bowlbug (Rock)|Rock Bowlbug|2}}
+* Added {{M2|Skulking Colony}} animations
+* Added new {{M2|Soul Nexus}} VFX
+* Tweaked the {{M2|Vantom}} explosion to look right on a shrunken Vantom
+* Repositioned {{M2|Sludge Spinner}}'s death landing spot
+* Updated enemy animations for:
+** {{M2|Vantom}} 
+** {{M2|Ceremonial Beast}}
+** {{M2|Entomancer}}
+* Added phobia mode alternate art for:
+** {{M2|Fossil Stalker}}
+** {{M2|Haunted Ship}}
+** {{M2|Skulking Colony}}
+** {{M2|The Obscura}}
+** {{M|Twig Slime (M)|Twig Slime M|2}}
+
+=== Events: ===
+* Added phobia mode alternate art for {{E2|Zen Weaver}} event
+
+== AUDIO: ==
+* Added background music for {{M2|Soul Fysh}} and {{M2|Kaiser Crab}}
+* Added SFX for:
+** {{M2|Kaiser Crab}} enemy
+** {{M2|Skulking Colony}} enemy
+** {{C2|Hyperbeam}} move
+** Cards traveling to a pile
+
+== WRITING: ==
+* {{R2|Brilliant Scarf}} relic description now specifies it only counts cards played "from your hand" (so it's clear it doesn't count auto-played cards)
+* {{C2|Reaper Form}} card wording now makes clear the Doom is applied by Reaper Form's power rather than the played card
+* Fixed inconsistencies in {{R2|Jeweled Mask}} relic's wording
+* {{C2|Exterminate}} card wording is now consistent with {{C2|Conflagration}} card
+* The word "Power" is no longer keyworded in {{R2|Lost Wisp}} relic's description
+* Reworded the {{M2|Axebot}} death message to reflect that there is only one of them now
+* Added more translated text and fixed translation errors across many languages
+
+== BUG FIXES: ==
+=== General: ===
+* Fixed save files being lost or corrupted after a PC crash, blue screen, or power outage
+* Made save operations fault-tolerant to prevent softlocks, and improved reliability of settings saves on startup
+* Stopped cloud-syncing settings.save and fixed Steam Cloud sync errors and duplicate run history files when syncing many files
+* Fixed black screen softlock when Steam disconnected during room transitions
+* Fixed several crashes: applying powers to dying creatures, closing the game during startup, upgrading a card at a rest site, entering rooms, and opening the card pile screen while targeting an enemy with a controller
+* Fixed a Linux crash during combat when UI elements are removed mid-frame, a Linux crash when ICU libraries are unavailable, and audio staying muted after pressing volume keys or alt-tabbing on Linux
+* Restored the default rendering backend to D3D12 for Intel 620 GPUs
+* Effects that make the next card free ({{C2|Unrelenting}}, {{C2|Void Form}}, etc.) now correctly take precedence over effects that increase all card costs ({{KW2|Entangled}}, {{R2|Spiked Gauntlets}}, {{BD2|Borrowed Time}}, etc.)
+* Replayed cards now show the appropriate damage if powers wore off between replays
+* Fixed cards in hand getting stuck if you try to play them while they are being transformed
+* The Night Terrors modifier can no longer kill you, and the Sealed Deck modifier is now affected by the multi-character card modifiers
+* The Perfect badge is no longer awarded if you abandon a run at a boss
+* Fixed several softlocks: returning to the main menu and resuming a run, playing {{C2|Compact}} with status cards in hand, the tutorial shuffle popup, and run histories from older versions
+* Fixed score being wrong at Ascension 10, wrong floor count when submitting a Daily score, and score separator lines showing while fetching or after a failure
+* Fixed the potion hovertip not appearing when pressing "b" in the potion popup, and num keys for card selection not working when the mouse is too low on screen
+* Fixed input settings errors for new keybindings added after saving
+* Fixed a rare problem where the feedback screen was stuck open on launch
+* Controller input is now ignored while the game window is unfocused
+* The game no longer rapidly switches between "Controller Detected" and "Mouse Detected" with a controller connected
+* Fixed broken controller navigation: off the top bar in the shop, through rest site options with two rows of relics, in the shop after buying out relics and colorless cards, and from relics to the reward screen after clearing the top reward
+* Fixed being able to start a single player run via controller while the Ascension tutorial was open
+* A loaded save with a deprecated boss can no longer roll the same double boss
+* Fixed an issue with the Game Over screen after discovering multiple enemies while playing in Polish
+* Fixed hovertips in the top bar sometimes displaying in the wrong language after switching languages and continuing a run
+* Fixed being able to target dead enemies with a controller
+* Fixed the odds of a follow-up potion reward sometimes going up instead of down after an Elite potion reward
+* Fixed being able to open card inspection and toggle View Upgrades with the same button press
+* Taking a card removal reward as your last reward no longer keeps the background faded out
+
+=== Ancients: ===
+* Fixed a crash when selecting Ancient relic options
+* Players can no longer roll {{2|Tezcatara}}'s {{R2|Nutritious Soup}} blessing with no Strikes in their deck
+* Fixed {{2|Vakuu}}'s {{R2|Whispering Earring}} relic not correctly playing {{C2|Stardust}} card, auto-playing cards into the next turn after {{C2|Void Form}}, and not letting {{R2|Unceasing Top}} relic trigger when it plays your last card
+* Fixed {{2|Neow}}'s {{R2|Kaleidoscope}} relic using up all of {{R2|Silver Crucible}}'s charges
+* Fixed {{2|Neow}}'s {{R2|Silken Tress}} relic in multiplayer only affecting card rewards for the host
+* Fixed {{2|Nonupeipe}}'s {{R2|Diamond Diadem}} relic resetting its count after {{BD2|Hellraiser}} plays cards at the start of the turn
+* {{R2|Leafy Poultice}} relic no longer transforms the upgraded Strikes/Defends from {{R2|Neow's Talisman}} when both come from {{R2|Neow's Bones}}
+* Fixed visual and navigation issues at Ancients: the next dialogue bubble peeking in early, navigating back to {{2|Neow}}'s blessings from the Card Library, the card inspection button blocking the accept hotkey on {{R2|Pandora's Box}}, and {{C2|Wish}} card immediately selecting a grid card on the same controller press
+
+=== Enemies: ===
+* Fixed cards that should be {{KW2|Ethereal}} sometimes becoming non-Ethereal after killing {{M2|Spectral Knight}}
+* Fixed creature and boss VFX occasionally failing to appear
+* Fixed {{M2|Flyconid}} spore effect lingering when its attack is interrupted
+* Fixed {{M2|Kaiser Crab}} appearing if you load into an already completed boss room, and its Rocket Claw charge-up SFX looping forever
+* Fixed a softlock when setting up an infinite against {{M2|Skulking Colony}}, and {{M2|Skulking Colony}}'s per-turn damage cap now resets at the start of both turns (so Poison no longer counts toward it on your next turn)
+* Fixed a softlock after defeating {{M2|Infested Prism}}
+* Fixed {{M2|Thieving Hopper}} softlock when you have no cards for him to steal
+* Recentered {{M2|Axebot}} so it reads as a single enemy
+* Fixed {{M2|Ceremonial Beast}} background music transition not lining up with its stun
+* Fixed {{M2|Living Fog}} missing its smoke, and corrected its encounter name in the death quote
+* Fixed {{2|Test Subject}} starting phase 2 with extra {{BD2|Strength}} when killed by {{BD2|Sleight of Flesh}} via {{C2|Enfeebling Touch}}
+* Fixed VFX glitch when {{M2|Snapping Jaxfruit}} dies to the {{BD2|Reflect}} power
+* {{M2|Inklet}} and {{M2|Vantom}} 's {{BD2|Slippery}} power no longer loses a stack when fully blocking a hit
+* {{M2|Zapbot}}'s {{BD2|High Voltage}} hovertip now correctly says it gains Strength at the end of its turn
+* Fixed {{M2|Parafright}} illusion keeping its negative {{BD2|Strength}} from {{C2|Dark Shackles}} when killed for the turn
+* Fixed {{M2|Waterfall Giant}} not respawning and its steam spouts misbehaving after its death animation
+* Hid {{M2|Lagavulin Matriarch}}'s sleep particles when awake
+* Fixed several {{M2|Test Subject}} issues
+
+=== Events: ===
+* Fixed being unable to give the {{P2|Foul Potion}} to the {{E2|The Merchant???}}
+* Fixed cards from other classes appearing in the {{E2|Infested Automaton}} event
+* Fixed being unable to discard potions in the {{E2|Punch Off}} event
+* Fixed a softlock if you somehow die in the {{E2|Battleworn Dummy}} event fight, and no longer get its rewards after saving and quitting
+* All {{C2|Spoils Map}} cards are now removed if you complete the quest with multiple copies, and you get 600 gold per copy of the quest card
+* Fixed {{E2|Crystal Sphere}} event giving potion rewards of the wrong rarity
+* Fixed {{KW2|Perfect Fit}} enchantment not working if you play Reboot while the enchanted card is in your hand or draw pile
+* {{R2|Gnarled Hammer}} relic can no longer be traded at the {{E2|Relic Trader}} event
+* {{E2|War Historian, Repy}} event now removes all duplicate {{C2|Lantern Key}} cards if you have more than two
+
+=== Potions & Relics: ===
+* Fixed {{R2|Mummified Hand}} relic sometimes selecting cards that already cost 0
+* Fixed {{R2|The Boot}} relic amplifying {{C2|Bad Luck}} curse's damage from 1 to 5 while you have {{BD2|Intangible}}, and dealing the correct 5 damage when you deal {{M2|Skulking Colony}} 1-4 damage
+* {{R2|Self-Forming Clay}} relic is no longer triggered by the Terminal modifier's max HP loss
+* {{R2|Bookmark}} relic now applies its cost reduction to a card retained by a "{{KW2|Retain}} your Hand" effect like {{C2|Equilibrium}}
+* {{R2|Snecko Skull}} relic now always triggers before {{R2|Unsettling Lamp}} relic
+* Fixed {{P2|Beetle Juice}} potion making {{M2|Vantom}} 's tail appear cut off
+* Players can no longer throw the {{P2|Foul Potion}} while the Merchant inventory is open, and using it on the {{2|Merchant}} no longer freezes the game on controller
+* Fixed visual errors with the outline of some potion assets
+* Fixed broken controller navigation from relics to card rewards after rerolling via {{R2|Driftwood}}, and completing {{R2|Orrery}}'s card selection in the shop no longer also clicks a shop item on controller
+* Fixed {{R2|Pantograph}} relic letting {{R2|Red Skull}}'s Strength increase persist after healing you above 50% health, until an attack was played
+
+=== Colorless: ===
+* Fixed VFX sometimes failing to appear during the {{BD2|Rolling Boulder}} power effect
+* Fixed a softlock when playing {{C2|Anointed}} card with a Draw Pile larger than your hand can hold
+* Fixed being able to highlight creatures while the {{C2|Purity}} card selection screen is open
+
+=== Ironclad: ===
+* {{C2|Howl from Beyond}} card now plays from the Exhaust pile after you've drawn your hand instead of before
+* Fixed {{C2|Anger}} card played by Havoc also Exhausting on play
+* Fixed being able to select an upgraded card with {{C2|Armaments}} card if it was added to your hand by {{C2|Largesse|Largesse+}} card
+* Not Yet card can no longer be generated via a {{P2|Skill Potion}}
+* To avoid infinite-loop softlocks, {{BD2|Hellraiser}} power now plays only 9 cards per turn when all enemies have infinite HP, and properly plays "Strike" cards against infinite-HP enemies
+
+=== Silent: ===
+* Fixed being able to skip the {{C2|Survivor}} card discard selection via the peek button
+* Fixed {{C2|Fan of Knives}} card VFX not playing
+* You can no longer play cards before {{BD2|Tools of the Trade}} power triggers
+
+=== Regent: ===
+* {{C2|Bombardment}} card now plays from the Exhaust pile after you've drawn your hand instead of before
+* {{C2|I Am Invincible}} card now triggers before you've discarded your hand instead of after
+* {{R2|Regalite}} relic no longer gains Block from enemies applying statuses
+* {{C2|Summon Forth}} card now puts existing Sovereign Blades into your hand before Forging instead of after
+* Fixed not being able to select cards with a controller when you choose your whole hand via {{C2|GUARDS!!!}}
+
+=== Necrobinder: ===
+* Fixed a crash when {{KW2|Osty}} dies during a scene transition
+* Fixed {{C2|Reave}} card always bottom-decking the {{C2|Soul}} card it creates
+* Fixed {{C2|Fetch}} card not glowing gold when drawn by Gambling Chip relic
+* Fixed {{C2|Enfeebling Touch}} power causing {{M2|Ceremonial Beast}} to gain {{BD2|Strength}} after you stun it
+* {{R2|Funerary Mask}} relic now shuffles {{C2|Soul|Souls}} into the Draw Pile before your hand is drawn
+
+=== Defect: ===
+* Fixed {{C2|Beckon}} still damaging the player if combat is ended by Lightning orbs
+* Fixed a spacing issue in the {{BD2|Consuming Shadow}} power hovertip
+* {{C2|Scrape}} no longer discards cards that cost zero Energy but have a Star cost
+
+=== Multiplayer: ===
+* Fixed a crash when using potions in multiplayer due to state divergence
+* Fixed state divergences related to event combats, the {{E2|Crystal Sphere}} event, long event option resolution, {{E2|Mad Science}}/{{BD2|Juggling}} cards with mixed combat speeds, and {{C2|Stampede}} + {{C2|Headbutt}} cards
+* Fixed player names with brackets (e.g. clan tags) causing errors
+* Fixed {{R2|Pael's Legion}} and {{R2|Vambrace}} relics not proccing when the owner applies {{KW2|Block}} to other players
+* Fixed occasional black screen when loading into a saved multiplayer combat
+* Fixed incorrect cards being shown when obtaining cards at certain events, and {{R2|Orrery}} relic reporting the wrong cards to other players
+* Potions are now canceled if targeted on a creature killed by another player
+* Corrected Test Subject HP scaling in multiplayer
+* {{E2|Dense Vegetation}} can no longer appear if any player has less than 8 HP
+* Fixed a softlock using {{R2|Driftwood}} relic on your first run, and a rare softlock loading into a treasure room when a teammate uses a controller
+* {{C2|Strangle}} power no longer procs off other players' card plays
+* Relics with turn-specific triggers like {{R2|Candelabra}} no longer skip their trigger when another player takes an extra turn with {{R2|Pael's Eye}}
+* {{C2|Nightmare}} card VFX no longer plays for all players
+* Other players' HP bars no longer go offscreen when resizing the window in settings
+* {{C2|Pillar of Creation}}, {{C2|Supermassive}}, and {{C2|Arsenal}} cards now proc for the player who played {{C2|Largesse}} rather than the recipient
+* You can no longer buy items at the shop while transitioning rooms, and exiting the {{2|Merchant}} no longer skips history recording for remaining players
+* The correct error message is now shown for a Steam multiplayer connection timeout (error 5008), and improved reporting for a rare connection error
+* The "Show Multiplayer Drawings" tickbox is now correctly localized
+* You can no longer start a loaded multiplayer game with only one person
+
+== PERFORMANCE: ==
+* Reduced stuttering when combat effects appear for the first time in a run
+
+== MODDING: ==
+* The base game no longer deletes progress from mods that are removed or errored
+
+== LATEST BETA FIXES: ==
+=== General: ===
+* Fixed many instances of inconsistent RNG behavior (thanks tckmn!)
+* Fixed more cases of daily runs diverging based on player network ID
+
+=== Multiplayer: ===
+* Fixed a state divergence caused by the host changing Ascension as the game is starting
+
+=== Modding: ===
+* Began publishing STS2.dll XML documentation
+* Fixed Steam mods causing ReflectionHelper.ModTypes to return nothing
+
+== Footnotes ==
+
+[[Category:Patch Notes]]
+[[Category:Major Versions]]

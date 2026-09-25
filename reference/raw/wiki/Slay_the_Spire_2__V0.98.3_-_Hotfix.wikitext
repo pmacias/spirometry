@@ -1,0 +1,11 @@
+{{PatchNav
+|Version = V0.98.3
+|Type = Hotfix
+|ReleaseDate = 2026-03-10
+}}
+Another small hotfix which resolves some more softlock issues. Thanks again to everyone reporting issues like this!
+
+== BUG FIXES: ==
+* Fixed more instances of players getting stuck at the timeline
+
+[[Category:Patch Notes]]

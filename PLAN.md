@@ -97,11 +97,11 @@ Done when tests pass on sample pages and the full snapshot builds locally withou
 *Status: parser merged: `python -m spirometry.runs build` writes `runs`,
 `run_players`, `card_offers`, `shop_offers` (Parquet, one file per page) and `runs.duckdb`
 with views `runs_dedup`, `card_offers_dedup`, `primary_offers`. Tested on the fixture and
-2 fetched pages (~1.5 s per page per worker). Follow-up PR next (CC): flags for
-non-release builds, runs dated before release and runs that don't start at Neow, the
-five-character list for mod characters, event-then-fight floors kept with a flag, uploader
-fields. Then Phil runs it on
-the full snapshot. `deck_final`, `deaths` and relic/event choices not started.*
+2 fetched pages (~1.5 s per page per worker). Follow-up PR (CC, parser 1.1.0): `runs` flags
+`released`, `before_release`, `neow_start`, `has_player_token`; mod characters by the
+five-character list; `primary_offers` applies the audit's primary population and keeps
+event-then-fight floors (`event_fight`); counts in `build_info`. Tested on the fixture and
+2 fetched pages. Next: Phil runs it on the full snapshot. `deck_final`, `deaths` and relic/event choices not started.*
 
 ### 4. Treatment table — CC
 Join `card_offers` to the card version live in each run's build: for each (card, build), which
@@ -141,8 +141,8 @@ Selection-corrected card strength metric; dashboard (Streamlit or Observable, un
 README with results, portfolio card on pmacias.github.io.
 
 ## Next up
-1. Run-table follow-up PR (CC): non-release builds, runs dated before release, non-Neow
-   starts, mod characters, event-then-fight floors, uploader fields.
+1. Review and merge the run-table follow-up PR (flags, event-then-fight floors, uploader
+   fields).
 2. Audit follow-ups: does rising ascension explain the within-build win-rate drift; confirm
    the thin betas pool (no card change between neighbours).
 3. Let the snapshot finish; run `--count-only`. Decide whether to re-download pages 0–948
@@ -223,7 +223,13 @@ README with results, portfolio card on pmacias.github.io.
   list as recorded, `usable = false`). `?` fights count as combat/elite/boss; a `?` event that
   turns into a fight (`event_combat`) is left out of `primary_offers` because its list can
   mix event and fight offers. `primary_offers` = solo, no modifiers, not modded,
-  combat/elite/boss, not a mod card; abandoned runs stay in, flagged.
+  combat/elite/boss, not a mod card; abandoned runs stay in, flagged. *Superseded
+  (follow-up PR): `event_combat` lists are fight rewards (event cards go to
+  `cards_gained`), so they are split into screens like combat and kept in
+  `primary_offers` with `event_fight = true`. On 2 fetched pages (2026-09-25, 2,000
+  records) the 87 solo event-fight lists were 84 of 3 cards, 1 of 4 (Lasting Candy held)
+  and 2 of 6 (The Lantern Key; one with Driftwood, one on v0.98.3 with none of Prayer
+  Wheel, Driftwood or White Star, cause unknown).*
 - Lasting Candy adds a card on some fights only (solo, candy held: 216 three-card vs 159
   four-card lists on 2 pages), so a candy holder's screen size is 3 or 4: a combat list is
   split when exactly one of them divides its length (12 with candy stays NULL).
@@ -236,8 +242,14 @@ README with results, portfolio card on pmacias.github.io.
 - Exact repeats (same `run_hash`) are dropped from the base tables, keeping the first by
   (page, line); `build_info` counts them and how many repeats differed in content.
 - Primary population (audit): also drop non-release builds (not in `builds.csv`) and runs
-  whose start date is before their build's release date. Parser flags to come in the
-  follow-up PR.
+  whose start date is before their build's release date. Parser flags: `runs.released`,
+  `runs.before_release` (false where `builds.csv` has no date, e.g. v0.98.0).
+- Run-table follow-up (CC's choices, open to review): `primary_offers` = solo, no
+  modifiers, not modded (the five-character check included), `released`, not
+  `before_release`, `neow_start`, sources combat/elite/boss/`event_combat`, not a mod card;
+  it also carries `event_fight` and `uploader_tag`. `has_player_token` is NULL when the
+  record has no `player_token` key (page downloaded before ~2026-09-25), false when the key
+  is null, true when it holds a token.
 - Mod characters: anything outside the five real characters is a mod marker (supersedes
   relying on a `-` in the id; `CHARACTER.WATCHER` has none).
 - Event-then-fight floors (rooms `[event, monster]`) are kept in `primary_offers` with an

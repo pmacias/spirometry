@@ -156,6 +156,10 @@ def test_build_info(db):
     assert meta["parser_version"] == runs.PARSER_VERSION
     assert meta["records_read"] == "6" and meta["duplicate_records_dropped"] == "0"
     assert meta["combat_lists_set_idx_null"] == "0"
+    assert meta["event_fight_lists_by_len"] == ""
+    assert (meta["runs_not_released"], meta["runs_before_release"],
+            meta["runs_not_neow_start"], meta["runs_modded"], meta["runs_uploader_tag"],
+            meta["runs_player_token_absent"]) == ("0", "0", "0", "0", "1", "6")
     assert meta["key_fingerprint"] == runs.key_fingerprint(KEY)
     assert rows(con, "SELECT DISTINCT source_page FROM runs") == [(0,)]
 
@@ -215,6 +219,90 @@ def test_modded_and_custom_runs_leave_primary(tmp_path):
     assert rows(con, "SELECT run_hash, is_modded, is_custom FROM runs ORDER BY 1") == [
         ("a" * 16, True, False), (SCHEMA10, False, False), ("b" * 16, False, True)]
     assert rows(con, "SELECT DISTINCT run_hash FROM primary_offers") == [(SCHEMA10,)]
+
+
+def variant(i, run_hash, **fields):
+    """A fixture run under a new run_hash, with top-level fields replaced."""
+    return dict(json.loads(lines()[i]), run_hash=run_hash, **fields)
+
+
+def test_non_release_builds_leave_primary(tmp_path):
+    recs = [variant(5, h * 16, build_id=b) for h, b in
+            [("a", "v0.97.0"), ("b", "v0.107.1-rc.1"), ("c", "NON-RELEASE-VERSION"),
+             ("d", "v0.98.0")]]           # v0.98.0 is in builds.csv, with no branch or date
+    _, con = build(tmp_path, [[json.dumps(r) for r in recs] + [lines()[5]]])
+    assert rows(con, "SELECT run_hash, released, branch FROM runs ORDER BY 1") == [
+        ("a" * 16, False, None), (SCHEMA10, True, "beta"), ("b" * 16, False, None),
+        ("c" * 16, False, None), ("d" * 16, True, None)]
+    assert rows(con, "SELECT DISTINCT run_hash FROM primary_offers ORDER BY 1") \
+        == [(SCHEMA10,), ("d" * 16,)]
+
+
+def test_before_release(tmp_path):
+    # v0.107.1 released 2026-06-18; v0.98.0 has no date in builds.csv
+    day = 1781740800                                   # 2026-06-18T00:00:00Z
+    recs = [variant(5, "a" * 16, build_id="v0.107.1", start_time=day - 1),   # 06-17 23:59:59
+            variant(5, "b" * 16, build_id="v0.107.1", start_time=day),
+            variant(5, "c" * 16, build_id="v0.98.0", start_time=0),
+            variant(5, "d" * 16, build_id="v0.97.0", start_time=0)]
+    _, con = build(tmp_path, [[json.dumps(r) for r in recs]])
+    assert rows(con, "SELECT run_hash, before_release FROM runs ORDER BY 1") == [
+        ("a" * 16, True), ("b" * 16, False), ("c" * 16, False), ("d" * 16, False)]
+    assert rows(con, "SELECT DISTINCT run_hash FROM primary_offers ORDER BY 1") \
+        == [("b" * 16,), ("c" * 16,)]
+    assert runs.started_before_release(None, runs.datetime.date(2026, 6, 18)) is False
+
+
+def test_mod_character_without_dash(tmp_path):
+    r = variant(5, "a" * 16)
+    r["players"] = [dict(r["players"][0], character="CHARACTER.WATCHER")]
+    _, con = build(tmp_path, [[json.dumps(r), lines()[5]]])
+    assert rows(con, "SELECT run_hash, is_modded FROM runs ORDER BY 1") == [
+        ("a" * 16, True), (SCHEMA10, False)]
+    assert rows(con, "SELECT DISTINCT run_hash FROM primary_offers") == [(SCHEMA10,)]
+
+
+def test_neow_start(tmp_path):
+    r = variant(5, "a" * 16)
+    del r["map_point_history"][0][0]                  # first floor is now a fight
+    _, con = build(tmp_path, [[json.dumps(r), lines()[5]]])
+    assert rows(con, "SELECT run_hash, neow_start FROM runs ORDER BY 1") == [
+        ("a" * 16, False), (SCHEMA10, True)]
+    assert rows(con, "SELECT DISTINCT run_hash FROM primary_offers") == [(SCHEMA10,)]
+    assert runs.neow_start([]) is False and runs.neow_start([[]]) is False
+
+
+def test_event_fight_floor_in_primary_with_flag(tmp_path):
+    r = variant(5, "a" * 16)
+    fl = next(f for a in r["map_point_history"] for f in a
+              if f["map_point_type"] == "monster" and f["player_stats"][0].get("card_choices"))
+    fl["map_point_type"] = "unknown"
+    fl["rooms"] = [{"room_type": "event", "model_id": "EVENT.THE_LANTERN_KEY",
+                    "turns_taken": 0}] + fl["rooms"]
+    n = len(fl["player_stats"][0]["card_choices"])
+    _, con = build(tmp_path, [[json.dumps(r)]])
+    got = rows(con, """SELECT source, event_fight, room_types, count(*), min(set_idx),
+                              max(screen_size)
+                       FROM primary_offers GROUP BY ALL ORDER BY ALL""")
+    assert got == [("combat", False, "monster", 9 - n, 0, 3),
+                   ("event_combat", True, "event+monster", n, 0, 3)]
+    meta = dict(rows(con, "SELECT key, value FROM build_info"))
+    assert meta["event_fight_lists_by_len"] == f"{n}:1"
+
+
+def test_uploader_fields(tmp_path):
+    recs = [variant(0, "a" * 16),                                  # page without the field
+            variant(0, "b" * 16, player_token=None),
+            variant(0, "c" * 16, player_token="0123456789abcdef", _sts="slay-the-stats/v1.2.2")]
+    _, con = build(tmp_path, [[json.dumps(r) for r in recs]])
+    got = rows(con, "SELECT run_hash, uploader_tag, has_player_token, uploader_hash "
+                    "FROM runs ORDER BY 1")
+    assert got == [("a" * 16, None, None, None), ("b" * 16, None, False, None),
+                   ("c" * 16, "slay-the-stats/v1.2.2", True,
+                    hmac.new(KEY, b"0123456789abcdef", hashlib.sha256).hexdigest()[:16])]
+    meta = dict(rows(con, "SELECT key, value FROM build_info"))
+    assert (meta["runs_uploader_tag"], meta["runs_player_token_absent"],
+            meta["runs_player_token_present"]) == ("1", "1", "1")
 
 
 def test_truncated_page_reported(tmp_path):

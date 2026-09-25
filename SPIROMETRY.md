@@ -139,9 +139,11 @@ game data. Pages fetched on
 2026-09-25 also have a top-level `player_token` on every record (null on most, a 16-character
 string on 170 of 2,000); it wasn't in the 2026-09-24 pages, and the local snapshot pages
 checked (0, 500, 948, downloaded 2026-09-24/25) don't have it either, although page 0 holds
-the same records as today's first page. So the export added the field on about 2026-09-25,
-and whether a record has it depends on when its page was downloaded. It probably identifies
-the uploader and is hashed like player IDs. It would allow clustering by uploader;
+the same records as today's first page. So `player_token` appeared in the export around
+2026-09-25, and pages downloaded before that lack it: whether a record has it depends on
+when its page was downloaded, not on the run. The run tables record a missing key as
+`has_player_token` NULL (unknown), not false. It probably identifies the uploader and is
+hashed like player IDs (`uploader_hash`). It would allow clustering by uploader;
 re-downloading pages 0–948 (~950 credits, about a day of the daily cap) is undecided.
 
 `map_point_history` is a list of acts, each a list of floors. Each floor has:
@@ -238,20 +240,37 @@ version, build time, record and duplicate counts, share of combat lists that cou
 split into screens, the hashing key's fingerprint). Columns follow `notes/run_schema.md`.
 
 - `runs`: one row per record (co-op copies kept). `branch` from `builds.csv`, NULL where
-  blank or missing. Flags: `is_custom` (any modifier), `is_modded`, `was_abandoned`,
-  `abandoned_at_neow`. `source_page` / `source_line` locate the raw record.
+  blank or missing. Flags: `is_custom` (any modifier), `is_modded` (mod markers, including a
+  character outside the five real ones), `was_abandoned`, `abandoned_at_neow`, `released`
+  (`build_id` in `builds.csv`), `before_release` (UTC start date before the build's
+  `release_date`; false where the date is blank), `neow_start` (first floor has
+  `EVENT.NEOW`). Uploader fields: `uploader_tag` (raw `_sts`, e.g. `slay-the-stats/v1.2.2`),
+  `has_player_token` (NULL when the record has no `player_token` key, i.e. its page was
+  downloaded before ~2026-09-25), `uploader_hash` (hashed token). `source_page` /
+  `source_line` locate the raw record.
 - `run_players`: one row per record × player (`player_hash`, `character`).
 - `card_offers`: one row per `card_choices` entry, every source, with `source`, `set_idx`
-  (combat/elite/boss screens; NULL when the list can't be split), `set_picked_any`,
+  (combat/elite/boss/`event_combat` screens; NULL when the list can't be split), `set_picked_any`,
   `upgraded`, `enchantment`, `in_card_list`, `is_mod_card`. `card_id` has no `CARD.` prefix.
 - `shop_offers`: solo shops as the list plus purchases (`origin = 'gained'`, `picked` =
   bought); co-op shops as recorded, `usable = false`.
 - Views: `runs_dedup` (first record per `run_key`, with `n_copies`), `card_offers_dedup`,
-  `primary_offers` (solo, no modifiers, not modded, combat/elite/boss, no mod cards;
-  abandoned runs kept with `was_abandoned`).
+  `primary_offers` (the primary population below: solo, no modifiers, not modded, released
+  build, not before release, Neow start; combat/elite/boss rewards plus event-then-fight
+  floors with `event_fight = true`; no mod cards; abandoned runs kept with
+  `was_abandoned`; carries `uploader_tag` for uploader groups).
+- `build_info` also counts runs not released, before release, not starting at Neow, modded,
+  tagged, and with `player_token` absent/present, plus event-fight lists by length.
 
 On the 2 fetched pages, 0.55% of combat reward lists (0.19% of `primary_offers` rows)
 couldn't be split; none of the 966 split multi-screen lists had two picks in one screen.
+Parser 1.1.0 on 2 pages fetched 2026-09-25 (first page and `start=2026-09-01`, 2,000
+records): 0 non-release builds, 6 runs before release, 12 not starting at Neow (all solo:
+v0.98.0 3 of 22, v0.98.1 5 of 57, v0.98.2 1, v0.107.1 1, v0.111.0 2), 25 modded, 364
+tagged, `player_token` present on all 2,000 (non-null on 170). Solo event-fight lists:
+84 of 3 cards, 1 of 4 (Lasting Candy), 2 of 6 (The Lantern Key: one with Driftwood, one
+with none of Prayer Wheel, Driftwood or White Star; cause unknown). 0.62% of combat lists
+(event fights included) couldn't be split. `primary_offers`: 58,678 rows from 1,416 runs.
 
 ## Audit decisions (first pass: 949 pages, submissions to ~2026-07-19)
 
@@ -370,7 +389,7 @@ ascension per week).
   a `-`, BaseLib keys). Some mods leave only a mod character (`CHARACTER.HERMIT-HERMIT`,
   1 run on 2 pages), so the parser flags any quoted id with a `-`. Mod characters don't
   always have a `-` (`CHARACTER.WATCHER`); the audit found non-vanilla characters on 824
-  records, so the check is a list of the five real characters. `MIDAS` is a game modifier,
+  records, so the check is a list of the five real characters (parser 1.1.0 does this). `MIDAS` is a game modifier,
   not a mod marker. Audit counts (records, 949 pages): `save_dict_*` 13,164, mod modifier
   5,233, mod card 2,532, mod character 824, mod acts 1,008.
 - **Treatment timing.** Assign builds from each run's own `build_id` and `start_time`, not
@@ -380,11 +399,11 @@ ascension per week).
 - **Runs dated before their build's release.** 5,566 runs (~0.6%) start before their build's
   `release_date`, by 1 day up to ~4 months (median a few days). Most likely saved on the old
   build and finished after an update, so their early floors may be on the old card
-  versions. Filter: start date (UTC) ≥ release date. Runs that cross an update on the
-  release day itself can't be detected.
+  versions. Filter: start date (UTC) ≥ release date (`runs.before_release`). Runs that
+  cross an update on the release day itself can't be detected.
 - **Non-release builds.** Pre-early-access playtest builds (v0.84.0–v0.97.0, 25 runs),
   release candidates (`-rc.N`, 13 runs) and `NON-RELEASE-VERSION` (286 runs) are in the
-  export but not in `builds.csv`. Dropped.
+  export but not in `builds.csv`. Dropped (`runs.released = false`).
 - **Old builds keep being played.** Every stable build has runs dated months after it was
   replaced (v0.98.x into July). The build still sets the card versions, so this doesn't
   affect treatment assignment.

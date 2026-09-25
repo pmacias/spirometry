@@ -34,7 +34,7 @@ import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-PARSER_VERSION = "1.0.0"
+PARSER_VERSION = "1.1.0"
 REF = pathlib.Path("reference")
 SALT_ENV = "SPIROMETRY_SALT"
 SALT_FILE = pathlib.Path(".spirometry_salt")
@@ -42,9 +42,15 @@ TABLES = ["runs", "run_players", "card_offers", "shop_offers"]
 PAGE_RE = re.compile(r"page_(\d+)\.jsonl\.gz$")
 
 LASTING_CANDY = "RELIC.LASTING_CANDY"
-COMBAT_SOURCES = {"combat", "elite", "boss"}          # reward screens that get set_idx
-# Mod markers: a quoted id with a '-' ("CARD.MULTIPLAYEREXPANDED-VULTURE",
-# "CHARACTER.HERMIT-HERMIT"), BaseLib's save_dict_* keys, a mod modifier.
+# Reward screens that get set_idx; event_combat = a ? event that turned into a fight
+# (rooms [event, monster]), whose list is the fight's reward (event cards go to cards_gained).
+# primary_offers takes the same sources. A tuple, so its repr is a SQL list.
+COMBAT_SOURCES = ("combat", "elite", "boss", "event_combat")
+# Mod markers: a quoted id with a '-' ("CARD.MULTIPLAYEREXPANDED-VULTURE"), BaseLib's
+# save_dict_* keys, a mod modifier, or a character outside the five real ones
+# (CHARACTER.WATCHER has no '-').
+VANILLA_CHARACTERS = {"CHARACTER.IRONCLAD", "CHARACTER.SILENT", "CHARACTER.DEFECT",
+                      "CHARACTER.REGENT", "CHARACTER.NECROBINDER"}
 MOD_ID_RE = re.compile(r'"[A-Z][A-Z_]*\.[A-Za-z0-9_]*-')
 MPT_SOURCE = {"monster": "combat", "elite": "elite", "boss": "boss", "ancient": "ancient",
               "shop": "shop", "rest_site": "rest_site", "treasure": "treasure"}
@@ -61,7 +67,8 @@ SCHEMAS = {
         ("ascension", I16), ("n_players", I16), ("win", B), ("was_abandoned", B),
         ("abandoned_at_neow", B), ("acts", pa.list_(S)), ("acts_reached", I16),
         ("floors_reached", I16), ("act1", S), ("killed_by_encounter", S),
-        ("killed_by_event", S), ("uploader_tag", S), ("uploader_hash", S),
+        ("killed_by_event", S), ("released", B), ("before_release", B), ("neow_start", B),
+        ("uploader_tag", S), ("has_player_token", B), ("uploader_hash", S),
         ("platform_type", S), ("record_digest", S),
     ]),
     "run_players": pa.schema([
@@ -135,10 +142,13 @@ def run_key(seed, start_time):
 
 # ------------------------------------------------------------------------------ reference
 
-def load_branches(path=REF / "builds.csv"):
-    """build_id -> branch, None where builds.csv leaves it blank."""
+def load_builds(path=REF / "builds.csv"):
+    """build_id -> (branch, release_date as a date), None where builds.csv leaves it blank."""
     with open(path, newline="") as f:
-        return {r["build_id"]: (r["branch"] or None) for r in csv.DictReader(f)}
+        return {r["build_id"]: (r["branch"] or None,
+                                datetime.date.fromisoformat(r["release_date"])
+                                if r["release_date"] else None)
+                for r in csv.DictReader(f)}
 
 
 def load_cards(path=REF / "raw" / "cards.json"):
@@ -166,7 +176,22 @@ def screen_sizes(n, candy):
 
 def is_modded(run, line):
     return bool(MOD_ID_RE.search(line) or "save_dict_" in line
-                or any(m.get("id", "").endswith("_MODIFIER") for m in run.get("modifiers", [])))
+                or any(m.get("id", "").endswith("_MODIFIER") for m in run.get("modifiers", []))
+                or any(p.get("character") not in VANILLA_CHARACTERS
+                       for p in run.get("players") or []))
+
+
+def started_before_release(start_time, release_date):
+    """UTC date of start_time before the build's release date; False where either is missing."""
+    if release_date is None or not isinstance(start_time, (int, float)):
+        return False
+    return datetime.datetime.fromtimestamp(start_time, datetime.timezone.utc).date() < release_date
+
+
+def neow_start(mph):
+    """The run's first floor has an EVENT.NEOW room."""
+    first = mph[0][0] if mph and mph[0] else {}
+    return any(r.get("model_id") == "EVENT.NEOW" for r in first.get("rooms") or [])
 
 
 def strip_card(cid):
@@ -190,7 +215,7 @@ class Table:
 
 
 def parse_run(run, line, page, line_no, ctx, out):
-    key, branches, cards = ctx["key"], ctx["branches"], ctx["cards"]
+    key, builds, cards = ctx["key"], ctx["builds"], ctx["cards"]
     players = run.get("players") or []
     solo = len(players) == 1
     rh, rk = run["run_hash"], run_key(run.get("seed"), run.get("start_time"))
@@ -202,9 +227,11 @@ def parse_run(run, line, page, line_no, ctx, out):
     n_floors = sum(len(a) for a in mph)
     token = run.get("player_token")
     acts = run.get("acts") or []
+    build_id = run.get("build_id")
+    branch, release_date = builds.get(build_id, (None, None))
 
     out["runs"].add(
-        **base, build_id=run.get("build_id"), branch=branches.get(run.get("build_id")),
+        **base, build_id=build_id, branch=branch,
         schema_version=run.get("schema_version"), start_time=run.get("start_time"),
         run_time_s=run.get("run_time"), seed=run.get("seed"), game_mode=run.get("game_mode"),
         modifiers=[m.get("id") for m in run.get("modifiers") or []],
@@ -216,7 +243,11 @@ def parse_run(run, line, page, line_no, ctx, out):
         act1=acts[0] if acts else None,
         killed_by_encounter=none_if_none(run.get("killed_by_encounter")),
         killed_by_event=none_if_none(run.get("killed_by_event")),
-        uploader_tag=run.get("_sts"),
+        released=build_id in builds,
+        before_release=started_before_release(run.get("start_time"), release_date),
+        neow_start=neow_start(mph), uploader_tag=run.get("_sts"),
+        # player_token is only on pages downloaded from ~2026-09-25: key absent -> NULL
+        has_player_token=(token is not None) if "player_token" in run else None,
         uploader_hash=keyed_hash(key, token) if token is not None else None,
         platform_type=run.get("platform_type"),
         record_digest=hashlib.blake2b(line.encode(), digest_size=8).hexdigest())
@@ -318,8 +349,8 @@ def shop_rows(tab, base, who, loc, st, cc, solo, cards):
 _CTX = {}
 
 
-def _init_worker(key, branches, cards, out_dir):
-    _CTX.update(key=key, branches=branches, cards=cards, out_dir=pathlib.Path(out_dir))
+def _init_worker(key, builds, cards, out_dir):
+    _CTX.update(key=key, builds=builds, cards=cards, out_dir=pathlib.Path(out_dir))
 
 
 def parse_page(path, ctx=None):
@@ -381,16 +412,27 @@ def drop_repeats(out_dir):
 
 
 def table_stats(out_dir):
-    """Counts on the final (repeat-free) tables for build_info. Combat lists are counted on
-    their list_pos = 0 row; multi-pick screens only among lists split into several screens."""
+    """Counts on the final (repeat-free) tables for build_info. Combat lists (combat, elite,
+    boss, event_combat) are counted on their list_pos = 0 row; multi-pick screens only among
+    lists split into several screens. Run flags are counted on records."""
     g = lambda t: f"read_parquet('{out_dir / t / '*.parquet'}')"
     con = duckdb.connect()
     lists, lists_null, offers, offers_null, multi = con.execute(f"""
         SELECT count(*), count(*) FILTER (WHERE screen_size IS NULL), sum(list_len),
                sum(list_len) FILTER (WHERE screen_size IS NULL),
                count(*) FILTER (WHERE list_len > screen_size)
-        FROM {g('card_offers')} WHERE list_pos = 0 AND source IN ('combat', 'elite', 'boss')
+        FROM {g('card_offers')} WHERE list_pos = 0 AND source IN {COMBAT_SOURCES}
         """).fetchone()
+    event_fight_lens = con.execute(f"""
+        SELECT list_len, count(*) FROM {g('card_offers')}
+        WHERE list_pos = 0 AND source = 'event_combat' GROUP BY 1 ORDER BY 1""").fetchall()
+    flags = con.execute(f"""
+        SELECT count(*) FILTER (WHERE NOT released), count(*) FILTER (WHERE before_release),
+               count(*) FILTER (WHERE NOT neow_start), count(*) FILTER (WHERE is_modded),
+               count(*) FILTER (WHERE uploader_tag IS NOT NULL),
+               count(*) FILTER (WHERE has_player_token IS NULL),
+               count(*) FILTER (WHERE has_player_token)
+        FROM {g('runs')}""").fetchone()
     multi_pick = con.execute(f"""
         SELECT count(*) FROM (
             SELECT 1 FROM {g('card_offers')} WHERE list_len > screen_size
@@ -404,10 +446,14 @@ def table_stats(out_dir):
             "combat_lists": lists, "combat_lists_set_idx_null": lists_null,
             "combat_offers": offers or 0, "combat_offers_set_idx_null": offers_null or 0,
             "combat_lists_multi_screen": multi, "combat_screens_multi_pick": multi_pick,
-            "shop_bought_rows": bought}
+            "event_fight_lists_by_len": ", ".join(f"{n}:{c}" for n, c in event_fight_lens),
+            "shop_bought_rows": bought,
+            **dict(zip(["runs_not_released", "runs_before_release", "runs_not_neow_start",
+                        "runs_modded", "runs_uploader_tag", "runs_player_token_absent",
+                        "runs_player_token_present"], flags))}
 
 
-VIEWS = """
+VIEWS = f"""
 CREATE VIEW runs_dedup AS
     SELECT * EXCLUDE (rn), n_copies FROM (
         SELECT *, row_number() OVER w AS rn, count(*) OVER (PARTITION BY run_key) AS n_copies
@@ -416,11 +462,13 @@ CREATE VIEW runs_dedup AS
 CREATE VIEW card_offers_dedup AS
     SELECT o.* FROM card_offers o SEMI JOIN runs_dedup d USING (run_hash);
 CREATE VIEW primary_offers AS
-    SELECT o.*, r.build_id, r.branch, r.ascension, r.win, r.was_abandoned,
-           r.abandoned_at_neow, r.start_time
+    SELECT o.*, o.source = 'event_combat' AS event_fight, r.build_id, r.branch,
+           r.ascension, r.win, r.was_abandoned, r.abandoned_at_neow, r.start_time,
+           r.uploader_tag
     FROM card_offers o JOIN runs r USING (run_hash)
     WHERE r.n_players = 1 AND NOT r.is_custom AND NOT r.is_modded
-      AND o.source IN ('combat', 'elite', 'boss') AND NOT o.is_mod_card;
+      AND r.released AND NOT r.before_release AND r.neow_start
+      AND o.source IN {COMBAT_SOURCES} AND NOT o.is_mod_card;
 """
 
 
@@ -459,7 +507,7 @@ def build(snapshot="sts2_snapshot", out="data/runs", workers=None, pages=None, k
     if key is None:
         key, key_source = load_key()
     workers = workers or os.cpu_count() or 1
-    branches = load_branches(ref / "builds.csv")
+    builds = load_builds(ref / "builds.csv")
     cards = load_cards(ref / "raw" / "cards.json")
     out_dir.mkdir(parents=True, exist_ok=True)
     clear_output(out_dir)
@@ -467,12 +515,12 @@ def build(snapshot="sts2_snapshot", out="data/runs", workers=None, pages=None, k
 
     results = []
     if workers == 1:
-        ctx = dict(key=key, branches=branches, cards=cards, out_dir=out_dir)
+        ctx = dict(key=key, builds=builds, cards=cards, out_dir=out_dir)
         results = [parse_page(f, ctx) for f in files]
     else:
         with concurrent.futures.ProcessPoolExecutor(
                 workers, initializer=_init_worker,
-                initargs=(key, branches, cards, str(out_dir))) as ex:
+                initargs=(key, builds, cards, str(out_dir))) as ex:
             for i, r in enumerate(ex.map(parse_page, files, chunksize=1), 1):
                 results.append(r)
                 if i % 50 == 0 or i == len(files):

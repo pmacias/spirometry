@@ -196,6 +196,11 @@ Notes by source:
   which is held on 66% of 4-card floors vs ~1% of 3-card floors), at most one pick per
   screen. 6-card floors go with Prayer Wheel (37% of them), Driftwood (27%; a reroll keeps
   the rejected screen in the list, probably) and White Star.
+- **Events that became a fight** (rooms `[event, monster]`): the list is the fight's card
+  reward; the event's own cards go to `cards_gained`. Solo lists are almost all 3 cards
+  (2 pages fetched 2026-09-25: 84 of 87; 1 of 4 with Lasting Candy, 2 of 6 at The Lantern
+  Key, one with Driftwood and one with no duplicating relic). The run tables split them
+  like combat and keep them in `primary_offers` flagged `event_fight`.
 - **Neow / ancients** mix relic effects that offer cards (lists of 1–3, and 15- or 30-card
   lists with several picks) with gains that have no
   offer at all (Neow's starting card). Some Neow floors list a card offer that doesn't match
@@ -372,6 +377,8 @@ Not code. Types are DuckDB types.
 | `act1` | VARCHAR | `acts[0]` (Underdocks / Overgrowth) |
 | `killed_by_encounter`, `killed_by_event` | VARCHAR | NULL for `NONE.NONE` |
 | `uploader_tag` | VARCHAR | `_sts` |
+| `has_player_token`, `uploader_hash` | BOOLEAN, VARCHAR | added in the parser: `player_token` present (NULL if the key is missing) and its keyed hash |
+| `released`, `before_release`, `neow_start` | BOOLEAN | added in the parser 1.1.0 (audit filters, see SPIROMETRY.md) |
 
 And `run_players` (one row per record × player): `run_hash`, `player_idx`,
 `player_hash` (hashed `id`; `1` stays solo), `character`, `final_deck_size`.

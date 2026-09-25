@@ -128,3 +128,19 @@ README with results, portfolio card on pmacias.github.io.
 - `change_kind` labels combine with `+` (e.g. `rework+cost_change`); `rarity_change` added
   alongside the requested labels, and whole-card `added` / `removed` rows are included.
 - `snapshot_export.py` moved to `scripts/` (unchanged behaviour; run from the repo root).
+- Primary analysis uses card-reward offers only; shop offers are secondary (table keeps them:
+  unsold cards plus purchases from `cards_gained`).
+- Primary analysis is solo runs only; deduplicated co-op runs are a later, separate analysis.
+- Floors with several merged reward screens: recover screen boundaries if possible; otherwise
+  pick rates only, with the limitation noted.
+- Abandoned runs: offers kept for pick rates; excluded from win analyses, with a both-ways check.
+- Any run with modifiers or mods is dropped from the primary analysis (game mode is unreliable).
+- Glow, Grave Warden, Shatter and Tesla Coil are reclassified from tweak to rework (patch notes
+  describe more than numbers); the numeric-tweak set for the minimum result is now 50.
+- Changes found only in the patch notes get rows, so those cards leave control groups.
+- Bug-fix behavior changes are not hand-checked; flagged cards are used for a sensitivity
+  analysis (excluded from controls only in comparison windows spanning the fix's build).
+- Artifact rows (Folly, Shiv, Sacrifice) stay in the tables labeled `artifact` and are excluded
+  from analyses.
+- Snapshot script: leave unchanged until the download finishes, then remove the beta column
+  (branch comes from `builds.csv` at analysis time).

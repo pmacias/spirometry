@@ -72,6 +72,11 @@ names).
 
 Not present anywhere: `is_beta`, `submitted_at`, a player name.
 
+Added later (2026-09-25, pages fetched for the run-table parser): every record now has a
+top-level `player_token`, null in 1,830 of 2,000 and a 16-character string in 170 (44
+distinct). It isn't in the fixture or in the pages above, so the export seems to have added
+it since. Probably identifies the uploader; hashed like player IDs (`runs.uploader_hash`).
+
 ### `players[]`
 
 | Path | Type | Example / notes |

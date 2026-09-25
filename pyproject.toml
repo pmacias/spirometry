@@ -9,14 +9,14 @@ description = "Causal analysis of Slay the Spire 2 early-access balance patches 
 requires-python = ">=3.11"
 dependencies = [
     "requests",
+    "duckdb",       # run tables (spirometry.runs)
+    "pyarrow",      # run tables: Parquet output
 ]
 
 [project.optional-dependencies]
 # Added as the pipeline and analysis stages come online.
 analysis = [
-    "duckdb",
     "pandas",
-    "pyarrow",
     "numpy",
     "matplotlib",
     "jupyter",

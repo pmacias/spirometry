@@ -124,7 +124,10 @@ Top level: `acts`, `ascension`, `build_id`, `schema_version` (8, 9, 10), `seed`,
 `start_time`, `run_time`, `game_mode`, `modifiers`, `win`, `was_abandoned`,
 `killed_by_encounter`, `killed_by_event`, `platform_type`, `players`, `map_point_history`,
 `run_hash`. No `is_beta`. Some recent records also carry `_sts` (uploader tool) and
-`_spirecodex_damage` (added by Spire Codex), which aren't game data.
+`_spirecodex_damage` (added by Spire Codex), which aren't game data. Pages fetched on
+2026-09-25 also have a top-level `player_token` on every record (null on most, a 16-character
+string on 170 of 2,000); it wasn't in the 2026-09-24 pages, so older snapshot pages may lack
+it. It probably identifies the uploader and is hashed like player IDs.
 
 `map_point_history` is a list of acts, each a list of floors. Each floor has:
 
@@ -211,6 +214,30 @@ their branch and date. Run export records have no `is_beta` field at all, so bra
 comes from `builds.csv`. Details in `notes/patch_history.md` and
 `notes/patch_notes_crosscheck.md`.
 
+## Run tables (`data/runs/`)
+
+Built locally by `python -m spirometry.runs build` from `sts2_snapshot/` (git-ignored). One
+Parquet file per snapshot page per table, plus `runs.duckdb`, which only holds views over
+those files (absolute paths: rebuild if the folder moves) and a `build_info` table (parser
+version, build time, record and duplicate counts, share of combat lists that couldn't be
+split into screens, the hashing key's fingerprint). Columns follow `notes/run_schema.md`.
+
+- `runs`: one row per record (co-op copies kept). `branch` from `builds.csv`, NULL where
+  blank or missing. Flags: `is_custom` (any modifier), `is_modded`, `was_abandoned`,
+  `abandoned_at_neow`. `source_page` / `source_line` locate the raw record.
+- `run_players`: one row per record × player (`player_hash`, `character`).
+- `card_offers`: one row per `card_choices` entry, every source, with `source`, `set_idx`
+  (combat/elite/boss screens; NULL when the list can't be split), `set_picked_any`,
+  `upgraded`, `enchantment`, `in_card_list`, `is_mod_card`. `card_id` has no `CARD.` prefix.
+- `shop_offers`: solo shops as the list plus purchases (`origin = 'gained'`, `picked` =
+  bought); co-op shops as recorded, `usable = false`.
+- Views: `runs_dedup` (first record per `run_key`, with `n_copies`), `card_offers_dedup`,
+  `primary_offers` (solo, no modifiers, not modded, combat/elite/boss, no mod cards;
+  abandoned runs kept with `was_abandoned`).
+
+On the 2 fetched pages, 0.55% of combat reward lists (0.19% of `primary_offers` rows)
+couldn't be split; none of the 966 split multi-screen lists had two picks in one screen.
+
 ## Known data issues
 
 - **Self-selection.** Uploaders install a companion app or mod; likely more dedicated and
@@ -224,7 +251,10 @@ comes from `builds.csv`. Details in `notes/patch_history.md` and
   at parsing (a co-op run has one outcome but several players' choices).
 - **Player IDs.** Solo runs use `player_id: 1`. Multiplayer runs carry real 64-bit Steam
   IDs. Hash these in the pipeline; publish aggregates only. Not planning player-level
-  analysis. Raw snapshot data is git-ignored and never committed.
+  analysis. Raw snapshot data is git-ignored and never committed. `spirometry.runs` hashes
+  Steam IDs and `player_token` with a keyed hash (HMAC-SHA256, key in `SPIROMETRY_SALT` or
+  the git-ignored `.spirometry_salt`); a plain hash of a Steam ID could be reversed by
+  enumeration.
 - **Beta vs. stable.** Two branches run different card versions at the same time
   (e.g. stable v0.107.1 and beta v0.111.0 in September 2026). Always key on `build_id`.
 - **Branch comes from `builds.csv` via `build_id`, never from the run file.** The export's
@@ -240,9 +270,15 @@ comes from `builds.csv`. Details in `notes/patch_history.md` and
 - **Offers aren't uniform.** Shops, events, Neow and relic effects (Prayer Wheel, Lasting
   Candy, Driftwood, Orrery) all write into `card_choices`, and a floor can hold several
   screens in one list. Solo shops list only the unsold shelf. See `notes/run_schema.md`.
+  Lasting Candy adds a fourth card on some fights only (solo, candy held: 216 three-card
+  and 159 four-card combat lists on 2 pages). Every `bought_colorless` card is also in that
+  floor's `cards_gained` (468 of 468), so purchases come from `cards_gained` alone. Co-op
+  combat lists sometimes have 4 cards with no Lasting Candy on any player (144 on 2 pages;
+  cause unknown).
 - **Custom and modded runs.** Early builds record custom runs as `game_mode: standard`;
   filter on `modifiers` being empty. Recent pages include modded runs (mod card ids with
-  a `-`, BaseLib keys).
+  a `-`, BaseLib keys). Some mods leave only a mod character (`CHARACTER.HERMIT-HERMIT`,
+  1 run on 2 pages), so the parser flags any quoted id with a `-`.
 - **Treatment timing.** Assign builds from each run's own `build_id` and `start_time`, not
   `submitted_at` — players often upload their whole history folder at once. This also
   means early builds can keep gaining runs late in the export.
@@ -289,9 +325,9 @@ close to randomized. That supports:
   and checkpoint `sts2_snapshot/cursor.txt` unchanged — paths are relative to the working
   directory, so run it from the repo root): `python scripts/snapshot_export.py`. A download
   started with the old path keeps running; resume it with the new path.
-- Environment: dependencies live only in `pyproject.toml` (`requests` as the only core
-  dependency; an `analysis` extra — duckdb, pandas, pyarrow, numpy, matplotlib, jupyter —
-  for later). Locally a mamba env with `pip install -e .`; plain `pip install -e .` in
+- Environment: dependencies live only in `pyproject.toml` (core: `requests`, and `duckdb`
+  and `pyarrow` for the run tables; an `analysis` extra — pandas, numpy, matplotlib,
+  jupyter — for later). Locally a mamba env with `pip install -e .`; plain `pip install -e .` in
   cloud sessions and CI. No separate environment.yml / requirements.txt. `src/` layout
   (`[tool.setuptools.packages.find] where = ["src"]`).
 - Cloud session check passed: spire-codex.com reachable, `pip install -e .` works,

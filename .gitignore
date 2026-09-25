@@ -5,6 +5,8 @@ data/
 *.json.gz
 *.duckdb
 *.duckdb.wal
+# HMAC key for player-ID hashes (spirometry.runs); never commit
+.spirometry_salt
 
 # Python
 __pycache__/

@@ -81,8 +81,11 @@ Parse raw runs into DuckDB/Parquet. Player IDs hashed.
   the core table for every design below.
 - `deck_final`, `deaths` (encounter, floor), and relic/event choices later.
 Done when tests pass on sample pages and the full snapshot builds locally without errors.
-*Status: not started. Column proposal and open decisions in `notes/run_schema.md`; test
-fixture `tests/fixtures/sample_runs.jsonl` (6 runs, co-op IDs replaced).*
+*Status: parser built, in review (PR): `python -m spirometry.runs build` writes `runs`,
+`run_players`, `card_offers`, `shop_offers` (Parquet, one file per page) and `runs.duckdb`
+with views `runs_dedup`, `card_offers_dedup`, `primary_offers`. Tested on the fixture and
+2 fetched pages (~1.5 s per page per worker). Next: Phil runs it on the full snapshot.
+`deck_final`, `deaths` and relic/event choices not started.*
 
 ### 4. Treatment table — CC
 Join `card_offers` to the card version live in each run's build: for each (card, build), which
@@ -127,7 +130,8 @@ README with results, portfolio card on pmacias.github.io.
 2. Let the snapshot finish; run `--count-only`.
 3. Send the maintainer message (budget per IP or per client, short pages, bulk dump,
    stable-only hotfixes).
-4. Phase 2 audit.
+4. Build the run tables on the full snapshot (`python -m spirometry.runs build`).
+5. Phase 2 audit.
 
 ## Decision log
 - Spire Codex export is the primary source; sts2runs.com only for cross-checks.
@@ -193,3 +197,21 @@ README with results, portfolio card on pmacias.github.io.
   from analyses.
 - Snapshot script: leave unchanged until the download finishes, then remove the beta column
   (branch comes from `builds.csv` at analysis time).
+- Run tables (CC's choices, open to review): `card_offers` keeps every `card_choices` entry,
+  shop rows included (`source = 'shop'`); `shop_offers` is the shop analysis table (solo:
+  the list plus purchases rebuilt from `cards_gained`, `bought_colorless` flagged; co-op: the
+  list as recorded, `usable = false`). `?` fights count as combat/elite/boss; a `?` event that
+  turns into a fight (`event_combat`) is left out of `primary_offers` because its list can
+  mix event and fight offers. `primary_offers` = solo, no modifiers, not modded,
+  combat/elite/boss, not a mod card; abandoned runs stay in, flagged.
+- Lasting Candy adds a card on some fights only (solo, candy held: 216 three-card vs 159
+  four-card lists on 2 pages), so a candy holder's screen size is 3 or 4: a combat list is
+  split when exactly one of them divides its length (12 with candy stays NULL).
+- Player IDs and the export's `player_token` are HMAC-SHA256 hashed (first 16 hex); key from
+  `SPIROMETRY_SALT` or the git-ignored `.spirometry_salt` (`init-salt` creates it). Solo id 1
+  stays `'1'`. The key's fingerprint goes in `build_info` so builds can be checked for the
+  same key. `run_key` is a plain SHA-256 of `seed|start_time` (not personal data).
+- Modded = a quoted id with a `-` anywhere in the record (cards, characters, acts,
+  monsters, ...), a `save_dict_*` key, or a modifier id ending `_MODIFIER`.
+- Exact repeats (same `run_hash`) are dropped from the base tables, keeping the first by
+  (page, line); `build_info` counts them and how many repeats differed in content.

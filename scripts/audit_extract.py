@@ -9,15 +9,17 @@ Reads sts2_snapshot/page_*.jsonl.gz and writes to data/audit/:
   runs.parquet         one row per record (no player IDs stored at all)
   offer_counts.parquet card_choices entries aggregated by
                        (build, character, card, source, act, upgraded, enchanted,
-                        picked, solo, clean, abandoned, before_release, tagged) -> n
+                        picked, solo, clean, abandoned, before_release, tagged,
+                        neow_start) -> n
   list_counts.parquet  card_choices lists aggregated by
                        (build, source, act, list_len, n_picked, solo, clean,
-                        before_release, tagged) -> n
+                        before_release, tagged, neow_start) -> n
   pages.parquet        one row per page file: records, repeats dropped, mtime, bytes
 
 "clean" = no modifiers and no mod markers. "before_release" = the run's start date (UTC)
 is before its build's release_date in reference/builds.csv (False where there's no date).
-"tagged" = the record has the uploader tag `_sts`. Records repeated across pages (same run_hash)
+"tagged" = the record has the uploader tag `_sts` (the SlayTheStats mod's upload stamp).
+"neow_start" = the run's first floor is Neow (EVENT.NEOW). Records repeated across pages (same run_hash)
 are kept once, first page wins. Co-op copies (same run_key) are NOT merged here: filter
 on solo for offer work, or dedup runs on run_key.
 
@@ -108,6 +110,7 @@ def parse_run(line, page, lineno, offers, lists):
 
     first = mph[0][0] if mph and mph[0] else {}
     first_ids = [x.get("model_id") for x in first.get("rooms", [])]
+    neow_start = "EVENT.NEOW" in first_ids
     floors = sum(len(a) for a in mph)
     abandoned = bool(r.get("was_abandoned"))
     p0 = players[0] if players else {}
@@ -148,9 +151,9 @@ def parse_run(line, page, lineno, offers, lists):
                     offers[(build, ch, cid, src, a,
                             (card.get("current_upgrade_level") or 0) >= 1,
                             "enchantment" in card, picked, solo, clean_so_far,
-                            abandoned, before_release, tagged)] += 1
+                            abandoned, before_release, tagged, neow_start)] += 1
                 lists[(build, src, a, len(cc), n_picked, solo, clean_so_far,
-                       before_release, tagged)] += 1
+                       before_release, tagged, neow_start)] += 1
                 n_lists += 1
                 n_offers += len(cc)
                 n_picks += n_picked
@@ -182,7 +185,7 @@ def parse_run(line, page, lineno, offers, lists):
         "floors_reached": floors,
         "act1": strip(acts[0], "ACT.") if acts else None,
         "first_floor": first.get("map_point_type"),
-        "first_floor_neow": "EVENT.NEOW" in first_ids,
+        "first_floor_neow": neow_start,
         "killed_by_encounter": strip(r.get("killed_by_encounter"), "ENCOUNTER."),
         "killed_by_event": strip(r.get("killed_by_event"), "EVENT."),
         "uploader_tag": r.get("_sts"),
@@ -278,11 +281,12 @@ def main():
     runs.to_parquet(a.out / "runs.parquet", index=False)
 
     ocols = ["build_id", "character", "card_id", "source", "act", "upgraded",
-             "enchanted", "picked", "solo", "clean", "abandoned", "before_release", "tagged"]
+             "enchanted", "picked", "solo", "clean", "abandoned", "before_release", "tagged",
+             "neow_start"]
     pd.DataFrame([(*k, n) for k, n in offers.items()], columns=ocols + ["n"]) \
         .to_parquet(a.out / "offer_counts.parquet", index=False)
     lcols = ["build_id", "source", "act", "list_len", "n_picked", "solo", "clean",
-             "before_release", "tagged"]
+             "before_release", "tagged", "neow_start"]
     pd.DataFrame([(*k, n) for k, n in lists.items()], columns=lcols + ["n"]) \
         .to_parquet(a.out / "list_counts.parquet", index=False)
     pd.DataFrame(infos).sort_values("page").to_parquet(a.out / "pages.parquet", index=False)

@@ -80,9 +80,12 @@ writes aggregate tables to `data/audit/` (git-ignored), read by
 `notebooks/01_data_audit.ipynb`. Findings so far are in SPIROMETRY.md (Known data issues):
 non-release builds, runs dated before release, `_sts` = SlayTheStats upload stamp and the
 ranking difference between uploader groups, mod-marker counts, cheat candidates. Unit:
-card offer, solo runs (already in the decision log). Open: the v0.103.2 checks (win rate by
-week within one build; uploader ranking before community tooltips). The notebook moves to
-the Phase 3 tables once they're built on the full snapshot.*
+card offer, solo runs (already in the decision log). Decisions written into SPIROMETRY.md
+("Audit decisions"): primary population, thin-build pooling rule, staggered rollout feasible
+within branch, snapshot reach and backfill, uploader groups, within-build win-rate drift.
+Open: backfill numbers and the thin-build check after the snapshot finishes; whether rising
+ascension explains the within-build drift. The notebook moves to the Phase 3 tables once
+they're built on the full snapshot.*
 
 ### 3. Run tables — CC builds, Phil runs locally
 Parse raw runs into DuckDB/Parquet. Player IDs hashed.
@@ -95,8 +98,9 @@ Done when tests pass on sample pages and the full snapshot builds locally withou
 `run_players`, `card_offers`, `shop_offers` (Parquet, one file per page) and `runs.duckdb`
 with views `runs_dedup`, `card_offers_dedup`, `primary_offers`. Tested on the fixture and
 2 fetched pages (~1.5 s per page per worker). Follow-up PR next (CC): flags for
-non-release builds and runs dated before release, the five-character list for mod
-characters, event-then-fight floors kept with a flag, uploader fields. Then Phil runs it on
+non-release builds, runs dated before release and runs that don't start at Neow, the
+five-character list for mod characters, event-then-fight floors kept with a flag, uploader
+fields. Then Phil runs it on
 the full snapshot. `deck_final`, `deaths` and relic/event choices not started.*
 
 ### 4. Treatment table — CC
@@ -137,9 +141,10 @@ Selection-corrected card strength metric; dashboard (Streamlit or Observable, un
 README with results, portfolio card on pmacias.github.io.
 
 ## Next up
-1. Run-table follow-up PR (CC): non-release builds, runs dated before release, mod
-   characters, event-then-fight floors, uploader fields.
-2. Finish the audit's open checks (v0.103.2 by week; uploader ranking in v0.103.2).
+1. Run-table follow-up PR (CC): non-release builds, runs dated before release, non-Neow
+   starts, mod characters, event-then-fight floors, uploader fields.
+2. Audit follow-ups: does rising ascension explain the within-build win-rate drift; confirm
+   the thin betas pool (no card change between neighbours).
 3. Let the snapshot finish; run `--count-only`. Decide whether to re-download pages 0–948
    for `player_token`.
 4. Send the maintainer message (budget per IP or per client, the daily cap, short pages,
@@ -247,3 +252,13 @@ README with results, portfolio card on pmacias.github.io.
   aggregate tables only, no player IDs. Column names follow the run tables where they
   overlap; the notebook moves to the Phase 3 tables once they exist for the full snapshot.
 - Cheat candidates (fast or impossible wins) are flagged, not filtered: 70 of ~98k wins.
+- Runs whose first floor isn't Neow are dropped from primary (~15% of v0.98.0, ~5% of
+  v0.98.1, ~0 after; launch builds outside the patch windows).
+- Thin builds: pooled with a same-branch neighbour when no card change falls between them;
+  otherwise left out of windows they can't fill. Comparisons use windows, not single builds.
+- Staggered rollout is feasible on volume (every stable build overlapped 1–4 betas with
+  21k–44k runs each); estimated within branch or with branch-specific trends.
+- Uploader groups differ already before community tooltips (v0.103.2: sd z 3.76, Spearman
+  0.93; v0.107.1: 4.95, 0.86): treated as selection, estimates stratified or adjusted.
+- Win rates drift within a build over calendar time (v0.103.2, both uploader groups): win
+  analyses control for week or ascension, not only build.

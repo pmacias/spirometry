@@ -253,6 +253,69 @@ split into screens, the hashing key's fingerprint). Columns follow `notes/run_sc
 On the 2 fetched pages, 0.55% of combat reward lists (0.19% of `primary_offers` rows)
 couldn't be split; none of the 966 split multi-screen lists had two picks in one screen.
 
+## Audit decisions (first pass: 949 pages, submissions to ~2026-07-19)
+
+From `notebooks/01_data_audit.ipynb` (interim tables from `scripts/audit_extract.py`). These
+define the populations every analysis starts from; the parser flags that implement them are
+listed in PLAN.md.
+
+**Primary population** (the main analysis): solo runs; no modifiers; no mod markers (a
+`save_dict_*` key, a mod modifier, a mod card, a mod act, or a character outside the five
+real ones); a released build (in `builds.csv`); start date (UTC) on or after the build's
+release date; first floor is Neow. Offers come from combat, elite and boss rewards,
+including `?` fights and event-then-fight floors (flagged). Abandoned runs stay in for pick
+rates and leave win analyses. On the first 949 pages, primary is ~75% of distinct runs.
+
+- **Cheats:** no filter. No cheat flag exists; 70 of ~98k primary wins took under 15
+  minutes and two look impossible. Flagged for a robustness check only.
+- **Runs that don't start at Neow:** dropped. About 15% of v0.98.0 runs and 5% of v0.98.1,
+  close to zero from v0.98.2 on. They start without the Neow bonus (a different setup) and
+  sit in launch builds outside the patch windows.
+
+**Thin builds.** Pick-rate comparisons use windows of builds (before vs. after a change), so
+a build only needs to stand alone if it can't be pooled. Rule: a build is pooled with its
+neighbour on the same branch when no card change falls between them; otherwise it is left
+out of any window it can't fill. Under 2,000 primary runs on the first pass: v0.99.0 (beta,
+3 days), v0.103.1 (beta hotfix, 1 day), v0.105.0 (beta, superseded the next day) — expected
+to pool, to be confirmed against `beta_card_changes.csv` and the patch notes — and v0.109.1,
+thin only because the snapshot stops in July.
+
+**Staggered rollout (beta before stable): feasible on volume.** Every stable build ran
+alongside betas: v0.103.2 (Apr 16 – May 29) with v0.104.0–v0.106.1, v0.103.3 with v0.107.0,
+v0.107.1 with v0.108–v0.109. The betas have 21k–44k distinct runs each (v0.104.0–v0.107.0)
+against 77k–113k for the stable builds running at the same time. Beta and stable players
+differ (win and skip rates differ by branch), so comparisons are within branch or allow
+branch-specific trends, never a pooled before/after.
+
+**Snapshot reach and backfill.** As of 2026-09-25: 949 pages, submissions to about
+2026-07-19, play dates to 2026-07-26; the download continues. Backfill is heavy: from about
+page 20 on, every page holds runs played as far back as March, because players upload their
+history in bulk (the SlayTheStats mod uploads a whole local history, oldest first). The
+notebook measures the upload lag (section 2); record the numbers here after the rerun on the
+finished snapshot. Recent builds are under-counted until the snapshot is complete.
+
+**Uploader groups.** `_sts`-tagged uploads (SlayTheStats mod users) differ from the rest:
+
+| Build | Cards | sd of per-card z | Spearman | typical gap (pick rate) |
+|---|---|---|---|---|
+| v0.103.2 (before community tooltips) | 400 | 3.76 | 0.93 | 0.046 |
+| v0.107.1 (after) | 400 | 4.95 | 0.86 | 0.074 |
+
+The groups already differed before the mod showed community stats, and the same cards lead
+both builds (tagged players pick Setup Strike, Perfected Strike and Flick Flack less,
+Footwork and Well-Laid Plans more), so this is mainly selection, possibly larger after June
+(different builds and upload timing, so not a clean comparison). A typical gap of 5–7
+points is as large as many patch effects: pick-rate estimates are made within uploader group
+or with it as a covariate, pooled as a robustness check. Tagged players also win about 8
+points more (v0.103.2, finished runs).
+
+**Win rates drift within a build.** In v0.103.2 alone (same card versions throughout), the
+win rate of finished primary runs fell from April to May in both groups (untagged 0.23 →
+0.17, tagged 0.32 → 0.24), and the tagged share fell from ~30% to ~10%. So calendar time
+matters beyond build: win analyses need week (or ascension) controls, not only build.
+Whether rising ascension explains it is the next check (the notebook now shows mean
+ascension per week).
+
 ## Known data issues
 
 - **Self-selection.** Uploaders install a companion app or mod; likely more dedicated and

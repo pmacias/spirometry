@@ -49,19 +49,22 @@ def ref(tmp_path_factory):
 
 
 def synth(n_runs=1500, screens=20, effect=0.0, run_sd=0.1, run_card_sd=0.1,
-          share=(0.3, 0.3), treated_gap=0.0, pretrend=0.0, offer_boost=1.0, seed=0):
+          share=(0.3, 0.3), treated_gap=0.0, pretrend=0.0, offer_boost=1.0, seed=0,
+          base=(0.20, 0.50), effect_slope=0.0, cards=CARDS, after_weights=None):
     """Synthetic offers in load_window's columns. Per block, n_runs runs; each run has an
     uploader group (tagged with probability share[block]), an ascension, a run effect
     ~ N(0, run_sd) shared by all its offers, a run x card effect ~ N(0, run_card_sd) shared
     by the offers of one card in the run (a deck's taste for that card), and `screens`
     3-card screens drawn without replacement (the treated card
-    C0's weight times offer_boost in the after block). Pick probability (linear, clipped):
-    card baseline + group gap (C0 gets treated_gap more in the tagged group; the others
+    C0's weight times offer_boost in the after block, or every card's weight times
+    after_weights). Pick probability (linear, clipped): card baseline (evenly spaced over
+    `base`) + group gap (C0 gets treated_gap more in the tagged group; the others
     alternate +-0.05) + 0.03 after + act and ascension effects + 0.10 upgraded + run and
-    run x card effects + effect on C0 after + pretrend * (week + 1) on C0 before release."""
+    run x card effects + (effect + effect_slope * week) on C0 after + pretrend * (week + 1)
+    on C0 before release. After-block runs are spread evenly over weeks 0-9."""
     rng = np.random.default_rng(seed)
-    k = len(CARDS)
-    base = np.linspace(0.20, 0.50, k)
+    k = len(cards)
+    base = np.linspace(*base, k)
     gap = np.array([treated_gap] + [0.05 * (-1) ** i for i in range(1, k)])
     runs = pd.DataFrame({"after": np.repeat([False, True], n_runs)})
     nr = len(runs)
@@ -75,6 +78,8 @@ def synth(n_runs=1500, screens=20, effect=0.0, run_sd=0.1, run_card_sd=0.1,
     # screens: top-3 of Gumbel-perturbed log weights = 3 draws without replacement
     w = np.ones((nr, k))
     w[runs.after.to_numpy(), 0] *= offer_boost
+    if after_weights is not None:
+        w[runs.after.to_numpy()] *= np.asarray(after_weights, dtype=float)
     keys = np.log(w)[:, None, :] + rng.gumbel(size=(nr, screens, k))
     card = np.argsort(-keys, axis=2)[:, :, :3]                  # (run, screen, 3)
     r_idx = np.broadcast_to(np.arange(nr)[:, None, None], card.shape).ravel()
@@ -87,12 +92,13 @@ def synth(n_runs=1500, screens=20, effect=0.0, run_sd=0.1, run_card_sd=0.1,
     pre = (card == 0) & ~rr.after.to_numpy() & (rr.week.to_numpy() < 0)
     p = (base[card] + gap[card] * rr.tagged.to_numpy() + 0.03 * rr.after.to_numpy()
          + np.array([0, 0.0, 0.04, -0.03])[act] + 0.01 * rr.asc.to_numpy()
-         + 0.10 * upgraded + rr.u.to_numpy() + u_card[r_idx, card] + effect * treated_after
+         + 0.10 * upgraded + rr.u.to_numpy() + u_card[r_idx, card]
+         + (effect + effect_slope * rr.week.to_numpy()) * treated_after
          + pretrend * (rr.week.to_numpy() + 1) * pre)
     picked = rng.random(len(card)) < np.clip(p, 0.02, 0.98)
     run_key = pd.Series([f"r{i}" for i in r_idx])
     df = pd.DataFrame({
-        "run_key": run_key, "card_id": np.array(CARDS)[card],
+        "run_key": run_key, "card_id": np.array(cards)[card],
         "block": np.where(rr.after, "after", "before"), "picked": picked,
         "upgraded": upgraded, "act": act.astype("int8"),
         "ascension": rr.asc.astype("Int16"),
@@ -150,6 +156,39 @@ def test_clustered_se_vs_naive(ref):
     assert common["se"] / common["se_iid"] < 1.05
 
 
+def test_robust_se_separates_unequal_variance_from_clustering(ref):
+    # C0 is picked ~5% of the time, the controls ~30-60%: a 0/1 outcome's variance differs
+    # a lot between cards. Without within-run correlation the iid SE is off (it assumes one
+    # variance), but clustering adds nothing over heteroskedasticity-robust errors.
+    kw = dict(base=(0.0, 0.6), run_sd=0.0, seed=10)
+    het = did.fit_did(synth(run_card_sd=0.0, **kw), CPID, ref=ref)
+    assert het["se"] / het["se_iid"] < 0.8
+    assert 0.93 < het["se"] / het["se_hc"] < 1.07
+    # A run x card effect correlates one card's offers within a run: clustering widens the
+    # bars beyond the robust ones.
+    cor = did.fit_did(synth(run_card_sd=0.15, **kw), CPID, ref=ref)
+    assert cor["se"] / cor["se_hc"] > 1.1
+
+
+def test_fixed_horizon(ref):
+    # The effect grows by 2 points a week after release: 0.02 + 0.02 * week, weeks 0-9.
+    # Capped at week 3 the fit recovers the mean over weeks 0-3 (0.05), uncapped the mean
+    # over weeks 0-9 (0.11). The before block is the same in both fits. No run or run x card
+    # noise, so no pick probability is clipped and the planted effect is exactly linear.
+    df = synth(effect=0.02, effect_slope=0.02, run_sd=0.0, run_card_sd=0.0, seed=13)
+    full = did.fit_did(df, CPID, ref=ref)
+    cap = did.fit_did(df, CPID, max_week_after=3, ref=ref)
+    assert within(full, 0.11, 3) and within(cap, 0.05, 3)
+    assert cap["beta"] + 3 * cap["se"] < full["beta"]
+    assert (full["max_week_after"], full["after_week_max"]) == (None, 9)
+    assert (cap["max_week_after"], cap["after_week_max"]) == (3, 3)
+    ctrl = [c for c in CARDS if c != EXCLUDED]
+    kept = df.card_id.isin(ctrl) & ((df.block == "before") | (df.week <= 3))
+    assert cap["n_offers"] + cap["n_singletons_dropped"] == kept.sum()
+    assert cap["control_rate_before"] == full["control_rate_before"]
+    assert cap["treated_rate_before"] == full["treated_rate_before"]
+
+
 def test_fit_options(ref):
     df = synth(effect=0.06, seed=5)
     full = did.fit_did(df, CPID, ref=ref)
@@ -194,6 +233,45 @@ def test_offer_rate_check_flags_planted_share_change(ref):
     clean = did.offer_rate_check(synth(offer_boost=1.0, seed=6), CPID, ref=ref)
     assert not clean.flag.any()
     assert (t.offers_before + t.offers_after > 0).all()
+
+
+RARITY_CARDS = [f"R{i}" for i in range(20)]
+RARITY_CPID = "R0@v2/patch"
+
+
+@pytest.fixture(scope="module")
+def rarity_ref(tmp_path_factory, ref):
+    """20 cards of one color: R0 (treated) and R1-R5 Uncommon, R6-R17 Common, R18-R19
+    Rare (2 controls: too few for their own comparison)."""
+    rref = tmp_path_factory.mktemp("rref")
+    for f in ("builds.csv", "card_changes.csv"):
+        (rref / f).write_bytes((ref / f).read_bytes())
+    pd.DataFrame([dict(level="card_patch", event_id=RARITY_CPID, card_id="R0",
+                       change_kind="tweak", branch="stable", before_builds="v1",
+                       after_builds="v2", clean="yes")],
+                 columns=WINDOW_COLS).fillna("").to_csv(rref / "windows.csv", index=False)
+    rarity = ["Uncommon"] * 6 + ["Common"] * 12 + ["Rare"] * 2
+    (rref / "raw").mkdir()
+    (rref / "raw" / "cards.json").write_text(json.dumps(
+        [{"id": c, "color": "ironclad", "rarity": r} for c, r in zip(RARITY_CARDS, rarity)]))
+    return rref
+
+
+def test_offer_rate_check_same_rarity(rarity_ref):
+    # The Uncommon pool shrinks: every Uncommon card (R0-R5) is offered 1.5x as often after
+    # the patch. Against all controls (mostly Common) they flag; against the other
+    # Uncommon controls they don't.
+    w = [1.5] * 6 + [1.0] * 14
+    df = synth(cards=RARITY_CARDS, after_weights=w, n_runs=3000, seed=12)
+    t = did.offer_rate_check(df, RARITY_CPID, ref=rarity_ref).set_index("card_id")
+    unc = [f"R{i}" for i in range(6)]
+    assert t.rarity[unc].eq("Uncommon").all() and t.rarity["R6"] == "Common"
+    assert t.flag[unc].all() and not t.flag_rarity[unc].any()
+    assert (t.n_controls_rarity[unc] == 5).all() and (t.rarity_note[unc] == "").all()
+    assert not t.flag.drop(unc).any() and not t.flag_rarity.drop(unc).any()
+    assert (t.n_controls_rarity[["R18", "R19"]] == 19).all()      # fell back to all controls
+    assert t.rarity_note["R18"].startswith("2 Rare controls")
+    assert (t.z_binom_rarity[["R18", "R19"]] == t.z_binom[["R18", "R19"]]).all()
 
 
 # ------------------------------------------------------------------------------ event study
@@ -272,6 +350,11 @@ def test_run_all_upgrade_only_placebo(ref, tmp_path):
     row = did.run_all(con, ref=uref).iloc[0]
     assert row.fit_on == "upgraded offers" and row.error == row.placebo_error == ""
     assert row.placebo_n_offers > row.n_offers          # most offers aren't upgraded
+    assert row.se_hc > 0 and pd.isna(row.max_week_after)
+    capped = did.run_all(con, ref=uref, max_week_after=3).iloc[0]
+    assert capped.error == capped.placebo_error == "" and capped.max_week_after == 3
+    assert capped.after_week_max == 3
+    assert capped.n_offers < row.n_offers and capped.placebo_n_offers < row.placebo_n_offers
 
 
 # ------------------------------------------------------------------------------ real pages

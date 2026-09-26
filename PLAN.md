@@ -112,6 +112,11 @@ Parser 1.5.0 (PR, CC): `primary_offers` takes runs from `runs_dedup`, so a solo 
 uploaded twice under different `run_hash`es counts once; `build_info` counts such
 `run_key`s (`solo_run_keys_multi_record`) and the rows removed
 (`primary_offers_dedup_removed`). Fixture-tested; 0 and 0 on 2 fetched pages.
+Parser 1.6.0 (PR, CC): `run_key` also hashes the sorted players' characters and the
+ascension, so different runs sharing seed and start time stay apart; `build_info` counts
+the old keys it splits (`old_run_keys_split`, `run_keys_split_from_old_key`,
+`solo_old_run_keys_split`). On 2 fetched pages the co-op multi-record keys stay at 137 and
+nothing splits. Every `run_key` value changes: regenerate anything keyed on the old one.
 Next: Phil reruns the full build and reads both counts. `deck_final`, `deaths` and
 relic/event choices not started.*
 
@@ -158,6 +163,12 @@ runs). Next: Phil runs it on the full build (parser 1.5.0) in the analysis noteb
 *First pass (2026-09-26, 949-page tables, parser 1.4.0): `notebooks/02_pick_rate_did.ipynb`
 ran steps 1–3 on all 43 solo-estimable tweaks; results and caveats in SPIROMETRY.md
 ("Phase 5 results, first pass"). Provisional until the rebuild on the full snapshot.*
+*Follow-up tooling (CC, PR): `fit_did` returns `se_hc` (heteroskedasticity-robust, same
+fit) and takes `max_week_after` (fixed horizon; `run_all` passes it to the placebo too);
+`offer_rate_check` adds `rarity` and same-rarity z-scores/flag (`flag_rarity`); dedup key
+fixed (parser 1.6.0). Tested on synthetic offers; not run on real pages (the 2 fetched
+pages have no v0.103.2 runs). Next: Phil rebuilds with parser 1.6.0 and reruns the
+notebook with `se_hc`, `max_week_after=3` and `flag_rarity`.*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -195,7 +206,8 @@ README with results, portfolio card on pmacias.github.io.
    buff/nerf claim; (d) CC: add heteroskedasticity-robust SEs (`se_hc`) to `fit_did`, the
    right comparison for clustering; (e) CC: 18 solo `run_key`s are different runs (character
    or ascension differ), so the dedup key needs the character; (f) the heavy-uploader
-   check, after the rebuild brings `player_token`.
+   check, after the rebuild brings `player_token`. Tooling for (a), (b), (d) and (e) in the
+   follow-up PR (parser 1.6.0); (a) and (b) still need running, (c) and (f) open.
 8. When official act 4 (or other new content) ships: re-cache the game lists for the new
    builds and switch the mod-entity rule to per-build lists (see SPIROMETRY.md, custom and
    modded runs).
@@ -283,7 +295,8 @@ README with results, portfolio card on pmacias.github.io.
 - Player IDs and the export's `player_token` are HMAC-SHA256 hashed (first 16 hex); key from
   `SPIROMETRY_SALT` or the git-ignored `.spirometry_salt` (`init-salt` creates it). Solo id 1
   stays `'1'`. The key's fingerprint goes in `build_info` so builds can be checked for the
-  same key. `run_key` is a plain SHA-256 of `seed|start_time` (not personal data).
+  same key. `run_key` is a plain SHA-256 of `seed|start_time` (not personal data); from
+  parser 1.6.0 of `seed|start_time|characters|ascension` (see below).
 - Modded = a quoted id with a `-` anywhere in the record (cards, characters, acts,
   monsters, ...), a `save_dict_*` key, or a modifier id ending `_MODIFIER`.
 - Mod enchantments: any `ENCHANTMENT.<id>` in the record (on any card, or in
@@ -441,3 +454,29 @@ README with results, portfolio card on pmacias.github.io.
 - Clustering is judged against heteroskedasticity-robust SEs, not iid ones: the iid ratio
   mostly measures differences in p(1−p) between cards.
 - The heavy-uploader check is deferred: the 949-page tables have no `uploader_hash`.
+- Phase 5 follow-up tooling (CC's choices, open to review):
+  - `se_hc` is pyfixest's `"hetero"` (HC1) on the same fit; `se` (clustered by `run_key`)
+    stays the main error and the only one `ci95` and `run_all`'s `se_lo` use.
+  - `max_week_after` filters on `load_window`'s `week` (whole weeks from the first
+    after-build's release date), inclusive, after the other filters (the shared-screen
+    filter still sees screens as offered). Offers of before-builds played after the release
+    are before-block offers and are kept at any week. The event study doesn't take it (it
+    already estimates each week separately). The output also carries `after_week_max`, the
+    latest after-block week actually in the fit, so an uncapped fit shows its horizon.
+  - Same-rarity comparison: rarity from the cached card list (current rarity, with
+    `card_changes.csv` as fallback for cards not in it); a card's comparison group is
+    the controls of its rarity with a finite log ratio, the card itself included when it
+    is a control (as in the all-controls statistics). Fewer than 5 such controls, or no
+    rarity, falls back to all controls with a note. The binomial SE is the same as for
+    the all-controls z.
+  - Dedup key: the brief's suggestion, `run_key` itself rather than a separate key for
+    `runs_dedup`, so every table and the DiD's clustering use the same notion of a run.
+    Characters are sorted (co-op copies can list players in different orders; seen once
+    on 2 pages) and joined as text; a missing ascension or character hashes as `None`.
+    `scripts/audit_extract.py` keeps its own `seed|start_time` key (not part of this
+    change). `build_info` reports the split at the level of old keys
+    (`old_run_keys_split`, and `solo_old_run_keys_split` among solo records, the number
+    comparable to the 18) plus the new keys in them (`run_keys_split_from_old_key`).
+  - The collision fixture is built in the test (records derived from the sample file, as
+    the other variant tests do) rather than added to `sample_runs.jsonl`, so the fixture's
+    existing counts don't change.

@@ -372,7 +372,7 @@ enchantment's amount reached 123,013 (SMALLINT tops out at 32,767). `card_offers
 | Column | Type | From |
 |---|---|---|
 | `run_hash` | VARCHAR | `run_hash` (primary key) |
-| `run_key` | VARCHAR | hash of `(seed, start_time)`: the dedup key shared by co-op copies |
+| `run_key` | VARCHAR | hash of `(seed, start_time, sorted players' characters, ascension)`: the dedup key shared by co-op copies (parser 1.6.0; up to 1.5.0 `(seed, start_time)` only) |
 | `source_page` | INTEGER | export page the record came from (for tracing) |
 | `build_id` | VARCHAR | `build_id` |
 | `branch` | VARCHAR | joined from `builds.csv`; NULL where builds.csv is blank |

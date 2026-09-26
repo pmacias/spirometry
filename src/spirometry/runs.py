@@ -37,7 +37,7 @@ import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-PARSER_VERSION = "1.5.0"
+PARSER_VERSION = "1.6.0"
 REF = pathlib.Path("reference")
 SALT_ENV = "SPIROMETRY_SALT"
 SALT_FILE = pathlib.Path(".spirometry_salt")
@@ -148,9 +148,14 @@ def player_hash(key, player_id):
     return "1" if player_id == 1 else keyed_hash(key, player_id)
 
 
-def run_key(seed, start_time):
-    """Dedup key shared by co-op copies: hash of (seed, start_time). Not personal data."""
-    return hashlib.sha256(f"{seed}|{start_time}".encode()).hexdigest()[:16]
+def run_key(seed, start_time, characters, ascension):
+    """Dedup key shared by co-op copies: hash of (seed, start_time, every player's
+    character sorted, ascension). Co-op copies of one run carry the same players, so they
+    share it; different runs that happen to share seed and start_time (up to parser 1.5.0
+    the whole key) get different keys when their characters or ascension differ. Sorted,
+    because co-op copies can list the players in different orders. Not personal data."""
+    chars = ",".join(sorted(str(c) for c in characters))
+    return hashlib.sha256(f"{seed}|{start_time}|{chars}|{ascension}".encode()).hexdigest()[:16]
 
 
 # ------------------------------------------------------------------------------ reference
@@ -280,7 +285,9 @@ def parse_run(run, line, page, line_no, ctx, out):
     entities = ctx["entities"]
     players = run.get("players") or []
     solo = len(players) == 1
-    rh, rk = run["run_hash"], run_key(run.get("seed"), run.get("start_time"))
+    rh = run["run_hash"]
+    rk = run_key(run.get("seed"), run.get("start_time"),
+                 [p.get("character") for p in players], run.get("ascension"))
     base = dict(run_hash=rh, run_key=rk, source_page=page, source_line=line_no)
     pidx = {p.get("id"): i for i, p in enumerate(players)}
     phash = {p.get("id"): player_hash(key, p.get("id")) for p in players}
@@ -520,7 +527,10 @@ def table_stats(out_dir):
     lists split into several screens. Run flags are counted on records.
     solo_run_keys_multi_record: solo run_keys with more than one record (a run uploaded
     twice under different run_hashes); primary_offers_dedup_removed: the primary offer rows
-    those extra records would add without runs_dedup."""
+    those extra records would add without runs_dedup. old_run_keys_split /
+    solo_old_run_keys_split: (seed, start_time) pairs, the run_key up to parser 1.5.0, that
+    now hold more than one run_key (different runs the old key merged), over all records /
+    solo records; run_keys_split_from_old_key: the run_keys in those pairs (all records)."""
     g = lambda t: f"read_parquet('{out_dir / t / '*.parquet'}')"
     con = duckdb.connect()
     for t in TABLES:
@@ -529,6 +539,12 @@ def table_stats(out_dir):
     solo_multi = con.execute("""
         SELECT count(*) FROM (SELECT run_key FROM runs WHERE n_players = 1
                               GROUP BY run_key HAVING count(*) > 1)""").fetchone()[0]
+    old_split, runs_split, solo_old_split = con.execute("""
+        WITH k AS (SELECT seed, start_time, count(DISTINCT run_key) AS n,
+                          count(DISTINCT run_key) FILTER (WHERE n_players = 1) AS n_solo
+                   FROM runs GROUP BY seed, start_time)
+        SELECT count(*) FILTER (WHERE n > 1), coalesce(sum(n) FILTER (WHERE n > 1), 0),
+               count(*) FILTER (WHERE n_solo > 1) FROM k""").fetchone()
     primary_removed = con.execute(f"""
         SELECT (SELECT count(*) FROM card_offers o JOIN runs r USING (run_hash)
                 WHERE {PRIMARY_FILTER}) - (SELECT count(*) FROM primary_offers)
@@ -568,6 +584,8 @@ def table_stats(out_dir):
             "shop_bought_rows": bought,
             "solo_run_keys_multi_record": solo_multi,
             "primary_offers_dedup_removed": primary_removed,
+            "old_run_keys_split": old_split, "run_keys_split_from_old_key": runs_split,
+            "solo_old_run_keys_split": solo_old_split,
             **dict(zip(["runs_not_released", "runs_before_release", "runs_not_neow_start",
                         "runs_modded", "runs_uploader_tag", "runs_player_token_absent",
                         "runs_player_token_present", "runs_mod_entity",

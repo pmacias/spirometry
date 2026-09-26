@@ -125,8 +125,10 @@ def test_solo_run_uploaded_twice_counts_once(db):
     info, con = db
     assert rows(con, f"""SELECT run_hash, run_key, uploader_tag IS NOT NULL FROM runs
                          WHERE run_hash IN ('{SCHEMA10}', '{SCHEMA10_COPY}') ORDER BY 1""") == [
-        (SCHEMA10, runs.run_key("SYNTHS100006", 1790000000), True),
-        (SCHEMA10_COPY, runs.run_key("SYNTHS100006", 1790000000), False)]
+        (SCHEMA10, runs.run_key("SYNTHS100006", 1790000000, ["CHARACTER.NECROBINDER"], 10),
+         True),
+        (SCHEMA10_COPY, runs.run_key("SYNTHS100006", 1790000000, ["CHARACTER.NECROBINDER"],
+                                     10), False)]
     assert rows(con, f"SELECT run_hash, n_copies FROM runs_dedup "
                      f"WHERE run_hash IN ('{SCHEMA10}', '{SCHEMA10_COPY}')") == [(SCHEMA10, 2)]
     assert rows(con, "SELECT count(*) FROM primary_offers WHERE run_hash = "
@@ -190,6 +192,8 @@ def test_build_info(db):
         "0", "0", "0", "0", "1", "7", "0")
     assert (meta["solo_run_keys_multi_record"], meta["primary_offers_dedup_removed"]) \
         == ("1", "9")
+    assert (meta["old_run_keys_split"], meta["run_keys_split_from_old_key"],
+            meta["solo_old_run_keys_split"]) == ("0", "0", "0")
     assert meta["key_fingerprint"] == runs.key_fingerprint(KEY)
     assert rows(con, "SELECT DISTINCT source_page FROM runs") == [(0,)]
 
@@ -219,6 +223,34 @@ def test_coop_copies_kept_and_deduped_in_view(tmp_path):
     assert rows(con, "SELECT run_hash FROM runs_dedup WHERE n_copies = 2 ORDER BY 1") \
         == [(COOP,), (SCHEMA10,)]
     assert info["solo_run_keys_multi_record"] == 1          # co-op copies don't count
+
+
+def test_same_seed_and_start_different_runs_kept_apart(tmp_path):
+    # Two solo records sharing seed and start_time with WIN but not its character (or
+    # ascension): different runs, which a (seed, start_time) key would merge. The duplicated
+    # solo run (SCHEMA10 + SCHEMA10_COPY) still counts once, and a co-op copy listing the
+    # players in the other order still merges with COOP.
+    recs = lines()
+    win = json.loads(recs[0])
+    other_char = dict(win, run_hash="a" * 16,
+                      players=[dict(win["players"][0], character="CHARACTER.SILENT")])
+    other_asc = dict(win, run_hash="b" * 16, ascension=win["ascension"] - 1)
+    coop = json.loads(recs[3])
+    coop_copy = dict(coop, run_hash="c" * 16, players=coop["players"][::-1])
+    info, con = build(tmp_path, [recs, [json.dumps(r) for r in (other_char, other_asc,
+                                                                coop_copy)]])
+    assert rows(con, f"""SELECT count(DISTINCT run_key) FROM runs
+                         WHERE run_hash IN ('{WIN}', '{"a" * 16}', '{"b" * 16}')""") == [(3,)]
+    assert rows(con, f"""SELECT run_hash, n_copies FROM runs_dedup
+                         WHERE run_hash IN ('{WIN}', '{"a" * 16}', '{"b" * 16}',
+                                            '{COOP}', '{SCHEMA10}') ORDER BY 1""") == [
+        (COOP, 2), (WIN, 1), ("a" * 16, 1), (SCHEMA10, 2), ("b" * 16, 1)]
+    assert rows(con, "SELECT run_hash, count(*) FROM primary_offers GROUP BY 1 ORDER BY 1") \
+        == [(WIN, 75), (SIX, 24), (ABANDONED, 9), (PREPARE, 12), ("a" * 16, 75),
+            (SCHEMA10, 9), ("b" * 16, 75)]
+    assert (info["solo_run_keys_multi_record"], info["primary_offers_dedup_removed"]) == (1, 9)
+    assert (info["old_run_keys_split"], info["run_keys_split_from_old_key"],
+            info["solo_old_run_keys_split"]) == (1, 3, 1)
 
 
 def test_workers_pages_and_rebuild_overwrite(tmp_path):

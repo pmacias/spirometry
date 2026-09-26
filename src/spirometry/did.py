@@ -12,7 +12,8 @@ returns a pandas DataFrame or a dict.
     fit_event_study(df, "PARRY@v0.103.2/patch")       # step 2b: gap by week
     run_all(con)                                      # every solo-estimable tweak
 
-Model (linear probability, OLS with absorbed fixed effects, errors clustered by run_key):
+Model (linear probability, OLS with absorbed fixed effects, errors clustered by run_key;
+heteroskedasticity-robust and iid errors of the same fit alongside, for comparison):
 
     picked ~ treat_post | card_id^upgraded + card_id^group + block^group + act + ascension
 
@@ -29,6 +30,7 @@ REF = pathlib.Path("reference")
 CLUSTER = "run_key"
 SINGLETON_WARNING = r".*singleton fixed effect"
 WEEK = 7 * 24 * 3600
+MIN_RARITY_CONTROLS = 5         # offer_rate_check: fewer same-rarity controls -> all controls
 
 
 # ------------------------------------------------------------------------------ reference
@@ -56,6 +58,19 @@ def card_colors(ref=REF):
         if r.color:
             colors.setdefault(r.card_id, r.color)
     return colors
+
+
+def card_rarities(ref=REF):
+    """card_id -> rarity ('Common', 'Uncommon', 'Rare', ...) from the cached card list,
+    plus card_changes.csv's rarity for cards not in it. This is the card's rarity now, not
+    at the time of a window: 4 card-patches changed a card's rarity."""
+    ref = pathlib.Path(ref)
+    rar = {c["id"]: c.get("rarity") or "" for c in
+           json.loads((ref / "raw" / "cards.json").read_bytes())}
+    for r in _csv(ref / "card_changes.csv").itertuples():
+        if getattr(r, "rarity", ""):
+            rar.setdefault(r.card_id, r.rarity)
+    return rar
 
 
 def release_date(build_id, ref=REF):
@@ -146,7 +161,15 @@ def offer_rate_check(df, card_patch_id, ref=REF):
     binomial standard error sqrt((1 - s_a)/n_a + (1 - s_b)/n_b). Shares sum to one, so a
     card whose share doubles pulls every other share down: measuring against the controls'
     median instead of zero keeps that from flagging them all. flag: both |z| > 3.
-    Computed for every row; the treated card's row is the check."""
+    Computed for every row; the treated card's row is the check.
+
+    rarity: the card's rarity in the cached card list, i.e. now, not necessarily during the
+    window (4 card-patches changed a card's rarity). z_spread_rarity, z_binom_rarity,
+    flag_rarity: the same statistics against the median and MAD of the controls of the
+    card's own rarity (controls_median_rarity, controls_mad_rarity, n_controls_rarity), so a
+    change in one rarity's pool, which moves every card of that rarity, doesn't flag them.
+    When a rarity has fewer than 5 controls with a log ratio (or the card has no rarity),
+    the row falls back to all controls and rarity_note says so."""
     w = window(card_patch_id, ref)
     treated = w["card_id"]
     cards = [treated] + control_cards(card_patch_id, df=df, ref=ref)
@@ -170,13 +193,36 @@ def offer_rate_check(df, card_patch_id, ref=REF):
     out["z_spread"] = (out.log_share_ratio - med) / mad if mad > 0 else np.nan
     out["z_binom"] = (out.log_share_ratio - med) / se
     out["flag"] = (out.z_spread.abs() > 3) & (out.z_binom.abs() > 3)
+
+    out["rarity"] = out.card_id.map(card_rarities(ref)).fillna("")
+    lr = out.log_share_ratio.where(~out.treated)
+    stats = {}
+    for r in out.rarity.unique():
+        c = lr[out.rarity == r].dropna()
+        if r and len(c) >= MIN_RARITY_CONTROLS:
+            m = c.median()
+            stats[r] = (m, 1.4826 * (c - m).abs().median(), len(c), "")
+        else:
+            stats[r] = (med, mad, len(ctrl),
+                        f"{len(c)} {r or 'no-rarity'} controls (< {MIN_RARITY_CONTROLS}): "
+                        "all controls used")
+    st = pd.DataFrame([stats[r] for r in out.rarity], index=out.index,
+                      columns=["controls_median_rarity", "controls_mad_rarity",
+                               "n_controls_rarity", "rarity_note"])
+    out = pd.concat([out, st], axis=1)
+    dev = out.log_share_ratio - out.controls_median_rarity
+    with np.errstate(divide="ignore", invalid="ignore"):
+        out["z_spread_rarity"] = np.where(out.controls_mad_rarity > 0,
+                                          dev / out.controls_mad_rarity, np.nan)
+    out["z_binom_rarity"] = dev / se
+    out["flag_rarity"] = (out.z_spread_rarity.abs() > 3) & (out.z_binom_rarity.abs() > 3)
     return out
 
 
 # ------------------------------------------------------------------------------ step 2
 
 def _subset(df, card_patch_id, *, upgraded=None, group=None, drop_shared_screens=False,
-            drop_behavior_flags=False, drop_uploaders=None, ref=REF):
+            drop_behavior_flags=False, drop_uploaders=None, max_week_after=None, ref=REF):
     """Treated card + controls, with the fit options applied. Returns (data, treated)."""
     treated = window(card_patch_id, ref)["card_id"]
     cards = [treated] + control_cards(card_patch_id, drop_behavior_flags, df=df, ref=ref)
@@ -190,6 +236,8 @@ def _subset(df, card_patch_id, *, upgraded=None, group=None, drop_shared_screens
         d = d[d.group == group]
     if drop_uploaders:
         d = d[~d.uploader_hash.isin(drop_uploaders)]
+    if max_week_after is not None:              # fixed horizon: the before block is kept
+        d = d[(d.block != "after") | (d.week <= max_week_after)]
     d = d.dropna(subset=["ascension"]).copy()
     for c in d.columns:
         if isinstance(d[c].dtype, pd.CategoricalDtype):
@@ -233,12 +281,16 @@ def _rates(d):
 
 
 def fit_did(df, card_patch_id, *, upgraded=None, group=None, drop_shared_screens=False,
-            drop_behavior_flags=False, drop_uploaders=None, pooled_groups=False, ref=REF):
+            drop_behavior_flags=False, drop_uploaders=None, pooled_groups=False,
+            max_week_after=None, ref=REF):
     """One DiD for one card-patch. Returns beta (pick probability, in probability units),
-    se (clustered by run_key), se_iid (the same fit with iid errors, for comparison), ci95,
-    n_offers (used in the fit, after pyfixest drops singleton fixed-effect cells;
-    n_singletons_dropped counts them), n_runs and n_treated_offers (before that drop), the
-    treated and control pick rates before/after, and the formula.
+    se (clustered by run_key, the main error; ci95 uses it), se_hc (the same fit with
+    heteroskedasticity-robust errors, pyfixest's "hetero": the fair comparison for the
+    clustering, since a 0/1 outcome's variance p(1-p) differs between cards), se_iid (iid
+    errors, one variance for every offer), ci95, n_offers (used in the fit, after pyfixest
+    drops singleton fixed-effect cells; n_singletons_dropped counts them), n_runs and
+    n_treated_offers (before that drop), the treated and control pick rates before/after,
+    and the formula.
 
     upgraded=True/False: fit on upgraded (or un-upgraded) offers only; upgrade-only tweaks
       are estimated on upgraded offers and their un-upgraded offers are a placebo.
@@ -248,20 +300,31 @@ def fit_did(df, card_patch_id, *, upgraded=None, group=None, drop_shared_screens
       (competition on the screen).
     drop_behavior_flags: drop controls with a bug-fix behavior event in the window.
     drop_uploaders: uploader_hash values to drop (heavy-uploader check).
+    max_week_after: fixed horizon; keep only after-block offers with week <= max_week_after
+      (week as load_window defines it, 0 = the first after-build's release week), so
+      patches with after periods of different length compare at the same horizon. The
+      before block is unchanged. Reported back as max_week_after, with after_week_max, the
+      latest after-block week in the fit data (before the singleton drop).
 
     Ascension enters as one fixed effect per level. If group has one level in the data
     (e.g. no tagged runs), the group terms are dropped automatically."""
     d, treated = _subset(df, card_patch_id, upgraded=upgraded, group=group,
                          drop_shared_screens=drop_shared_screens,
                          drop_behavior_flags=drop_behavior_flags,
-                         drop_uploaders=drop_uploaders, ref=ref)
+                         drop_uploaders=drop_uploaders, max_week_after=max_week_after,
+                         ref=ref)
     fml = "picked ~ treat_post | " + " + ".join(_fixed_effects(d, group, pooled_groups))
     fit = _feols(fml, d)
     beta, se = float(fit.coef()["treat_post"]), float(fit.se()["treat_post"])
     ci = fit.confint().loc["treat_post"].to_numpy(dtype=float)
+    # fit.vcov() recomputes the errors in place: read the clustered ones first
+    se_hc = float(fit.vcov("hetero").se()["treat_post"])
     se_iid = float(fit.vcov("iid").se()["treat_post"])
     return dict(card_patch_id=card_patch_id, card_id=treated, beta=beta, se=se,
-                ci95=(float(ci[0]), float(ci[1])), se_iid=se_iid, n_offers=int(fit._N),
+                ci95=(float(ci[0]), float(ci[1])), se_hc=se_hc, se_iid=se_iid,
+                max_week_after=max_week_after,
+                after_week_max=int(d.week[d.after].max()),
+                n_offers=int(fit._N),
                 n_singletons_dropped=len(d) - int(fit._N),
                 n_runs=int(d.run_key.nunique()), n_treated_offers=int(d.is_treated.sum()),
                 **_rates(d), formula=fml)
@@ -326,7 +389,8 @@ def run_all(con, *, tweaks=None, ref=REF, **fit_kwargs):
     un-upgraded offers are fit as a placebo (placebo_* columns). beta_lo / se_lo are the
     log-odds versions (to_log_odds with the treated card's pick rate before). A tweak whose
     fit fails (e.g. no offers in a block) gets the reason in `error` (placebo_error for the
-    placebo) and blank estimates; the others still run. `fit_kwargs` go to fit_did."""
+    placebo) and blank estimates; the others still run. `fit_kwargs` go to fit_did (both
+    the main and the placebo fit), e.g. max_week_after=3 for fixed-horizon estimates."""
     ts = _csv(pathlib.Path(ref) / "tweak_sizes.csv")
     ts = ts[ts.solo_estimable == "yes"]
     if tweaks is not None:

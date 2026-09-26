@@ -362,6 +362,13 @@ run_hash); the build finishes the other pages and exits 1.
 - `offers_with_version` (parser 1.4.0, when `reference/card_versions.csv` exists):
   `primary_offers` joined to `card_versions` on (card_id, build_id), adding
   `card_version`, `event_ids`, `behavior_event_ids`. NULL version on v0.98.0 by design.
+- `run_key` (the dedup key, parser 1.6.0): SHA-256 of `seed|start_time|characters|ascension`,
+  where `characters` is every player's character, sorted (co-op copies can list the players
+  in a different order). Co-op copies of one run carry the same players list, so they share
+  it; different runs that happen to share seed and start time (18 solo `run_key`s on the
+  949-page tables, differing in character or ascension) get different keys. Up to parser
+  1.5.0 it was `seed|start_time` only. Every `run_key` value changed with 1.6.0: anything
+  keyed on an older `run_key` has to be regenerated.
 - Views: `runs_dedup` (first record per `run_key`, with `n_copies`), `card_offers_dedup`,
   `primary_offers` (the primary population below: solo, no modifiers, not modded, released
   build, not before release, Neow start; combat/elite/boss rewards plus event-then-fight
@@ -376,7 +383,10 @@ run_hash); the build finishes the other pages and exits 1.
   (`runs_mod_entity`) and runs flagged by that marker alone (`runs_mod_entity_only`), plus
   event-fight lists by length. Parser 1.5.0 adds `solo_run_keys_multi_record` (solo
   `run_key`s with more than one record) and `primary_offers_dedup_removed` (primary offer
-  rows the extra records would add without the dedup).
+  rows the extra records would add without the dedup). Parser 1.6.0 adds the key
+  collisions it now separates: `old_run_keys_split` (`(seed, start_time)` pairs, the old
+  key, that now hold more than one `run_key`), `run_keys_split_from_old_key` (the
+  `run_key`s in them) and `solo_old_run_keys_split` (the pairs split among solo records).
 
 On the 2 fetched pages, 0.55% of combat reward lists (0.19% of `primary_offers` rows)
 couldn't be split; none of the 966 split multi-screen lists had two picks in one screen.
@@ -391,6 +401,11 @@ Parser 1.5.0 on the first 2 pages fetched 2026-09-26 (2,000 records, 1,680 solo,
 2026-03-05 to 2026-04-05): 0 solo `run_key`s with more than one record, so the dedup
 removes 0 `primary_offers` rows (67,513 rows from 1,580 runs). All 137 multi-record
 `run_key`s are co-op copies (differing only in `run_hash`); one 2-player run has 4 records.
+Parser 1.6.0 on the same 2 pages (fetched again 2026-09-26): 137 multi-record `run_key`s,
+all co-op, the same as with the old key (in one of them the copies list the players in a
+different order; characters and ascension never differ within one); 0 keys split; 67,513
+`primary_offers` rows from 1,580 runs, unchanged. The pages have no solo duplicates, so the
+split is tested on the fixture only.
 Not yet verified on the full snapshot: how often a solo run is uploaded twice, and what
 differs between the copies (`_sts`, `player_token`).
 
@@ -413,7 +428,14 @@ cached card list for colors).
 - `offer_rate_check(df, card_patch_id)` (step 1): per card, offers and share of the
   character's offers before/after, log share ratio, `z_spread` (against the controls'
   median and scaled MAD), `z_binom` (log ratio minus the controls' median over its binomial
-  SE), `flag` when both |z| > 3.
+  SE), `flag` when both |z| > 3. `rarity` (from the cached card list: the card's rarity
+  now, not during the window; 4 card-patches changed rarity) and the same statistics
+  against the controls of the card's own rarity: `z_spread_rarity`, `z_binom_rarity`,
+  `flag_rarity`, with `controls_median_rarity`, `controls_mad_rarity`,
+  `n_controls_rarity`. A change in one rarity's pool moves every card of that rarity; this
+  comparison doesn't flag it. A rarity with fewer than 5 controls (or a card with no
+  rarity in the list: Follow Through, Prepare and Grapple on the 2 fetched pages) falls
+  back to all controls, with a note in `rarity_note`.
 - `fit_did(df, card_patch_id, ...)` (step 2): linear probability model with pyfixest,
   errors clustered by `run_key`:
   `picked ~ treat_post | card_id^upgraded + card_id^group + block^group + act + ascension`
@@ -422,8 +444,13 @@ cached card list for colors).
   `group` (within one uploader group), `pooled_groups` (no group terms: how much the
   adjustment matters), `drop_shared_screens` (control offers that shared a screen with the
   treated card: competition on the screen), `drop_behavior_flags` (bug-fixed controls),
-  `drop_uploaders` (heavy-uploader check). Returns beta (probability units), se, se_iid,
-  ci95, counts and the four pick rates. pyfixest drops singleton fixed-effect cells;
+  `drop_uploaders` (heavy-uploader check), `max_week_after` (fixed horizon: keep only
+  after-block offers with `week` <= the cap, 0 = release week; the before block is
+  unchanged). Returns beta (probability units), se (clustered by `run_key`, the main
+  error; ci95 uses it), se_hc (heteroskedasticity-robust, pyfixest `"hetero"`, same fit:
+  the comparison for clustering), se_iid, ci95, `max_week_after` (the setting, None when
+  unset) and `after_week_max` (latest after-block week in the fit data), counts and the
+  four pick rates. pyfixest drops singleton fixed-effect cells;
   `n_singletons_dropped` counts them.
 - `fit_event_study(df, card_patch_id, weeks=(-6, 8), ref_week=-1)` (step 2b): the treated
   card's gap per (week, block) cell, week^block^group fixed effects, the before-block
@@ -433,7 +460,8 @@ cached card list for colors).
   approximation, not a logit coefficient.
 - `run_all(con, ...)`: `fit_did` for every solo-estimable tweak plus its `tweak_sizes`
   columns and log-odds versions, one data load per window × character. Upgrade-only tweaks
-  are fit on upgraded offers, with the un-upgraded fit as `placebo_*`. A fit that can't run
+  are fit on upgraded offers, with the un-upgraded fit as `placebo_*`. Fit options (e.g.
+  `max_week_after=3`) go to both the main and the placebo fit. A fit that can't run
   (e.g. an empty block) gets the reason in `error`.
 
 Checked on synthetic offers (`tests/test_did.py`): a planted effect is recovered and a
@@ -444,6 +472,14 @@ run effect shared by all cards cancels in the treated-vs-control contrast and do
 2 fetched pages (2026-09-26, `start=2026-05-01` and `start=2026-07-01`) the first stable
 window fits end to end; the second has no v0.103.3 runs (no before block). Those estimates
 mean nothing at that size.
+Added checks (synthetic): with the treated card picked ~5% and controls ~30–60%, and no
+within-run correlation, se/se_iid = 0.71 but se/se_hc = 1.00; adding a run × card effect
+gives se/se_hc = 1.30 (while se/se_iid is 1.01: the two effects cancel). An effect growing
+2 points a week (0.02 + 0.02 × week, weeks 0–9): `max_week_after=3` gives 0.047 ± 0.009
+(truth 0.05), uncapped 0.106 ± 0.007 (truth 0.11). With every Uncommon card offered 1.5× as
+often after the patch, all six Uncommon cards flag against all controls (|z_binom| ≈ 25–30)
+and none against the Uncommon controls (|z_binom_rarity| ≤ 3.3, |z_spread_rarity| ≤ 2).
+Not yet run on real pages: the 2 pages fetched for this have no v0.103.2 runs.
 
 ## Phase 5 results, first pass (2026-09-26)
 
@@ -453,7 +489,8 @@ From `notebooks/02_pick_rate_did.ipynb` on the run tables built from the first 9
 
 **Data checks.** 106 of 577,092 solo `run_key`s (0.02%) have more than one record, so the
 missing dedup doesn't matter here. 18 of the 106 differ in character or ascension: different
-runs that share a seed and start time, which the 1.5.0 dedup would merge (fix pending).
+runs that share a seed and start time, which the 1.5.0 dedup would merge (fixed in parser 1.6.0: the key now includes the
+characters and ascension).
 Offers per stable build: v0.99.1 2.46M (62k runs), v0.103.2 2.98M (78k), v0.103.3 1.89M
 (51k), v0.107.1 3.95M (106k). v0.103.3 is not thin.
 

@@ -143,8 +143,19 @@ the same records as today's first page. So `player_token` appeared in the export
 2026-09-25, and pages downloaded before that lack it: whether a record has it depends on
 when its page was downloaded, not on the run. The run tables record a missing key as
 `has_player_token` NULL (unknown), not false. It probably identifies the uploader and is
-hashed like player IDs (`uploader_hash`). It would allow clustering by uploader;
-re-downloading pages 0–948 (~950 credits, about a day of the daily cap) is undecided.
+hashed like player IDs (`uploader_hash`).
+
+Probe on 2026-09-26 (3 fresh pages): the token is filled on 1.8% of records at the start of
+the export, 12% on a page submitted mid-June and 31% on one from mid-September, from 2, 5
+and 33 distinct uploaders. The export fills it in retroactively where it knows the uploader.
+It never appears together with `_sts`, so it marks a separate upload route (probably Spire
+Codex's own), not the SlayTheStats mod. Uploads are concentrated: one uploader made 259 of
+the 1,000 records on the September page. Decision: the first 949 pages are **not**
+re-downloaded for now (about a day of the cap for tokens on a few percent of those runs);
+resuming the download brings the recent, token-rich submissions. If tokens on the old pages
+matter later, fetch them into a separate folder and keep only a `run_hash → player_token`
+table to merge in. Uses: clustering standard errors by uploader, a drop-the-top-uploaders
+robustness check, and within-player before/after comparisons for a few heavy uploaders.
 
 `map_point_history` is a list of acts, each a list of floors. Each floor has:
 

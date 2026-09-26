@@ -1,0 +1,51 @@
+card_patch_id,card_id,color,stable_build,before_builds,after_builds,main_field,old,new,log_ratio,upgrade_field,upgrade_old,upgrade_new,upgraded_log_ratio,upgrade_only,mixed_direction,solo_estimable,direction,note
+ANTICIPATE@v0.103.2/patch,ANTICIPATE,silent,v0.103.2,v0.99.1,v0.103.2,powers_applied[0].amount,3,2,-0.4055,upgrade.dexterity,+2,+1,-0.5108,no,no,yes,1,
+BELIEVE_IN_YOU@v0.103.2/patch,BELIEVE_IN_YOU,colorless,v0.103.2,v0.99.1,v0.103.2,energy_gain,3,2,-0.4055,,,,,no,no,no,1,"not solo-estimable: multiplayer only, color colorless"
+COLLISION_COURSE@v0.103.2/patch,COLLISION_COURSE,regent,v0.103.2,v0.99.1,v0.103.2,damage,9,11,0.2007,upgrade.damage,+3,+4,0.2231,no,no,yes,1,
+CORROSIVE_WAVE@v0.103.2/patch,CORROSIVE_WAVE,silent,v0.103.2,v0.99.1,v0.103.2,vars.CorrosiveWave,3,2,-0.4055,,,,,no,no,yes,1,
+DANSE_MACABRE@v0.103.2/patch,DANSE_MACABRE,necrobinder,v0.103.2,v0.99.1,v0.103.2,powers_applied[0].amount,3,4,0.2877,upgrade.dansemacabrepower,+1,+2,0.4055,no,no,yes,1,
+DEBILITATE@v0.103.2/patch,DEBILITATE,necrobinder,v0.103.2,v0.99.1,v0.103.2,damage,7,10,0.3567,,,,,no,no,yes,1,
+ETERNAL_ARMOR@v0.103.2/patch,ETERNAL_ARMOR,colorless,v0.103.2,v0.99.1,v0.103.2,powers_applied[0].amount,7,9,0.2513,upgrade.platingpower,+2,+3,0.2877,no,no,no,1,not solo-estimable: color colorless
+FALLING_STAR@v0.103.2/patch,FALLING_STAR,regent,v0.103.2,v0.99.1,v0.103.2,damage,7,8,0.1335,,,,,no,no,no,1,not solo-estimable: rarity Basic
+FIGHT_ME@v0.103.2/patch,FIGHT_ME,ironclad,v0.103.2,v0.99.1,v0.103.2,powers_applied[0].amount,2,3,0.4055,,,,,no,no,yes,1,
+FLICK_FLACK@v0.103.2/patch,FLICK_FLACK,silent,v0.103.2,v0.99.1,v0.103.2,damage,7,6,-0.1542,,,,,no,no,yes,1,
+GATHER_LIGHT@v0.103.2/patch,GATHER_LIGHT,regent,v0.103.2,v0.99.1,v0.103.2,block,7,8,0.1335,,,,,no,no,yes,1,
+GLITTERSTREAM@v0.103.2/patch,GLITTERSTREAM,regent,v0.103.2,v0.99.1,v0.103.2,vars.BlockNextTurn,4,5,0.2231,,,,,no,no,yes,1,
+GRAND_FINALE@v0.103.2/patch,GRAND_FINALE,silent,v0.103.2,v0.99.1,v0.103.2,damage,50,60,0.1823,upgrade.damage,+10,+15,0.2231,no,no,yes,1,
+HEIRLOOM_HAMMER@v0.103.2/patch,HEIRLOOM_HAMMER,regent,v0.103.2,v0.99.1,v0.103.2,damage,17,20,0.1625,,,,,no,no,yes,1,
+HEMOKINESIS@v0.103.2/patch,HEMOKINESIS,ironclad,v0.103.2,v0.99.1,v0.103.2,damage,14,15,0.0690,,,,,no,no,yes,1,
+I_AM_INVINCIBLE@v0.103.2/patch,I_AM_INVINCIBLE,regent,v0.103.2,v0.99.1,v0.103.2,block,9,10,0.1054,,,,,no,no,yes,1,
+KINGLY_KICK@v0.103.2/patch,KINGLY_KICK,regent,v0.103.2,v0.99.1,v0.103.2,damage,24,27,0.1178,upgrade.damage,+6,+8,0.1542,no,no,yes,1,
+LEADING_STRIKE@v0.103.2/patch,LEADING_STRIKE,silent,v0.103.2,v0.99.1,v0.103.2,damage,7,3,-0.8473,,,,,no,yes,yes,1,
+MEMENTO_MORI@v0.103.2/patch,MEMENTO_MORI,silent,v0.103.2,v0.99.1,v0.103.2,damage,8,9,0.1178,,,,,no,no,yes,1,
+MINION_STRIKE@v0.103.2/patch,MINION_STRIKE,token,v0.103.2,v0.99.1,v0.103.2,damage,7,6,-0.1542,,,,,no,no,no,1,"not solo-estimable: rarity Token, color token"
+PARRY@v0.103.2/patch,PARRY,regent,v0.103.2,v0.99.1,v0.103.2,powers_applied[0].amount,6,10,0.5108,upgrade.parrypower,+3,+4,0.4418,no,no,yes,1,
+PATTER@v0.103.2/patch,PATTER,regent,v0.103.2,v0.99.1,v0.103.2,block,8,9,0.1178,,,,,no,no,yes,1,
+PINPOINT@v0.103.2/patch,PINPOINT,silent,v0.103.2,v0.99.1,v0.103.2,damage,17,15,-0.1252,upgrade.damage,+5,+4,-0.1466,no,no,yes,1,
+REFINE_BLADE@v0.103.2/patch,REFINE_BLADE,regent,v0.103.2,v0.99.1,v0.103.2,vars.Forge,6,9,0.4055,,,,,no,no,yes,1,
+SCULPTING_STRIKE@v0.103.2/patch,SCULPTING_STRIKE,necrobinder,v0.103.2,v0.99.1,v0.103.2,damage,8,9,0.1178,,,,,no,no,yes,1,
+SEEKER_STRIKE@v0.103.2/patch,SEEKER_STRIKE,colorless,v0.103.2,v0.99.1,v0.103.2,damage,6,9,0.4055,,,,,no,no,no,1,not solo-estimable: color colorless
+SERPENT_FORM@v0.103.2/patch,SERPENT_FORM,silent,v0.103.2,v0.99.1,v0.103.2,,,,,upgrade.serpentformpower,+1,+2,,yes,no,yes,1,upgrade-only: no base field changed; base value not in the change tables: no upgraded ratio
+SKEWER@v0.103.2/patch,SKEWER,silent,v0.103.2,v0.99.1,v0.103.2,damage,7,8,0.1335,,,,,no,no,yes,1,
+SOLAR_STRIKE@v0.103.2/patch,SOLAR_STRIKE,regent,v0.103.2,v0.99.1,v0.103.2,damage,8,9,0.1178,,,,,no,no,yes,1,
+UNTOUCHABLE@v0.103.2/patch,UNTOUCHABLE,silent,v0.103.2,v0.99.1,v0.103.2,block,9,6,-0.4055,upgrade.block,+3,+2,-0.4055,no,no,yes,1,
+WROUGHT_IN_WAR@v0.103.2/patch,WROUGHT_IN_WAR,regent,v0.103.2,v0.99.1,v0.103.2,vars.Forge,5,7,0.3365,,,,,no,no,yes,1,
+BULWARK@v0.107.1/patch,BULWARK,regent,v0.107.1,v0.103.3,v0.107.1,block,13,12,-0.0800,,,,,no,no,yes,1,
+CRESCENT_SPEAR@v0.107.1/patch,CRESCENT_SPEAR,regent,v0.107.1,v0.103.3,v0.107.1,damage,6,8,0.2877,,,,,no,no,yes,1,
+DEATH_MARCH@v0.107.1/patch,DEATH_MARCH,necrobinder,v0.107.1,v0.103.3,v0.107.1,vars.ExtraDamage,3,4,0.2877,upgrade.extradamage,+1,+2,0.4055,no,no,yes,1,"mostly an upgrade change, but base vars.ExtraDamage changes too (3 -> 4): not upgrade-only, and its un-upgraded offers are no placebo"
+DEBILITATE@v0.107.1/patch,DEBILITATE,necrobinder,v0.107.1,v0.103.3,v0.107.1,powers_applied[0].amount,3,2,-0.4055,,,,,no,no,yes,1,
+FASTEN@v0.107.1/patch,FASTEN,colorless,v0.107.1,v0.103.3,v0.107.1,vars.ExtraBlock,5,4,-0.2231,,,,,no,no,no,1,not solo-estimable: color colorless
+FURNACE@v0.107.1/patch,FURNACE,regent,v0.107.1,v0.103.3,v0.107.1,vars.Forge,4,5,0.2231,,,,,no,no,yes,1,
+HYPERBEAM@v0.107.1/patch,HYPERBEAM,defect,v0.107.1,v0.103.3,v0.107.1,damage,26,28,0.0741,,,,,no,no,yes,1,
+JUGGERNAUT@v0.107.1/patch,JUGGERNAUT,ironclad,v0.107.1,v0.103.3,v0.107.1,powers_applied[0].amount,5,6,0.1823,,,,,no,no,yes,1,
+MINION_SACRIFICE@v0.107.1/patch,MINION_SACRIFICE,token,v0.107.1,v0.103.3,v0.107.1,block,9,8,-0.1178,,,,,no,no,no,1,"not solo-estimable: rarity Token, color token"
+PATTER@v0.107.1/patch,PATTER,regent,v0.107.1,v0.103.3,v0.107.1,block,9,8,-0.1178,,,,,no,no,yes,1,
+POUNCE@v0.107.1/patch,POUNCE,silent,v0.107.1,v0.103.3,v0.107.1,damage,12,14,0.1542,,,,,no,no,yes,1,
+REFLECT@v0.107.1/patch,REFLECT,regent,v0.107.1,v0.103.3,v0.107.1,block,17,15,-0.1252,upgrade.block,+4,+5,-0.0488,no,yes,yes,1,
+ROYALTIES@v0.107.1/patch,ROYALTIES,regent,v0.107.1,v0.103.3,v0.107.1,,,,,upgrade.gold,+5,+10,,yes,no,yes,1,upgrade-only: no base field changed; base value not in the change tables: no upgraded ratio
+SIC_EM@v0.107.1/patch,SIC_EM,necrobinder,v0.107.1,v0.103.3,v0.107.1,powers_applied[0].amount,2,3,0.4055,,,,,no,no,yes,1,
+SYNTHESIS@v0.107.1/patch,SYNTHESIS,defect,v0.107.1,v0.103.3,v0.107.1,damage,12,14,0.1542,,,,,no,no,yes,1,
+THE_SCYTHE@v0.107.1/patch,THE_SCYTHE,necrobinder,v0.107.1,v0.103.3,v0.107.1,vars.Increase,3,4,0.2877,,,,,no,no,yes,1,
+UNRELENTING@v0.107.1/patch,UNRELENTING,ironclad,v0.107.1,v0.103.3,v0.107.1,damage,12,14,0.1542,,,,,no,no,yes,1,
+UNTOUCHABLE@v0.107.1/patch,UNTOUCHABLE,silent,v0.107.1,v0.103.3,v0.107.1,,,,,upgrade.block,+2,+3,0.1178,yes,no,yes,1,"upgrade-only: no base field changed; upgraded ratio uses base block 6 (set by the v0.103.2 card-patch, unchanged since)"
+UPROAR@v0.107.1/patch,UPROAR,defect,v0.107.1,v0.103.3,v0.107.1,damage,5,6,0.1823,,,,,no,no,yes,1,

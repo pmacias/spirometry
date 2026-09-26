@@ -311,6 +311,18 @@ details and counts in `notes/treatment_table.md`):
   between the two blocks), `behavior_in_window`, `control_behavior_flags`. v0.99.0 is in
   no window; the thin betas pool (v0.103.0+v0.103.1, v0.105.0+v0.105.1,
   v0.109.0+v0.109.1).
+- `tweak_sizes.csv` — one row per numeric tweak card-patch (50), built by
+  `python -m spirometry.tweaks` from `card_patch_fields.csv`, `windows.csv` and
+  `card_changes.csv`: window builds, `main_field` (first of damage, block, energy_gain,
+  powers_applied[0].amount, else the single changed vars.* field) with `old`, `new`,
+  `log_ratio` = ln(new/old); the changed upgrade delta (`upgrade_field`, `upgrade_old`,
+  `upgrade_new`) and `upgraded_log_ratio`; `upgrade_only` (Serpent Form, Royalties,
+  Untouchable v0.107.1), `mixed_direction` (Leading Strike, Reflect), `solo_estimable`
+  (no for the 7 in `patch_history.tweak_report`), `direction` (+1 = bigger number is
+  stronger; exceptions in `tweaks.DIRECTION`, none so far), `note`. Death March is not
+  upgrade-only (base `vars.ExtraDamage` changes too; noted). Serpent Form and Royalties have
+  no upgraded ratio (their base value isn't in the change tables); Untouchable v0.107.1's
+  uses base block 6 from its v0.103.2 card-patch.
 
 Caveats: update-history types every entry "Beta Patch" (including stable v0.103.2) and has
 no entries for stable-only hotfixes (v0.98.1–v0.98.3, v0.99.1, v0.103.1). The wiki fills
@@ -384,6 +396,57 @@ removes 0 `primary_offers` rows (67,513 rows from 1,580 runs). All 137 multi-rec
 `run_key`s are co-op copies (differing only in `run_hash`); one 2-player run has 4 records.
 Not yet verified on the full snapshot: how often a solo run is uploaded twice, and what
 differs between the copies (`_sts`, `player_token`).
+
+## Phase 5 tooling (`spirometry.did`)
+
+Functions that return tables for the analysis notebook (no plotting). Input: a read-only
+connection to `runs.duckdb` (`offers_with_version`, plus `runs` for `uploader_hash`) and the
+reference CSVs (`windows.csv` at `level = card_patch`, `builds.csv`, `tweak_sizes.csv`, the
+cached card list for colors).
+
+- `load_window(con, card_patch_id)`: the window's offers for the treated card's character,
+  that character's cards only, on `before_builds` + `after_builds`: `run_key`, `card_id`,
+  `block`, `picked`, `upgraded`, `act`, `ascension`, `group` (tagged / untagged, from the
+  copy `runs_dedup` keeps), `screen_id` (run_key|floor|set_idx, or |list when set_idx is
+  NULL), `start_time`, `week` (whole weeks from the first after-build's release date),
+  `build_id`, `uploader_hash`. Categorical columns to keep memory down.
+- `control_cards(card_patch_id, drop_behavior_flags=False, df=...)`: same-color cards seen
+  in the window minus the treated card and `control_exclusions` (and
+  `control_behavior_flags` if asked).
+- `offer_rate_check(df, card_patch_id)` (step 1): per card, offers and share of the
+  character's offers before/after, log share ratio, `z_spread` (against the controls'
+  median and scaled MAD), `z_binom` (log ratio minus the controls' median over its binomial
+  SE), `flag` when both |z| > 3.
+- `fit_did(df, card_patch_id, ...)` (step 2): linear probability model with pyfixest,
+  errors clustered by `run_key`:
+  `picked ~ treat_post | card_id^upgraded + card_id^group + block^group + act + ascension`
+  (ascension one level each; group terms dropped when the data have one group). Options:
+  `upgraded` (fit on upgraded or un-upgraded offers: upgrade-only tweaks and their placebo),
+  `group` (within one uploader group), `pooled_groups` (no group terms: how much the
+  adjustment matters), `drop_shared_screens` (control offers that shared a screen with the
+  treated card: competition on the screen), `drop_behavior_flags` (bug-fixed controls),
+  `drop_uploaders` (heavy-uploader check). Returns beta (probability units), se, se_iid,
+  ci95, counts and the four pick rates. pyfixest drops singleton fixed-effect cells;
+  `n_singletons_dropped` counts them.
+- `fit_event_study(df, card_patch_id, weeks=(-6, 8), ref_week=-1)` (step 2b): the treated
+  card's gap per (week, block) cell, week^block^group fixed effects, the before-block
+  `ref_week` cell omitted; weeks outside the range binned into the end weeks; before-build
+  offers played after the release are their own cells.
+- `to_log_odds(beta, se, p_before)`: delta-method conversion, beta / (p(1-p)); an
+  approximation, not a logit coefficient.
+- `run_all(con, ...)`: `fit_did` for every solo-estimable tweak plus its `tweak_sizes`
+  columns and log-odds versions, one data load per window × character. Upgrade-only tweaks
+  are fit on upgraded offers, with the un-upgraded fit as `placebo_*`. A fit that can't run
+  (e.g. an empty block) gets the reason in `error`.
+
+Checked on synthetic offers (`tests/test_did.py`): a planted effect is recovered and a
+planted null gives ~0; with the tagged share moving 10% → 70% and a 20-point group gap on
+the treated card, the pooled fit shows a +0.11 fake effect and the group-term fit doesn't;
+a run × card random effect makes the clustered SE larger than the iid one (x1.27), while a
+run effect shared by all cards cancels in the treated-vs-control contrast and doesn't. On
+2 fetched pages (2026-09-26, `start=2026-05-01` and `start=2026-07-01`) the first stable
+window fits end to end; the second has no v0.103.3 runs (no before block). Those estimates
+mean nothing at that size.
 
 ## Audit decisions (first pass: 949 pages, submissions to ~2026-07-19)
 

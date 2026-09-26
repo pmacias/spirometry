@@ -26,11 +26,11 @@ See [PLAN.md](PLAN.md) for the research questions and methods.
 | [SPIROMETRY.md](SPIROMETRY.md) | Reference: data sources, record structure, known data issues |
 | [CLAUDE.md](CLAUDE.md) | Standing instructions for Claude Code sessions |
 | `notes/` | Investigation notes: patch history endpoints (`patch_history.md`), run file structure and table proposal (`run_schema.md`), patch notes vs. card tables (`patch_notes_crosscheck.md`), card versions and DiD windows (`treatment_table.md`) |
-| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `runs.py` parses the run snapshot into Parquet + DuckDB run tables |
+| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study) that the analysis notebook calls |
 | `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
 | `scripts/audit_extract.py` | Interim: compact audit tables from the snapshot (runs, aggregated offer counts) into `data/audit/` |
 | `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power |
-| `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes, change events, card-patch net fields, per-build card versions, DiD windows (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages) |
+| `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes, change events, card-patch net fields, per-build card versions, DiD windows, numeric tweak sizes (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages) |
 | `data/runs/` | Run tables built locally by `spirometry.runs` (git-ignored, never committed) |
 | `data/audit/` | Audit tables built locally by `scripts/audit_extract.py` (git-ignored) |
 | `tests/` | pytest tests; `tests/fixtures/sample_runs.jsonl` holds 7 sample records (6 runs, one solo run uploaded twice; the only run data in git; co-op player IDs replaced) |
@@ -101,6 +101,27 @@ python -m spirometry.treatment
 
 `python -m spirometry.runs build` then adds `offers_with_version` to `runs.duckdb`
 (`primary_offers` with the card version on each run's build).
+
+Build the tweak size table (`reference/tweak_sizes.csv`) from the treatment tables:
+
+```bash
+python -m spirometry.tweaks
+```
+
+The Phase 5 functions in `spirometry.did` run on the run tables from a notebook:
+
+```python
+import duckdb
+from spirometry import did
+con = duckdb.connect("data/runs/runs.duckdb", read_only=True)
+df = did.load_window(con, "PARRY@v0.103.2/patch")
+did.offer_rate_check(df, "PARRY@v0.103.2/patch")
+did.fit_did(df, "PARRY@v0.103.2/patch")
+results = did.run_all(con)            # every solo-estimable tweak
+```
+
+`SPIROMETRY_SMOKE_DB=path/to/runs.duckdb python -m pytest tests/test_did.py` also runs the
+smoke test on a build from fetched pages.
 
 ## Data
 

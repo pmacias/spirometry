@@ -150,6 +150,11 @@ stable diffs. It also has to hold changes that were revised or reverted within b
 ### 5. Analysis — Phil, in this order
 *Prep (CC, PR): `pyfixest` added to the `analysis` extra (unpinned); `primary_offers`
 deduplicated by `run_key` (parser 1.5.0).*
+*Tooling (CC, PR): `reference/tweak_sizes.csv` (`python -m spirometry.tweaks`, 50 numeric
+tweaks, 43 solo-estimable) and `spirometry.did` (load_window, control_cards,
+offer_rate_check, fit_did, fit_event_study, to_log_odds, run_all); tested on synthetic
+offers and smoke-tested on 2 fetched pages (first window only: the pages have no v0.103.3
+runs). Next: Phil runs it on the full build (parser 1.5.0) in the analysis notebook.*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -181,7 +186,9 @@ README with results, portfolio card on pmacias.github.io.
    the audit notebook onto them.
 6. Phase 4: review the treatment tables (`notes/treatment_table.md`), then rebuild the
    run tables (parser 1.5.0) for `offers_with_version` and the deduplicated `primary_offers`.
-7. When official act 4 (or other new content) ships: re-cache the game lists for the new
+7. Phase 5: review `tweak_sizes.csv` and the DiD tooling choices (decision log), then run
+   `spirometry.did` on the full build (parser 1.5.0) from the analysis notebook.
+8. When official act 4 (or other new content) ships: re-cache the game lists for the new
    builds and switch the mod-entity rule to per-build lists (see SPIROMETRY.md, custom and
    modded runs).
 
@@ -389,6 +396,26 @@ README with results, portfolio card on pmacias.github.io.
 - `pyfixest` for Phase 5's fixed-effects regressions (CC's choice, open to review): added
   to the `analysis` extra unpinned, like the other dependencies; 0.60.0 installs and
   imports on Python 3.11. Pin it (or set a floor) if a result must be reproduced exactly.
+- Tweak sizes (CC's choices, open to review): main field and ratio as in
+  `spirometry.tweaks`; the upgrade delta is assumed to apply to the main field when both
+  changed (true for all 50). Upgrade-only tweaks have no main field; their upgraded ratio
+  needs the base value, taken from an earlier card-patch of the matching field when there
+  is one (Untouchable v0.107.1: block 6), else blank (Serpent Form, Royalties).
+  `mixed_direction` compares the sign of every changed numeric field, vars and upgrade
+  included. `direction` = +1 for all 50 (`tweaks.DIRECTION` is empty). Death March is
+  flagged in `note` (`tweaks.NOTES`), not upgrade-only.
+- DiD tooling (CC's choices, open to review): its own module `spirometry.did` and its own
+  `spirometry.tweaks` (not a treatment subcommand). `uploader_hash` comes from joining
+  `runs` (it isn't in `primary_offers`). "Character's offers" = offers to that character of
+  cards of its color (colorless and other cards dropped); offer shares use that total.
+  `control_cards` takes the data frame to know which cards were seen (without it, the
+  card list's cards of that color). `offer_rate_check`'s binomial z measures the log ratio
+  against the controls' median, not zero (shares sum to one, so one card's jump moves all
+  the others), and z/flag are computed for every card. Rows with NULL ascension are
+  dropped from fits. pyfixest's default singleton drop is kept and counted. The screen
+  filter (`drop_shared_screens`) runs before the upgraded/group filters, on screens as
+  offered. `fit_did` refuses a fit with no treated or control offers in a block (reason in
+  `run_all`'s `error`). The event study also takes `upgraded`, `group`, `pooled_groups`.
 - `primary_offers` deduplicated by run (CC's choices, open to review, parser 1.5.0): it
   joins `runs_dedup` instead of `runs`, so a solo run uploaded twice (same `run_key`,
   different `run_hash`) counts once. The copy kept is the one `runs_dedup` keeps (first by

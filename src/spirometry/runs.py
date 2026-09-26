@@ -9,9 +9,10 @@ worker process, and writes one Parquet file per page per table:
     <out>/shop_offers/page_NNNNN.parquet  shop offers: solo shelf + rebuilt purchases; co-op raw
     <out>/build_info.parquet              parser version, build time, counts
     <out>/runs.duckdb                     views over the Parquet files (absolute paths),
-                                          plus runs_dedup, card_offers_dedup, primary_offers,
-                                          and offers_with_version (primary_offers joined to
-                                          reference/card_versions.csv) when that file exists
+                                          plus runs_dedup, card_offers_dedup, primary_offers
+                                          (one record per run_key), and offers_with_version
+                                          (primary_offers joined to reference/card_versions.csv)
+                                          when that file exists
 
 Base tables keep every row and carry flags; filtering happens in the views. source_page is
 the page file's number, source_line the record's 0-based line in it. Exact repeats
@@ -36,7 +37,7 @@ import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-PARSER_VERSION = "1.4.0"
+PARSER_VERSION = "1.5.0"
 REF = pathlib.Path("reference")
 SALT_ENV = "SPIROMETRY_SALT"
 SALT_FILE = pathlib.Path(".spirometry_salt")
@@ -516,9 +517,22 @@ def drop_repeats(out_dir):
 def table_stats(out_dir):
     """Counts on the final (repeat-free) tables for build_info. Combat lists (combat, elite,
     boss, event_combat) are counted on their list_pos = 0 row; multi-pick screens only among
-    lists split into several screens. Run flags are counted on records."""
+    lists split into several screens. Run flags are counted on records.
+    solo_run_keys_multi_record: solo run_keys with more than one record (a run uploaded
+    twice under different run_hashes); primary_offers_dedup_removed: the primary offer rows
+    those extra records would add without runs_dedup."""
     g = lambda t: f"read_parquet('{out_dir / t / '*.parquet'}')"
     con = duckdb.connect()
+    for t in TABLES:
+        con.execute(f"CREATE VIEW {t} AS SELECT * FROM {g(t)}")
+    con.execute(VIEWS)
+    solo_multi = con.execute("""
+        SELECT count(*) FROM (SELECT run_key FROM runs WHERE n_players = 1
+                              GROUP BY run_key HAVING count(*) > 1)""").fetchone()[0]
+    primary_removed = con.execute(f"""
+        SELECT (SELECT count(*) FROM card_offers o JOIN runs r USING (run_hash)
+                WHERE {PRIMARY_FILTER}) - (SELECT count(*) FROM primary_offers)
+        """).fetchone()[0]
     lists, lists_null, offers, offers_null, multi = con.execute(f"""
         SELECT count(*), count(*) FILTER (WHERE screen_size IS NULL), sum(list_len),
                sum(list_len) FILTER (WHERE screen_size IS NULL),
@@ -552,12 +566,22 @@ def table_stats(out_dir):
             "combat_lists_multi_screen": multi, "combat_screens_multi_pick": multi_pick,
             "event_fight_lists_by_len": ", ".join(f"{n}:{c}" for n, c in event_fight_lens),
             "shop_bought_rows": bought,
+            "solo_run_keys_multi_record": solo_multi,
+            "primary_offers_dedup_removed": primary_removed,
             **dict(zip(["runs_not_released", "runs_before_release", "runs_not_neow_start",
                         "runs_modded", "runs_uploader_tag", "runs_player_token_absent",
                         "runs_player_token_present", "runs_mod_entity",
                         "runs_mod_entity_only"], flags))}
 
 
+# The primary population (SPIROMETRY.md, Audit decisions), on offers o of runs r.
+PRIMARY_FILTER = f"""
+    r.n_players = 1 AND NOT r.is_custom AND NOT r.is_modded
+      AND r.released AND NOT r.before_release AND r.neow_start
+      AND o.source IN {COMBAT_SOURCES} AND NOT o.is_mod_card"""
+
+# primary_offers takes runs from runs_dedup, so a solo run uploaded twice (same run_key,
+# different run_hash) counts once: the record runs_dedup keeps, first by (page, line).
 VIEWS = f"""
 CREATE VIEW runs_dedup AS
     SELECT * EXCLUDE (rn), n_copies FROM (
@@ -570,10 +594,8 @@ CREATE VIEW primary_offers AS
     SELECT o.*, o.source = 'event_combat' AS event_fight, r.build_id, r.branch,
            r.ascension, r.win, r.was_abandoned, r.abandoned_at_neow, r.start_time,
            r.uploader_tag
-    FROM card_offers o JOIN runs r USING (run_hash)
-    WHERE r.n_players = 1 AND NOT r.is_custom AND NOT r.is_modded
-      AND r.released AND NOT r.before_release AND r.neow_start
-      AND o.source IN {COMBAT_SOURCES} AND NOT o.is_mod_card;
+    FROM card_offers o JOIN runs_dedup r USING (run_hash)
+    WHERE {PRIMARY_FILTER};
 """
 
 

@@ -108,8 +108,12 @@ failing page is skipped and reported instead of aborting the build, and enchantm
 outside the game's list are a mod marker. Parser 1.3.0 (PR): events, encounters and
 monsters outside the game's lists are a mod marker too (`runs.mod_markers`,
 `runs.mod_entities`; `build_info.runs_mod_entity_only` counts the runs it newly flags).
-Next: Phil reruns the full build. `deck_final`, `deaths` and relic/event choices not
-started.*
+Parser 1.5.0 (PR, CC): `primary_offers` takes runs from `runs_dedup`, so a solo run
+uploaded twice under different `run_hash`es counts once; `build_info` counts such
+`run_key`s (`solo_run_keys_multi_record`) and the rows removed
+(`primary_offers_dedup_removed`). Fixture-tested; 0 and 0 on 2 fetched pages.
+Next: Phil reruns the full build and reads both counts. `deck_final`, `deaths` and
+relic/event choices not started.*
 
 ### 4. Treatment table — CC
 *Status: reference tables built (PR), `python -m spirometry.treatment`:
@@ -144,6 +148,8 @@ stable diffs. It also has to hold changes that were revised or reverted within b
 (`behavior_changes.csv`) that no card field shows.
 
 ### 5. Analysis — Phil, in this order
+*Prep (CC, PR): `pyfixest` added to the `analysis` extra (unpinned); `primary_offers`
+deduplicated by `run_key` (parser 1.5.0).*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -174,7 +180,7 @@ README with results, portfolio card on pmacias.github.io.
 5. Build the run tables on the full snapshot (`python -m spirometry.runs build`) and move
    the audit notebook onto them.
 6. Phase 4: review the treatment tables (`notes/treatment_table.md`), then rebuild the
-   run tables (parser 1.4.0) for `offers_with_version`.
+   run tables (parser 1.5.0) for `offers_with_version` and the deduplicated `primary_offers`.
 7. When official act 4 (or other new content) ships: re-cache the game lists for the new
    builds and switch the mod-entity rule to per-build lists (see SPIROMETRY.md, custom and
    modded runs).
@@ -380,3 +386,13 @@ README with results, portfolio card on pmacias.github.io.
   for the new builds and check each run against its own build's lists, plus a backstop
   (act 4 content on a build before its release = modded), so a mod id that collides with
   a new official one doesn't un-flag earlier modded runs.
+- `pyfixest` for Phase 5's fixed-effects regressions (CC's choice, open to review): added
+  to the `analysis` extra unpinned, like the other dependencies; 0.60.0 installs and
+  imports on Python 3.11. Pin it (or set a floor) if a result must be reproduced exactly.
+- `primary_offers` deduplicated by run (CC's choices, open to review, parser 1.5.0): it
+  joins `runs_dedup` instead of `runs`, so a solo run uploaded twice (same `run_key`,
+  different `run_hash`) counts once. The copy kept is the one `runs_dedup` keeps (first by
+  page, line), not the one with an `_sts` tag or a `player_token`; the filters and
+  `uploader_tag` come from that copy. `build_info` gets `solo_run_keys_multi_record` and
+  `primary_offers_dedup_removed`. Test variants of a fixture run now get their own seed
+  (a new `run_key`) so they stay separate runs.

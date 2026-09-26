@@ -14,9 +14,9 @@ FIXTURE = HERE / "fixtures" / "sample_runs.jsonl"
 REF = HERE.parent / "reference"
 KEY = b"spirometry-test-key"
 
-WIN, SIX, ABANDONED, COOP, PREPARE, SCHEMA10 = (
+WIN, SIX, ABANDONED, COOP, PREPARE, SCHEMA10, SCHEMA10_COPY = (
     "2823a3180dad3c9c", "344778d82365e4af", "420e7f550122ee41",
-    "1ee25d46da842936", "545666d976bab316", "ab7f7e8f6118dc26")
+    "1ee25d46da842936", "545666d976bab316", "ab7f7e8f6118dc26", "c4125c3cab8b7cf3")
 
 
 def lines():
@@ -64,11 +64,12 @@ def test_offer_counts_per_run_and_source(db):
         (ABANDONED, "combat", 9, 3, 0),
         (PREPARE, "combat", 12, 4, 0),
         (SCHEMA10, "combat", 9, 3, 0),
+        (SCHEMA10_COPY, "combat", 9, 3, 0),
     ]
     # every card_choices entry becomes one row
     raw = sum(len(s.get("card_choices", [])) for l in lines()
               for a in json.loads(l)["map_point_history"] for f in a for s in f["player_stats"])
-    assert rows(con, "SELECT count(*) FROM card_offers")[0][0] == raw == 182
+    assert rows(con, "SELECT count(*) FROM card_offers")[0][0] == raw == 191
 
 
 def test_run_flags(db):
@@ -84,6 +85,7 @@ def test_run_flags(db):
         COOP: ("v0.99.1", "stable", 8, 2, False, False, False, False, False, True),
         PREPARE: ("v0.100.0", "beta", 8, 1, False, True, False, False, False, True),
         SCHEMA10: ("v0.111.0", "beta", 10, 1, False, False, False, False, False, True),
+        SCHEMA10_COPY: ("v0.111.0", "beta", 10, 1, False, False, False, False, False, True),
     }
     assert rows(con, f"SELECT uploader_tag FROM runs WHERE run_hash = '{SCHEMA10}'")[0][0]
 
@@ -113,9 +115,34 @@ def test_primary_offers(db):
     _, con = db
     got = rows(con, "SELECT run_hash, count(*), sum(picked::INT) FROM primary_offers "
                     "GROUP BY 1 ORDER BY 1")
-    # solo only (no COOP); combat/elite/boss only (WIN loses its event and shop rows)
+    # solo only (no COOP); combat/elite/boss only (WIN loses its event and shop rows);
+    # SCHEMA10_COPY (same run, uploaded again without _sts) counts once, as SCHEMA10
     assert got == [(WIN, 75, 13), (SIX, 24, 4), (ABANDONED, 9, 3), (PREPARE, 12, 4),
                    (SCHEMA10, 9, 3)]
+
+
+def test_solo_run_uploaded_twice_counts_once(db):
+    info, con = db
+    assert rows(con, f"""SELECT run_hash, run_key, uploader_tag IS NOT NULL FROM runs
+                         WHERE run_hash IN ('{SCHEMA10}', '{SCHEMA10_COPY}') ORDER BY 1""") == [
+        (SCHEMA10, runs.run_key("SYNTHS100006", 1790000000), True),
+        (SCHEMA10_COPY, runs.run_key("SYNTHS100006", 1790000000), False)]
+    assert rows(con, f"SELECT run_hash, n_copies FROM runs_dedup "
+                     f"WHERE run_hash IN ('{SCHEMA10}', '{SCHEMA10_COPY}')") == [(SCHEMA10, 2)]
+    assert rows(con, "SELECT count(*) FROM primary_offers WHERE run_hash = "
+                     f"'{SCHEMA10_COPY}'") == [(0,)]
+    assert rows(con, "SELECT count(*) FROM offers_with_version WHERE run_hash = "
+                     f"'{SCHEMA10_COPY}'") == [(0,)]
+    assert (info["solo_run_keys_multi_record"], info["primary_offers_dedup_removed"]) == (1, 9)
+
+
+def test_dedup_keeps_first_copy_by_page(tmp_path):
+    recs = lines()
+    info, con = build(tmp_path, [[recs[6]], recs[:6]])      # the untagged copy comes first
+    assert rows(con, "SELECT DISTINCT run_hash, uploader_tag FROM primary_offers "
+                     f"WHERE run_hash IN ('{SCHEMA10}', '{SCHEMA10_COPY}')") == [
+        (SCHEMA10_COPY, None)]
+    assert info["primary_offers_dedup_removed"] == 9
 
 
 def test_beta_only_card_kept_and_flagged(db):
@@ -154,13 +181,15 @@ def test_build_info(db):
     info, con = db
     meta = dict(rows(con, "SELECT key, value FROM build_info"))
     assert meta["parser_version"] == runs.PARSER_VERSION
-    assert meta["records_read"] == "6" and meta["duplicate_records_dropped"] == "0"
+    assert meta["records_read"] == "7" and meta["duplicate_records_dropped"] == "0"
     assert meta["combat_lists_set_idx_null"] == "0"
     assert meta["event_fight_lists_by_len"] == ""
     assert (meta["runs_not_released"], meta["runs_before_release"],
             meta["runs_not_neow_start"], meta["runs_modded"], meta["runs_uploader_tag"],
             meta["runs_player_token_absent"], meta["runs_mod_entity"]) == (
-        "0", "0", "0", "0", "1", "6", "0")
+        "0", "0", "0", "0", "1", "7", "0")
+    assert (meta["solo_run_keys_multi_record"], meta["primary_offers_dedup_removed"]) \
+        == ("1", "9")
     assert meta["key_fingerprint"] == runs.key_fingerprint(KEY)
     assert rows(con, "SELECT DISTINCT source_page FROM runs") == [(0,)]
 
@@ -170,12 +199,12 @@ def test_build_info(db):
 def test_exact_repeats_dropped_across_pages(tmp_path):
     recs = lines()
     info, con = build(tmp_path, [recs, [recs[1], recs[0]]])
-    assert info["records_read"] == 8
+    assert info["records_read"] == 9
     assert info["duplicate_records_dropped"] == 2
     assert info["duplicates_with_different_content"] == 0
     assert rows(con, "SELECT count(*), count(DISTINCT run_hash), max(source_page) FROM runs") \
-        == [(6, 6, 0)]
-    assert rows(con, "SELECT count(*) FROM card_offers") == [(182,)]
+        == [(7, 7, 0)]
+    assert rows(con, "SELECT count(*) FROM card_offers") == [(191,)]
 
 
 def test_coop_copies_kept_and_deduped_in_view(tmp_path):
@@ -184,17 +213,19 @@ def test_coop_copies_kept_and_deduped_in_view(tmp_path):
     copy["run_hash"] = "ffffffffffffffff"
     info, con = build(tmp_path, [recs, [json.dumps(copy)]])
     assert info["duplicate_records_dropped"] == 0
-    assert rows(con, "SELECT count(*) FROM runs") == [(7,)]
+    assert rows(con, "SELECT count(*) FROM runs") == [(8,)]
     assert rows(con, "SELECT count(*), max(n_copies) FROM runs_dedup") == [(6, 2)]
     assert rows(con, "SELECT count(*) FROM card_offers_dedup") == [(182,)]
-    assert rows(con, "SELECT run_hash FROM runs_dedup WHERE n_copies = 2") == [(COOP,)]
+    assert rows(con, "SELECT run_hash FROM runs_dedup WHERE n_copies = 2 ORDER BY 1") \
+        == [(COOP,), (SCHEMA10,)]
+    assert info["solo_run_keys_multi_record"] == 1          # co-op copies don't count
 
 
 def test_workers_pages_and_rebuild_overwrite(tmp_path):
     recs = lines()
     info, con = build(tmp_path, [recs[:3], recs[3:]], workers=2)
     assert rows(con, "SELECT source_page, count(*) FROM runs GROUP BY 1 ORDER BY 1") \
-        == [(0, 3), (1, 3)]
+        == [(0, 3), (1, 4)]
     con.close()
     info, con = build(tmp_path, [recs[:3], recs[3:]], pages=1)
     assert info["pages_parsed"] == 1
@@ -211,20 +242,21 @@ def test_branch_blank_or_unknown_is_null(tmp_path):
         == [("v0.98.0", None), ("v9.9.9", None)]
 
 
+def variant(i, run_hash, **fields):
+    """A fixture run under a new run_hash and seed (so a new run_key: a separate run, not
+    a second upload of run i), with top-level fields replaced."""
+    return {**json.loads(lines()[i]), "run_hash": run_hash, "seed": run_hash, **fields}
+
+
 def test_modded_and_custom_runs_leave_primary(tmp_path):
     r = json.loads(lines()[5])
-    mod = dict(r, run_hash="a" * 16)
+    mod = dict(r, run_hash="a" * 16, seed="a" * 16)
     mod["players"] = [dict(mod["players"][0], character="CHARACTER.HERMIT-HERMIT")]
-    custom = dict(r, run_hash="b" * 16, modifiers=[{"id": "MODIFIER.SEALED_DECK"}])
+    custom = dict(r, run_hash="b" * 16, seed="b" * 16, modifiers=[{"id": "MODIFIER.SEALED_DECK"}])
     _, con = build(tmp_path, [[json.dumps(mod), json.dumps(custom), lines()[5]]])
     assert rows(con, "SELECT run_hash, is_modded, is_custom FROM runs ORDER BY 1") == [
         ("a" * 16, True, False), (SCHEMA10, False, False), ("b" * 16, False, True)]
     assert rows(con, "SELECT DISTINCT run_hash FROM primary_offers") == [(SCHEMA10,)]
-
-
-def variant(i, run_hash, **fields):
-    """A fixture run under a new run_hash, with top-level fields replaced."""
-    return dict(json.loads(lines()[i]), run_hash=run_hash, **fields)
 
 
 def test_non_release_builds_leave_primary(tmp_path):
@@ -394,13 +426,13 @@ def test_failing_pages_skipped_and_reported(tmp_path, monkeypatch):
     assert e.value.code == 1
     con = duckdb.connect(str(out / "runs.duckdb"), read_only=True)
     meta = dict(rows(con, "SELECT key, value FROM build_info"))
-    assert meta["pages_parsed"] == "2" and meta["records_read"] == "5"
+    assert meta["pages_parsed"] == "2" and meta["records_read"] == "6"
     assert meta["pages_failed"] == "page_00001.jsonl.gz,page_00002.jsonl.gz"
     d1, d2 = meta["pages_failed_detail"].split(" | ")
     assert "run_hash " + "a" * 16 in d1 and "runs.run_time_s" in d1
     assert d2.startswith("page_00002.jsonl.gz; TypeError") and "b" * 16 in d2
     assert rows(con, "SELECT source_page, count(*) FROM runs GROUP BY 1 ORDER BY 1") \
-        == [(0, 3), (3, 2)]
+        == [(0, 3), (3, 3)]
     assert not (out / "runs" / "page_00001.parquet").exists()
 
 

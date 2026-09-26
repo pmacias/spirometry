@@ -21,6 +21,7 @@ analysis = [
     "matplotlib",
     "jupyter",
     "scipy",        # audit notebook: KS / chi-square tests
+    "pyfixest",     # Phase 5: fixed-effects regressions (DiD, IV)
 ]
 dev = [
     "pytest",

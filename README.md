@@ -33,7 +33,7 @@ See [PLAN.md](PLAN.md) for the research questions and methods.
 | `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes, change events, card-patch net fields, per-build card versions, DiD windows (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages) |
 | `data/runs/` | Run tables built locally by `spirometry.runs` (git-ignored, never committed) |
 | `data/audit/` | Audit tables built locally by `scripts/audit_extract.py` (git-ignored) |
-| `tests/` | pytest tests; `tests/fixtures/sample_runs.jsonl` holds 6 sample runs (the only run data in git; co-op player IDs replaced) |
+| `tests/` | pytest tests; `tests/fixtures/sample_runs.jsonl` holds 7 sample records (6 runs, one solo run uploaded twice; the only run data in git; co-op player IDs replaced) |
 
 ## Setup
 

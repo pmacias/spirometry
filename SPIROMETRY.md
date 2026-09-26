@@ -357,11 +357,17 @@ run_hash); the build finishes the other pages and exits 1.
   `primary_offers` (the primary population below: solo, no modifiers, not modded, released
   build, not before release, Neow start; combat/elite/boss rewards plus event-then-fight
   floors with `event_fight = true`; no mod cards; abandoned runs kept with
-  `was_abandoned`; carries `uploader_tag` for uploader groups).
+  `was_abandoned`; carries `uploader_tag` for uploader groups). From parser 1.5.0
+  `primary_offers` (and so `offers_with_version`) takes its runs from `runs_dedup`: a solo
+  run uploaded twice (same `run_key`, different `run_hash`) counts once, as the record
+  `runs_dedup` keeps (first by page, line). The population filters apply to that record,
+  and its `uploader_tag` is the one the offers carry.
 - `build_info` also counts runs not released, before release, not starting at Neow, modded,
   tagged, and with `player_token` absent/present, runs with a mod event/encounter/monster
   (`runs_mod_entity`) and runs flagged by that marker alone (`runs_mod_entity_only`), plus
-  event-fight lists by length.
+  event-fight lists by length. Parser 1.5.0 adds `solo_run_keys_multi_record` (solo
+  `run_key`s with more than one record) and `primary_offers_dedup_removed` (primary offer
+  rows the extra records would add without the dedup).
 
 On the 2 fetched pages, 0.55% of combat reward lists (0.19% of `primary_offers` rows)
 couldn't be split; none of the 966 split multi-screen lists had two picks in one screen.
@@ -372,6 +378,12 @@ tagged, `player_token` present on all 2,000 (non-null on 170). Solo event-fight 
 84 of 3 cards, 1 of 4 (Lasting Candy), 2 of 6 (The Lantern Key: one with Driftwood, one
 with none of Prayer Wheel, Driftwood or White Star; cause unknown). 0.62% of combat lists
 (event fights included) couldn't be split. `primary_offers`: 58,678 rows from 1,416 runs.
+Parser 1.5.0 on the first 2 pages fetched 2026-09-26 (2,000 records, 1,680 solo, play dates
+2026-03-05 to 2026-04-05): 0 solo `run_key`s with more than one record, so the dedup
+removes 0 `primary_offers` rows (67,513 rows from 1,580 runs). All 137 multi-record
+`run_key`s are co-op copies (differing only in `run_hash`); one 2-player run has 4 records.
+Not yet verified on the full snapshot: how often a solo run is uploaded twice, and what
+differs between the copies (`_sts`, `player_token`).
 
 ## Audit decisions (first pass: 949 pages, submissions to ~2026-07-19)
 
@@ -584,7 +596,7 @@ close to randomized. That supports:
   started with the old path keeps running; resume it with the new path.
 - Environment: dependencies live only in `pyproject.toml` (core: `requests`, and `duckdb`
   and `pyarrow` for the run tables; an `analysis` extra — pandas, numpy, matplotlib,
-  jupyter — for later). Locally a mamba env with `pip install -e .`; plain `pip install -e .` in
+  jupyter, scipy, pyfixest — for the notebooks and Phase 5). Locally a mamba env with `pip install -e .`; plain `pip install -e .` in
   cloud sessions and CI. No separate environment.yml / requirements.txt. `src/` layout
   (`[tool.setuptools.packages.find] where = ["src"]`).
 - Cloud session check passed: spire-codex.com reachable, `pip install -e .` works,

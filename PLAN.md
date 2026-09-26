@@ -155,6 +155,9 @@ tweaks, 43 solo-estimable) and `spirometry.did` (load_window, control_cards,
 offer_rate_check, fit_did, fit_event_study, to_log_odds, run_all); tested on synthetic
 offers and smoke-tested on 2 fetched pages (first window only: the pages have no v0.103.3
 runs). Next: Phil runs it on the full build (parser 1.5.0) in the analysis notebook.*
+*First pass (2026-09-26, 949-page tables, parser 1.4.0): `notebooks/02_pick_rate_did.ipynb`
+ran steps 1–3 on all 43 solo-estimable tweaks; results and caveats in SPIROMETRY.md
+("Phase 5 results, first pass"). Provisional until the rebuild on the full snapshot.*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -186,8 +189,13 @@ README with results, portfolio card on pmacias.github.io.
    the audit notebook onto them.
 6. Phase 4: review the treatment tables (`notes/treatment_table.md`), then rebuild the
    run tables (parser 1.5.0) for `offers_with_version` and the deduplicated `primary_offers`.
-7. Phase 5: review `tweak_sizes.csv` and the DiD tooling choices (decision log), then run
-   `spirometry.did` on the full build (parser 1.5.0) from the analysis notebook.
+7. Phase 5 follow-ups from the first pass: (a) offer-rate flags (Patter, Sculpting
+   Strike): did same-rarity cards move too; (b) fixed-horizon β (weeks 0–3) so the two
+   patches compare; (c) a patch term in the dose-response meta-regression before any
+   buff/nerf claim; (d) CC: add heteroskedasticity-robust SEs (`se_hc`) to `fit_did`, the
+   right comparison for clustering; (e) CC: 18 solo `run_key`s are different runs (character
+   or ascension differ), so the dedup key needs the character; (f) the heavy-uploader
+   check, after the rebuild brings `player_token`.
 8. When official act 4 (or other new content) ships: re-cache the game lists for the new
    builds and switch the mod-entity rule to per-build lists (see SPIROMETRY.md, custom and
    modded runs).
@@ -423,3 +431,13 @@ README with results, portfolio card on pmacias.github.io.
   `uploader_tag` come from that copy. `build_info` gets `solo_run_keys_multi_record` and
   `primary_offers_dedup_removed`. Test variants of a fixture run now get their own seed
   (a new `run_key`) so they stay separate runs.
+- Phase 5 first pass (Phil): the second patch's before block stays v0.103.3 alone. Dropping
+  first-patch cards from its controls changes nothing; pooling v0.103.2 moves several
+  estimates because the treated cards drift over time, not the controls.
+- Pre-trends are judged by the weekly slope before release; the χ² screen is a flag only
+  (it ignores correlation between weeks).
+- Uploader-group terms stay in the main model although they changed nothing on the first
+  pass (the tagged share moved little); the pooled fit stays a robustness check.
+- Clustering is judged against heteroskedasticity-robust SEs, not iid ones: the iid ratio
+  mostly measures differences in p(1−p) between cards.
+- The heavy-uploader check is deferred: the 949-page tables have no `uploader_hash`.

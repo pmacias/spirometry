@@ -2,14 +2,11 @@
 
 Measuring what Slay the Spire 2's balance patches actually did.
 
-Status: data acquisition. Data access confirmed from my Mac and from CC cloud sessions;
-5-page test done (4,641 runs, v0.98.0–v0.103.2, including beta builds v0.100.0–v0.103.1);
-patch history endpoints checked (`notes/patch_history.md`); card patch dataset built and
-cross-checked against the official patch notes (`notes/patch_notes_crosscheck.md`); run file
-structure documented from 3 pages (`notes/run_schema.md`); run-table parser merged
-(`spirometry.runs`). Full snapshot running locally: 949 pages as of 2026-09-25, submissions up
-to about 2026-07-19. Data audit under way (`notebooks/01_data_audit.ipynb`, first pass on
-those 949 pages).
+Status: Phase 5, first pass done. The pipeline is complete through Phase 4 (reference tables,
+run tables, treatment tables). The full snapshot is still downloading; the run tables used so
+far are built from the first 949 pages (submissions to about 2026-07-19, parser 1.4.0).
+First-pass pick-rate results for the numeric tweaks are under "Phase 5 results, first pass";
+the design and the reasoning behind it are in `notes/phase5_deck_v2.pdf`.
 
 ---
 
@@ -447,6 +444,98 @@ run effect shared by all cards cancels in the treated-vs-control contrast and do
 2 fetched pages (2026-09-26, `start=2026-05-01` and `start=2026-07-01`) the first stable
 window fits end to end; the second has no v0.103.3 runs (no before block). Those estimates
 mean nothing at that size.
+
+## Phase 5 results, first pass (2026-09-26)
+
+From `notebooks/02_pick_rate_did.ipynb` on the run tables built from the first 949 pages
+(parser 1.4.0, not yet deduplicated by `run_key`). Results are saved in `data/analysis/`
+(git-ignored). Provisional: rerun after the rebuild on the full snapshot.
+
+**Data checks.** 106 of 577,092 solo `run_key`s (0.02%) have more than one record, so the
+missing dedup doesn't matter here. 18 of the 106 differ in character or ascension: different
+runs that share a seed and start time, which the 1.5.0 dedup would merge (fix pending).
+Offers per stable build: v0.99.1 2.46M (62k runs), v0.103.2 2.98M (78k), v0.103.3 1.89M
+(51k), v0.107.1 3.95M (106k). v0.103.3 is not thin.
+
+**Offer-rate check.** 3 of 43 flagged: Patter in both patches (offer share +17% and +12%
+against the controls' median) and Sculpting Strike (+11%). Not explained yet. Next check:
+did same-rarity cards of that character move too (a pool change)?
+
+**Pick-rate DiD, 43 tweaks** (β in percentage points, relative to unchanged cards of the
+same character; "clearly nonzero" = |β| > 2 SE):
+
+| | First patch (26) | Second patch (17) |
+|---|---|---|
+| Clearly nonzero | 22 | 6 |
+| …in the direction of the change | 18 | 4 |
+| Median \|β\| | 4.5 | 1.3 |
+
+- Largest: Corrosive Wave −16.6 (pick rate 43% → 29%), Parry +14.9 (13% → 28%), Leading
+  Strike +10.3 (mixed: damage 7 → 3, Shivs 1 → 2), Fight Me +9.7, Untouchable (v0.103.2)
+  −9.6, Danse Macabre +7.6 (7% → 16%).
+- Buffs with lower picks: Grand Finale −4.4, Memento Mori −3.9, Solar Strike −1.7. Second
+  patch: Debilitate's nerf shows +2.6 (its first-patch buff was still rising).
+- Parry by hand: controls 27.5% → 27.5%, Parry 12.9% → 27.9%; raw DiD +15.0, regression
+  +14.9 ± 0.8; every robustness option between +14.7 and +15.7.
+- The second patch's effects are smaller at similar change sizes. Candidate reasons: a
+  shorter after period (5 weeks vs. 8, while effects kept growing), more experienced
+  players by June. A fixed-horizon estimate (weeks 0–3) would separate them.
+
+**Error bars.** Clustered SE ÷ plain (iid) SE ranged 0.59–1.26, median 0.99. That ratio
+mostly measures unequal noise between cards: a 0/1 outcome's variance is p(1−p), plain OLS
+assumes one variance for all offers, and the ratio tracks √(p(1−p)) with correlation 0.96.
+Net of that, clustering by run widens the bars by about 8% (−3% to +26%), most for common
+cards offered many times per run (Crescent Spear, Uproar, Collision Course). Compare
+clustered errors with heteroskedasticity-robust ones, not plain ones.
+
+**Pre-trends.** Mostly flat. Weekly drift before the release of about 2 SE or more:
+Anticipate, Patter (v0.103.2), Gather Light (rising, about 1.5 points a week); weaker
+falling drift for Fight Me and Heirloom Hammer. Over a 4–8 week after period that is
+comparable to the effects, so these are reported with a caveat or a trend adjustment
+(Anticipate's nerf is probably understated). The notebook's χ² screen flags six more cards
+at p < 0.01 on single odd weeks; it ignores correlation between weeks, so the slopes decide.
+Old-build offers after the release: 8,315 in week 0 and about 1,500 spread over all later
+weeks, so mostly release-day timing.
+
+**Robustness** (shift of each check from the main estimate, in main-estimate SEs):
+
+| Check | Median shift | Note |
+|---|---|---|
+| No uploader-group terms | 0.14 | The tagged share barely moved (≈25% → 22%) |
+| Tagged uploaders only | 1.48 | ~¼ of the data, SE about 2× larger; 1 sign flip |
+| Untagged uploaders only | 0.30 | |
+| Drop shared screens | 0.04 | Competition on the screen doesn't matter |
+| Drop bug-fix-flagged controls | 0.02 | |
+| Drop top uploaders | – | Not run: these tables have no `uploader_hash` |
+
+Tagged and untagged estimates correlate at 0.68 (χ² of their differences 63 on 43):
+mostly the same answer, with a few cards where tagged players respond more (Danse Macabre,
+Refine Blade, Debilitate v0.103.2) or less (Patter v0.107.1).
+
+Second patch's before block: dropping first-patch cards from the controls changes nothing;
+pooling v0.103.2 into the before block moves several estimates (Furnace +0.2 → +2.9). The
+controls aren't the cause, so it is the treated cards drifting over time: v0.103.3 alone
+stays the main design.
+
+**Dose-response** (38 tweaks; mixed-direction and upgrade-only kept off the line). x =
+direction × ln(new/old) of the main field; y = β in log-odds (delta method); random-effects
+meta-regression.
+- One slope: 1.10 ± 0.18 log-odds per unit of ln(new/old); intercept −0.02 ± 0.05, so no
+  sign that appearing in the patch notes moves picks by itself. +1 damage on a 7-damage
+  card (ln(8/7) = 0.13) ≈ +0.15 log-odds ≈ +2.3 points at a 20% pick rate.
+- Between-card scatter: τ ≈ 0.25 log-odds (Q = 1,100 on 36 df). Same-sized changes had
+  very different effects on different cards.
+- Buff slope 1.78 ± 0.38, nerf slope 0.37 ± 0.40. Not a finding yet: only 8 nerfs, 3 from
+  the weaker second patch. Needs a patch term in the model first.
+
+**Upgrade-only placebos.** Un-upgraded offers of Serpent Form, Royalties and Untouchable
+(v0.107.1) moved −0.5 to +0.1 points, all within about 1.6 SE of zero: no attention effect.
+The upgraded-offer estimates are uninformative for Serpent Form and Royalties (126–162
+offers); Untouchable's is about zero.
+
+**Open.** Offer-rate flags (Patter, Sculpting Strike); fixed-horizon β; patch term in the
+dose-response fit; heteroskedasticity-robust SEs as the comparison; dedup key collisions;
+the heavy-uploader check after the rebuild.
 
 ## Audit decisions (first pass: 949 pages, submissions to ~2026-07-19)
 

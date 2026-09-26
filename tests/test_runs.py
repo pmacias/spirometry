@@ -159,7 +159,8 @@ def test_build_info(db):
     assert meta["event_fight_lists_by_len"] == ""
     assert (meta["runs_not_released"], meta["runs_before_release"],
             meta["runs_not_neow_start"], meta["runs_modded"], meta["runs_uploader_tag"],
-            meta["runs_player_token_absent"]) == ("0", "0", "0", "0", "1", "6")
+            meta["runs_player_token_absent"], meta["runs_mod_entity"]) == (
+        "0", "0", "0", "0", "1", "6", "0")
     assert meta["key_fingerprint"] == runs.key_fingerprint(KEY)
     assert rows(con, "SELECT DISTINCT source_page FROM runs") == [(0,)]
 
@@ -326,6 +327,55 @@ def test_mod_enchantment_huge_amount(tmp_path):
     # game enchantments are not mod markers
     assert rows(con, "SELECT count(*) FROM card_offers WHERE enchantment IS NOT NULL "
                      "AND is_mod_enchantment") == [(1,)]
+
+
+def test_game_entities_cover_stable_beta_and_removed():
+    ids = runs.load_game_entities(REF / "raw")
+    # stable list, beta-only (v0.108.0+), and removed before the beta lists (changelog 1.1.0)
+    for e in ("EVENT.NEOW", "ENCOUNTER.AEONGLASS_BOSS", "MONSTER.AEONGLASS",
+              "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER", "ENCOUNTER.DOORMAKER_BOSS",
+              "MONSTER.DOORMAKER", "ENCOUNTER.TOADPOLES_NORMAL", "MONSTER.DOOR"):
+        assert e in ids, e
+    assert "EVENT.NINE_TAILED_FOX_EVENT" not in ids
+    assert "ENCOUNTER.SHANGHAI_JIAOTONG_ENCOUNTER" not in ids
+
+
+def test_mod_event_and_encounter(tmp_path):
+    # Edited sample run shaped like the full-build case: a solo event-then-fight floor whose
+    # event and encounter aren't in the game data, and no other mod marker.
+    mod = variant(5, "a" * 16)
+    fl = next(f for a in mod["map_point_history"] for f in a
+              if f["map_point_type"] == "monster" and f["player_stats"][0].get("card_choices"))
+    fl["map_point_type"] = "unknown"
+    fl["rooms"] = [{"room_type": "event", "model_id": "EVENT.NINE_TAILED_FOX_EVENT",
+                    "turns_taken": 0},
+                   dict(fl["rooms"][0], model_id="ENCOUNTER.SHANGHAI_JIAOTONG_ENCOUNTER")]
+    # removed and beta-only game content is not a mod marker
+    old = variant(5, "b" * 16)
+    fl = next(f for a in old["map_point_history"] for f in a if f["map_point_type"] == "monster")
+    fl["rooms"][0].update(model_id="ENCOUNTER.DOORMAKER_BOSS", monster_ids=["MONSTER.DOOR"])
+    old["killed_by_encounter"] = "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER"
+    info, con = build(tmp_path, [[json.dumps(mod), json.dumps(old), lines()[5]]])
+    assert rows(con, "SELECT run_hash, is_modded, mod_markers, mod_entities FROM runs "
+                     "ORDER BY 1") == [
+        ("a" * 16, True, ["mod_entity"],
+         ["ENCOUNTER.SHANGHAI_JIAOTONG_ENCOUNTER", "EVENT.NINE_TAILED_FOX_EVENT"]),
+        (SCHEMA10, False, [], []), ("b" * 16, False, [], [])]
+    assert rows(con, "SELECT DISTINCT run_hash FROM primary_offers ORDER BY 1") == [
+        (SCHEMA10,), ("b" * 16,)]
+    assert (info["runs_mod_entity"], info["runs_mod_entity_only"]) == (1, 1)
+
+
+def test_mod_markers_listed_in_order():
+    run = {"modifiers": [{"id": "MODIFIER.HEXTECH_MAYHEM_MODIFIER"}],
+           "players": [{"character": "CHARACTER.WATCHER"}]}
+    line = json.dumps(dict(run, x="CARD.MOD-X", save_dict_y=1, e="ENCHANTMENT.RUNE_OF_CORRUPTION",
+                           r="EVENT.NINE_TAILED_FOX_EVENT"))
+    ents = runs.load_game_entities(REF / "raw")
+    enchs = runs.load_enchantments(REF / "raw" / "enchantments.json")
+    assert runs.mod_markers(run, line, enchs, ents) == [
+        "dash_id", "save_dict", "mod_enchantment", "mod_modifier", "mod_character", "mod_entity"]
+    assert "mod_entity" not in runs.mod_markers(run, line, enchs)       # check off without lists
 
 
 def test_failing_pages_skipped_and_reported(tmp_path, monkeypatch):

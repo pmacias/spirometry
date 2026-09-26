@@ -174,9 +174,16 @@ turn). "Was this card good in this run" can't be read directly off the file.
 
 Built by `python -m spirometry.patch_history` (fetches into `reference/raw/`, cached and
 committed — no player data — then builds the CSVs from the cache; at most 10 requests/min,
-~60 min for a cold cache). Cards only so far. The cache also holds the game's enchantment
-list (`raw/enchantments.json`, from `/api/enchantments`), which `spirometry.runs` uses to
-flag mod enchantments.
+~60 min for a cold cache). Cards only so far. The cache also holds the game lists that
+`spirometry.runs` checks run ids against (mod markers): enchantments
+(`raw/enchantments.json`, `/api/enchantments`), and events, encounters and monsters
+(`raw/{events,encounters,monsters}.json` from `/api/<name>`, the stable build's data, plus
+`raw/<name>/<version>.json` from `/api/<name>?version=<v>` for every beta in `builds.csv`).
+The per-version endpoint returns data for v0.100.0–v0.111.0 and an empty list for v0.99.0
+and v0.110.1. The lists differ only in the Doormaker → Aeonglass boss swap (Doormaker on
+betas up to v0.104.0, Aeonglass from v0.105.0) and three beta-only encounters from v0.108.0
+(`BATTLEWORN_DUMMY_EVENT_V1/V2/V3_ENCOUNTER`). Content removed before v0.100.0 isn't in any
+list; the changelogs' added/removed entries cover it (Toadpoles, Door in 1.1.0).
 
 - `builds.csv` — one row per game version (from update-history, changelog text, and the run
   data): `build_id` (lowercase, as in run files), `branch`, `release_date`, `source`,
@@ -185,9 +192,39 @@ flag mod enchantments.
 - `card_changes.csv` — one row per (card, field, stable patch): `old`/`new` from the
   changelog, `beta_build`/`beta_date` (first beta where update-history shows that field
   changing), `stable_build`/`stable_date`, `change_kind` (tweak, rework, cost_change,
-  rarity_change, text_only, added, removed; `+`-joined, e.g. `rework+cost_change`),
-  `changed_fields` (every field in that card-patch, for reclassifying), `source`.
-  Two stable patches so far: v0.103.2 (85 card-patches) and v0.107.1 (43).
+  rarity_change, text_only, added, removed, mechanic, artifact; `+`-joined, e.g.
+  `rework+cost_change`), `classified_as` (the classifier's label before any decision),
+  `changed_fields` (every field in that card-patch, for reclassifying), `source`,
+  `decision` (blank unless a decision in PLAN.md's log changed the row), and from the
+  cached card list `multiplayer_only` (`yes`/`no`; the API sets the key only when true),
+  `rarity` and `color`. Those three describe the card as it is in the stable card list
+  now, not at the time of the change (4 card-patches are rarity changes), and are blank
+  for cards not in the list (Grapple, Follow Through, Prepare). Two stable
+  patches so far: v0.103.2 (85 card-patches from the changelog + 4 notes-only) and v0.107.1
+  (43 + 8). The decisions are applied by the build scripts, not by hand
+  (`patch_history.RELABELS` / `ARTIFACTS`, `notes_crosscheck.notes_only_rows`):
+  - Glow, Grave Warden (v0.103.2), Shatter, Tesla Coil (v0.107.1): `rework`
+    (`classified_as` tweak); the patch notes describe more than a number.
+  - Folly, Shiv (v0.103.2), Sacrifice (v0.107.1): `artifact` (parser changes; kept, excluded
+    from analyses).
+  - One row per notes-only change (12: Beacon of Hope, Dazed, Prepare, Prepared in
+    v0.103.2; Blade of Ink, Entrench, Gold Axe, Lantern Key, Nightmare, Stratagem, Tag Team,
+    Tyranny in v0.107.1): `change_kind = mechanic`, `source = patch notes`,
+    `field = (patch notes)`, `old`/`new` blank, `beta_build` = the beta whose patch notes
+    list the change (`patch_notes_cards.csv`, `role = subject`, content/balance; the first
+    if several betas do: Dazed and Prepared, v0.100.0 and v0.101.0), the notes quoted in
+    `decision`. Phase 4 uses `beta_build` to decide which betas carry the change. Taken from `crosscheck.csv`'s "notes only: missing"
+    rows, so those cards leave control groups. Dazed's notes are about encounters that
+    apply it; Prepare/Prepared were reworked and restored within the window.
+  - Numeric tweaks (`change_kind = tweak`, the minimum result's set): 50 card-patches, 31
+    in v0.103.2 and 19 in v0.107.1 (`patch_history.numeric_tweaks`). None filtered, but 7
+    can't come from character card rewards, so the solo reward design has little or no
+    data on them (`patch_history.tweak_report`, printed by the build): Believe in You
+    (multiplayer-only, colorless), Eternal Armor, Seeker Strike (v0.103.2) and Fasten
+    (v0.107.1) (colorless: shop, events, ancients), Falling Star (Regent's Basic starter),
+    Minion Strike (v0.103.2) and Minion Sacrifice (v0.107.1) (Token). On the first export
+    page: 2 Fasten and 1 Seeker Strike offers in `primary_offers`, none for the other five.
+    The other 43 are Common/Uncommon/Rare character cards, none multiplayer-only.
 - `text_only_changes.csv` — the text_only card-patches, for manual review.
 - `excluded_fields.csv` — every card field left out, with counts and the reason (not in
   the gameplay whitelist, a `*_key` mirror, or from a site/parser changelog).
@@ -225,7 +262,9 @@ version list to `builds.csv`):
   groups around that build, not treatments.
 - `beta_card_changes.csv` — card changes that never reached stable as written: everything
   after v0.107.1, beta values revised or reverted before stable, beta-only cards, from the
-  notes plus update-history.
+  notes plus update-history. `change_kind` is `artifact` for the 5 v0.106.1 update-history
+  entries whose every field goes to `none` with no changelog behind it (Ascender's Bane,
+  Folly, Genetic Algorithm, Summon Forth, The Scythe); blank on other rows.
 
 Caveats: update-history types every entry "Beta Patch" (including stable v0.103.2) and has
 no entries for stable-only hotfixes (v0.98.1–v0.98.3, v0.99.1, v0.103.1). The wiki fills
@@ -248,7 +287,10 @@ run_hash); the build finishes the other pages and exits 1.
 
 - `runs`: one row per record (co-op copies kept). `branch` from `builds.csv`, NULL where
   blank or missing. Flags: `is_custom` (any modifier), `is_modded` (mod markers, including a
-  character outside the five real ones and an enchantment outside the game's list), `was_abandoned`, `abandoned_at_neow`, `released`
+  character outside the five real ones, an enchantment outside the game's list, and an
+  event, encounter or monster outside the game's lists), `mod_markers` (which markers),
+  `mod_entities` (the unknown event/encounter/monster ids), `was_abandoned`,
+  `abandoned_at_neow`, `released`
   (`build_id` in `builds.csv`), `before_release` (UTC start date before the build's
   `release_date`; false where the date is blank), `neow_start` (first floor has
   `EVENT.NEOW`). Uploader fields: `uploader_tag` (raw `_sts`, e.g. `slay-the-stats/v1.2.2`),
@@ -268,7 +310,9 @@ run_hash); the build finishes the other pages and exits 1.
   floors with `event_fight = true`; no mod cards; abandoned runs kept with
   `was_abandoned`; carries `uploader_tag` for uploader groups).
 - `build_info` also counts runs not released, before release, not starting at Neow, modded,
-  tagged, and with `player_token` absent/present, plus event-fight lists by length.
+  tagged, and with `player_token` absent/present, runs with a mod event/encounter/monster
+  (`runs_mod_entity`) and runs flagged by that marker alone (`runs_mod_entity_only`), plus
+  event-fight lists by length.
 
 On the 2 fetched pages, 0.55% of combat reward lists (0.19% of `primary_offers` rows)
 couldn't be split; none of the 966 split multi-screen lists had two picks in one screen.
@@ -303,9 +347,17 @@ rates and leave win analyses. On the first 949 pages, primary is ~75% of distinc
 a build only needs to stand alone if it can't be pooled. Rule: a build is pooled with its
 neighbour on the same branch when no card change falls between them; otherwise it is left
 out of any window it can't fill. Under 2,000 primary runs on the first pass: v0.99.0 (beta,
-3 days), v0.103.1 (beta hotfix, 1 day), v0.105.0 (beta, superseded the next day) — expected
-to pool, to be confirmed against `beta_card_changes.csv` and the patch notes — and v0.109.1,
-thin only because the snapshot stops in July.
+3 days), v0.103.1 (beta hotfix, 1 day), v0.105.0 (beta, superseded the next day), and
+v0.109.1, thin only because the snapshot stops in July. Checked (2026-09-25) against
+`card_changes`, `beta_card_changes`, `behavior_changes`, update-history and the patch notes:
+no card change between v0.99.0 and v0.99.1, v0.103.0 and v0.103.1, or v0.105.0 and
+v0.105.1. The later pages hold only bug fixes; the card-related ones are v0.99.1's
+(multiplayer softlock and state fixes, Brightest Flame's Max HP floor, Hand Drill with
+Burn, Hellraiser with no targets), v0.103.1's Not Yet no longer generated in combat
+(`behavior_changes.csv`, mid-combat generation, not offers) and v0.105.1's Silken Tress
+co-op fix (non-host card rewards). v0.103.0/v0.103.1 and v0.105.0/v0.105.1 pool. v0.99.0 is
+beta and v0.99.1 stable (on beta for its first three days), so the pair crosses branches:
+v0.99.0 (295 primary runs) is left out of all windows (decision log).
 
 **Staggered rollout (beta before stable): feasible on volume.** Every stable build ran
 alongside betas: v0.103.2 (Apr 16 – May 29) with v0.104.0–v0.106.1, v0.103.3 with v0.107.0,
@@ -405,7 +457,16 @@ ascension per week).
   enchantments' amounts are 0–25 on those pages, so any other enchantment id is a mod marker
   (parser 1.2.0). On 2 pages fetched 2026-09-25, 3 records carry a non-game enchantment
   (`MULTIPLAYEREXPANDED-FATED`, `UNCAPPEDSPIRE-MULTI_ENCHANTMENT`), all already flagged by
-  the `-` rule. `MIDAS` is a game modifier, not a mod marker. Audit counts (records, 949 pages): `save_dict_*` 13,164, mod modifier
+  the `-` rule. `MIDAS` is a game modifier, not a mod marker. Mod events and encounters
+  likewise: `EVENT.NINE_TAILED_FOX_EVENT` + `ENCOUNTER.SHANGHAI_JIAOTONG_ENCOUNTER` in the full
+  local build (6 solo event-fight lists, no other marker). Parser 1.3.0 flags any
+  `EVENT.`/`ENCOUNTER.`/`MONSTER.` id outside the game's lists (stable + every beta + the
+  changelogs' added/removed ids, see Reference data). The stable list alone isn't enough:
+  on the first export page (fetched 2026-09-25) it would flag 223 of 1,000 records for
+  removed content (`ENCOUNTER.DOORMAKER_BOSS`, `ENCOUNTER.TOADPOLES_NORMAL`, `MONSTER.DOOR`,
+  `MONSTER.DOORMAKER`); with the full lists that page has 0. That page is early data with no
+  modded runs at all, so how many runs the rule newly flags is for the full build
+  (`build_info.runs_mod_entity_only`). Audit counts (records, 949 pages): `save_dict_*` 13,164, mod modifier
   5,233, mod card 2,532, mod character 824, mod acts 1,008.
 - **Treatment timing.** Assign builds from each run's own `build_id` and `start_time`, not
   `submitted_at` — players often upload their whole history folder at once (the
@@ -500,10 +561,10 @@ close to randomized. That supports:
    ~~Build the card change table and the version → branch → date table.~~ Done —
    `reference/`. ~~Label the text-only changes.~~ Done — `text_only_labels.csv`.
    ~~Cross-check against the official patch notes.~~ Done —
-   `notes/patch_notes_crosscheck.md`. Next: decide on the four tweak/rework
-   disagreements, the notes-only changes and the bug-fix behavior changes (decisions
-   listed there); review `excluded_fields.csv` and `history_unmatched.csv`; extend to
-   relics, monsters, and encounters.
+   `notes/patch_notes_crosscheck.md`. ~~Decide and apply the four tweak/rework
+   relabels, the notes-only rows and the artifact labels.~~ Done (see Reference data).
+   Next: review `excluded_fields.csv` and `history_unmatched.csv`; extend to relics,
+   monsters, and encounters.
 2b. ~~Document the run file structure.~~ Done — `notes/run_schema.md`, with a proposal
    for the `runs` and `card_offers` columns and the decisions they need.
 3. ~~Estimate total snapshot size and rate-budget cost per page.~~ Done — see Data sources.

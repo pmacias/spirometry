@@ -61,9 +61,10 @@ set up, patch history endpoints checked (`notes/patch_history.md`).
       Cross-checked against the official patch notes (PR): 115 of 128 card-patches are in
       the notes, all 69 with comparable numbers match, 4 `tweak`s look like reworks,
       12 notes-only changes. builds.csv reconciled with the wiki's version list (4
-      versions added, hotfix branches and dates filled). Phil's decisions are in the
-      decision log; applying them to the CSVs (the 4 relabels, notes-only rows) is still
-      to do.*
+      versions added, hotfix branches and dates filled). Phil's decisions applied by the
+      build scripts (PR): 4 relabels to rework, 12 notes-only `mechanic` rows, 3 `artifact`
+      card-patches in `card_changes.csv` and 5 in `beta_card_changes.csv`; numeric-tweak
+      set = 50 card-patches.*
 - [x] Run file structure (CC): `notes/run_schema.md`, from 3 export pages. Merged;
       decisions in the decision log.
 
@@ -104,9 +105,15 @@ event-then-fight floors (`event_fight`); counts in `build_info`. Tested on the f
 2 fetched pages. The first full build (949 pages) crashed on an enchantment amount too
 large for SMALLINT in three modded runs; fix PR (parser 1.2.0): wider integer types, a
 failing page is skipped and reported instead of aborting the build, and enchantments
-outside the game's list are a mod marker. Next: Phil reruns the full build. `deck_final`, `deaths` and relic/event choices not started.*
+outside the game's list are a mod marker. Parser 1.3.0 (PR): events, encounters and
+monsters outside the game's lists are a mod marker too (`runs.mod_markers`,
+`runs.mod_entities`; `build_info.runs_mod_entity_only` counts the runs it newly flags).
+Next: Phil reruns the full build. `deck_final`, `deaths` and relic/event choices not
+started.*
 
 ### 4. Treatment table — CC
+*Status: not started. Inputs ready: card-change decisions applied to `card_changes.csv`
+(relabels, notes-only rows, artifacts); thin betas checked for pooling.*
 Join `card_offers` to the card version live in each run's build: for each (card, build), which
 version was live and whether it's pre- or post-change. Also list, for each change, the other
 cards of the same character changed in the same patch (candidates to exclude from its control
@@ -144,17 +151,16 @@ Selection-corrected card strength metric; dashboard (Streamlit or Observable, un
 README with results, portfolio card on pmacias.github.io.
 
 ## Next up
-1. Review and merge the run-table fix PR (integer types, per-page failures, mod
-   enchantments); rerun the full build.
-2. Audit follow-ups: does rising ascension explain the within-build win-rate drift; confirm
-   the thin betas pool (no card change between neighbours).
+1. Review and merge the card-decisions + mod-entity PR; rerun the full build (parser
+   1.3.0) and read `runs_mod_entity_only` in `build_info`.
+2. Audit follow-up: does rising ascension explain the within-build win-rate drift.
 3. Let the snapshot finish; run `--count-only`. Decide whether to re-download pages 0–948
    for `player_token`.
 4. Send the maintainer message (budget per IP or per client, the daily cap, short pages,
    bulk dump, stable-only hotfixes, when `player_token` was added).
 5. Build the run tables on the full snapshot (`python -m spirometry.runs build`) and move
    the audit notebook onto them.
-6. Apply the card-change decisions to the CSVs (4 relabels, notes-only rows).
+6. Phase 4: per-build card version table and treatment table.
 
 ## Decision log
 - Spire Codex export is the primary source; sts2runs.com only for cross-checks.
@@ -291,3 +297,36 @@ README with results, portfolio card on pmacias.github.io.
   0.93; v0.107.1: 4.95, 0.86): treated as selection, estimates stratified or adjusted.
 - Win rates drift within a build over calendar time (v0.103.2, both uploader groups): win
   analyses control for week or ascension, not only build.
+- Card-change decisions are applied in the build scripts (CC's choices, open to review):
+  `patch_history.RELABELS` / `ARTIFACTS` name the card-patches and the label the classifier
+  must give (the build stops if it no longer does); `classified_as` keeps the classifier's
+  label and `decision` says what changed. Notes-only rows are generated from
+  `crosscheck.csv`'s "notes only: missing from card_changes" rows by
+  `notes_crosscheck` (field `(patch notes)`, `old`/`new` blank, `beta_build` = the beta
+  whose notes list the change as subject in a content/balance section, the first if
+  several do (Dazed, Prepared: v0.100.0, also v0.101.0, named in `decision`), notes quoted
+  in `decision`); the cross-check itself compares only the
+  changelog rows, so the result doesn't feed back into it. All 12 notes-only rows are
+  added, including Dazed (the notes change encounters that apply it) and Prepare/Prepared
+  (reworked and restored within the window). `patch_history build` also reruns the
+  cross-check, so one command rebuilds everything.
+- `card_changes.csv` carries `multiplayer_only`, `rarity` and `color` from the cached card
+  list (current card, not the card at the time of the change). Nothing is filtered on them;
+  the build's tweak report lists the 7 of 50 numeric tweaks that character card rewards
+  can't offer (colorless, Basic, Token; Believe in You is also multiplayer-only), so the
+  analysis can say which changes the solo design can estimate.
+- Artifact rows in `beta_card_changes.csv`: an update-history entry with no changelog
+  behind it whose every field goes to `none` (the five v0.106.1 entries). Wither's v0.106.0
+  entry (cost, keywords, damage change) stays unlabeled.
+- Thin betas: no card change between v0.99.0 and v0.99.1, v0.103.0 and v0.103.1, or v0.105.0
+  and v0.105.1 (card_changes, beta_card_changes, behavior_changes, update-history, patch
+  notes). v0.103.1 carries one bug-fix behavior change (Not Yet no longer generated in
+  combat; sensitivity list only). v0.103.x and v0.105.x pool.
+- v0.99.0 is left out of all windows rather than pooled with v0.99.1 (Phil): the pair
+  crosses branches (v0.99.0 beta, v0.99.1 stable), and v0.99.0 has 295 primary runs.
+- Mod events, encounters and monsters: any `EVENT.`/`ENCOUNTER.`/`MONSTER.` id in the record
+  that isn't in the game's lists is a mod marker, like the enchantment rule. "The game's
+  lists" = Spire Codex's stable list, each beta build's list (`?version=`), and every id a
+  cached changelog adds, removes or changes, so removed content (Doormaker, Toadpoles,
+  Door) and beta-only content (`BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER`, v0.108.0+) are not
+  markers. `runs.mod_markers` lists which markers a record carries.

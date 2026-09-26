@@ -10,7 +10,9 @@ Rebuild with `python -m spirometry.patch_notes build` (runs the cross-check too)
   `card_changes.csv`, 115 are in the notes. Where the notes give numbers, all 69 comparable
   card-patches match (net over the window, base and upgraded values). No change goes the
   opposite way, and no size disagrees.
-- **4 card-patches are labeled `tweak` but the notes describe more than a number**: Glow
+- **4 card-patches are labeled `tweak` but the notes describe more than a number**
+  (relabeled `rework` since, per the decisions at the end; the classifier's label is kept in
+  `classified_as`): Glow
   (v0.103.2, "Reworked"), Grave Warden (upgrade "no longer upgrades the Soul"), Shatter
   ("now Evokes all of your Orbs twice") and Tesla Coil ("Lightning triggers once →
   twice"), the last two in v0.107.1. These would sit in the numeric-tweak dose-response
@@ -56,7 +58,7 @@ Rebuild with `python -m spirometry.patch_notes build` (runs the cross-check too)
 | agree: numbers match | 44 | 22 | 66 |
 | agree: no numbers to compare (reworks, keywords, rarity) | 27 | 10 | 37 |
 | agree: writing note (text_only change listed under Writing) | 6 | 2 | 8 |
-| disagree: kind (table says tweak, notes describe more) | 2 | 2 | 4 |
+| kind relabeled tweak -> rework (was "disagree: kind") | 2 | 2 | 4 |
 | notes only: missing from card_changes | 4 | 8 | 12 |
 | notes only: reverted within beta | 1 | 0 | 1 |
 | table only | 6 | 7 | 13 |
@@ -201,6 +203,12 @@ a stable patch page). Changes to `builds.csv`:
   field was false).
 
 ## Decisions for Phil
+
+*Decided (PLAN.md decision log) and applied by the build scripts: 1. the four → `rework`;
+2. every "notes only: missing" row → a `mechanic` row in `card_changes.csv` (source `patch
+notes`); 3. bug-fix changes → sensitivity analysis only; 5. parser rows kept, labeled
+`artifact`. The tables above describe the comparison before those labels; `crosscheck.csv`
+compares only the changelog rows, so its counts are unchanged apart from the relabels.*
 
 1. **Relabel the four tweak/rework disagreements?** Glow is clearly a rework. Shatter and
    Tesla Coil combine a number and a mechanic. Grave Warden's upgrade change is minor. Proposed:

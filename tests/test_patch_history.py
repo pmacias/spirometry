@@ -91,3 +91,74 @@ def test_known_cards(cached, card, stable, beta, kind):
     assert rows
     assert {r["beta_build"] for r in rows} == {beta}
     assert {r["change_kind"] for r in rows} == {kind}
+
+
+# ------------------------------------------------------------------ decisions
+
+def test_decisions_relabel_and_artifacts(cached):
+    import copy
+    rows = ph.apply_decisions(copy.deepcopy(cached[0]))
+    kinds = {(r["card_id"], r["stable_build"]): (r["change_kind"], r["classified_as"])
+             for r in rows}
+    for key in ph.RELABELS:
+        assert kinds[key] == ("rework", "tweak")
+    for key in ph.ARTIFACTS:
+        assert kinds[key] == ("artifact", "rework")
+    assert all(r["decision"] == "" for r in rows
+               if (r["card_id"], r["stable_build"]) not in {**ph.RELABELS, **ph.ARTIFACTS})
+    tweaks = ph.numeric_tweaks(rows)
+    assert len(tweaks) == 50                      # PLAN.md decision log
+    assert not set(ph.RELABELS) & set(tweaks)
+    assert ("DEBILITATE", "v0.103.2") in tweaks
+
+
+def test_decision_on_unexpected_label_stops_the_build():
+    rows = [{"card_id": "GLOW", "stable_build": "v0.103.2", "change_kind": "rework"}]
+    with pytest.raises(AssertionError):
+        ph.apply_decisions(rows)
+
+
+def test_committed_card_changes():
+    import csv
+    with open(REPO / "reference" / "card_changes.csv", newline="") as f:
+        r = csv.DictReader(f)
+        assert r.fieldnames == ph.CHANGE_COLS
+        rows = list(r)
+    notes = [x for x in rows if x["source"] == "patch notes"]
+    assert {x["change_kind"] for x in notes} == {"mechanic"}
+    assert {"TYRANNY", "ENTRENCH", "TAG_TEAM", "NIGHTMARE"} <= {x["card_id"] for x in notes}
+    assert len(notes) == 12
+    assert {(x["card_id"], x["stable_build"]) for x in rows
+            if x["change_kind"] == "artifact"} == set(ph.ARTIFACTS)
+    assert len(ph.numeric_tweaks(rows)) == 50
+
+
+def test_card_attrs_and_tweak_report():
+    cards = [{"id": "A", "rarity": "Common", "color": "silent"},
+             {"id": "B", "rarity": "Uncommon", "color": "colorless", "multiplayer_only": True},
+             {"id": "C", "rarity": "Token", "color": "token"}]
+    rows = [{"card_id": c, "stable_build": "v0.107.1", "change_kind": "tweak"}
+            for c in ("A", "B", "C", "GONE")]
+    ph.add_card_attrs(rows, ph.card_attrs(cards))
+    assert [(r["multiplayer_only"], r["rarity"], r["color"]) for r in rows] == [
+        ("no", "Common", "silent"), ("yes", "Uncommon", "colorless"), ("no", "Token", "token"),
+        ("", "", "")]
+    assert {c: why for c, _, why in ph.tweak_report(rows)} == {
+        "A": [], "B": ["multiplayer only", "color colorless"],
+        "C": ["rarity Token", "color token"], "GONE": ["not in the card list"]}
+
+
+def test_committed_tweak_report():
+    import csv
+    with open(REPO / "reference" / "card_changes.csv", newline="") as f:
+        rows = list(csv.DictReader(f))
+    flagged = {(c, s): why for c, s, why in ph.tweak_report(rows) if why}
+    assert flagged == {
+        ("BELIEVE_IN_YOU", "v0.103.2"): ["multiplayer only", "color colorless"],
+        ("ETERNAL_ARMOR", "v0.103.2"): ["color colorless"],
+        ("FALLING_STAR", "v0.103.2"): ["rarity Basic"],
+        ("MINION_STRIKE", "v0.103.2"): ["rarity Token", "color token"],
+        ("SEEKER_STRIKE", "v0.103.2"): ["color colorless"],
+        ("FASTEN", "v0.107.1"): ["color colorless"],
+        ("MINION_SACRIFICE", "v0.107.1"): ["rarity Token", "color token"]}
+    assert len(ph.numeric_tweaks(rows)) == 50              # nothing filtered

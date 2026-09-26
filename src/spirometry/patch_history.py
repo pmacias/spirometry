@@ -1,12 +1,16 @@
 """Card patch-change dataset from Spire Codex's changelogs and update history.
 
-Fetches the card list, every changelog, and every card's update history, caching
+Fetches the card list, every changelog, every card's update history, and the game's
+enchantment, event, encounter and monster lists (for spirometry.runs' mod markers), caching
 raw responses under reference/raw/ (reruns read the cache instead of refetching),
 then builds the reference CSVs from the cache alone:
 
     reference/builds.csv             one row per game version: branch, release date, source
                                      (then reconciled with the wiki's patch-note list, if cached)
-    reference/card_changes.csv       one row per (card, field, stable patch), with beta timing
+    reference/card_changes.csv       one row per (card, field, stable patch), with beta timing;
+                                     the decisions in RELABELS / ARTIFACTS applied (then the
+                                     notes-only rows added by spirometry.notes_crosscheck,
+                                     if the patch notes are built)
     reference/text_only_changes.csv  card-patches where only description text changed
     reference/excluded_fields.csv    card fields left out of card_changes, with counts
     reference/history_unmatched.csv  update-history entries no changelog row accounts for
@@ -58,6 +62,105 @@ BRANCH_FACTS = [
     (["v0.109.0", "v0.109.1", "v0.110.0", "v0.111.0"], "beta", "1.3.0",
      "Beta channel: ingested v0.109.0, v0.109.1, v0.110.0, and v0.111.0", ""),
 ]
+
+# Phil's decisions on the patch-notes cross-check (PLAN.md decision log), applied at build
+# time: (card, stable build) -> (label the classifier gives, label to use, why). The build
+# stops if the classifier's label is no longer the expected one, so a changed cache can't
+# silently relabel the wrong row. The classifier's own label stays in `classified_as`.
+RELABELS = {
+    ("GLOW", "v0.103.2"): ("tweak", "rework", "patch notes: v0.100.0 'Reworked'"),
+    ("GRAVE_WARDEN", "v0.103.2"): ("tweak", "rework",
+                                   "patch notes: upgrade no longer upgrades the Soul"),
+    ("SHATTER", "v0.107.1"): ("tweak", "rework",
+                              "patch notes: now Evokes all of your Orbs twice"),
+    ("TESLA_COIL", "v0.107.1"): ("tweak", "rework",
+                                 "patch notes: Lightning triggers once -> twice"),
+}
+# Parser artifacts: kept in the table, labeled `artifact`, excluded from analyses.
+ARTIFACTS = {
+    ("FOLLY", "v0.103.2"): ("rework", "curse keyword list reshuffled (gains Ethereal); "
+                            "not in the patch notes"),
+    ("SHIV", "v0.103.2"): ("rework", "token; vars.Calculation* -> none, not in the patch notes"),
+    ("SACRIFICE", "v0.107.1"): ("rework", "vars.Calculation* none -> 0/1, not in the patch "
+                                "notes, no update-history entry"),
+}
+CHANGE_COLS = ["card_id", "field", "old", "new", "beta_build", "beta_date", "stable_build",
+               "stable_date", "change_kind", "classified_as", "changed_fields", "source",
+               "decision", "multiplayer_only", "rarity", "color"]
+# Card-reward offers (combat, elite, boss) draw from these; anything else (Basic starters,
+# Token, Event, Ancient, Curse, Status, Quest; colorless cards) comes from other sources.
+REWARD_RARITIES = {"Common", "Uncommon", "Rare"}
+CHARACTER_COLORS = {"ironclad", "silent", "defect", "regent", "necrobinder"}
+
+
+def apply_decisions(rows):
+    """Relabel card_changes rows per RELABELS and ARTIFACTS (in place). Every row gets
+    `classified_as` (the classifier's label) and `decision` (blank unless one applied)."""
+    seen = set()
+    for r in rows:
+        key = (r["card_id"], r["stable_build"])
+        r["classified_as"], r["decision"] = r["change_kind"], ""
+        if key in RELABELS:
+            want, new, why = RELABELS[key]
+            label = "relabeled"
+        elif key in ARTIFACTS:
+            (want, why), new, label = ARTIFACTS[key], "artifact", "parser artifact"
+        else:
+            continue
+        assert r["change_kind"] == want, (key, r["change_kind"], want)
+        r["change_kind"] = new
+        r["decision"] = f"{label} {want} -> {new}: {why} (PLAN.md decision log)"
+        seen.add(key)
+    missing = (set(RELABELS) | set(ARTIFACTS)) - seen
+    assert not missing, f"decisions for card-patches not in card_changes: {sorted(missing)}"
+    return rows
+
+
+def card_attrs(cards):
+    """card_id -> {multiplayer_only, rarity, color} from the cached card list (the stable
+    build's current card, not the card at the time of a change). The API only carries
+    multiplayer_only when it is true, so a listed card without it is 'no'. Cards not in the
+    list (removed, beta-only) get no entry: their columns stay blank."""
+    return {c["id"]: {"multiplayer_only": "yes" if c.get("multiplayer_only") else "no",
+                      "rarity": c.get("rarity") or "", "color": c.get("color") or ""}
+            for c in cards}
+
+
+def add_card_attrs(rows, attrs):
+    blank = {"multiplayer_only": "", "rarity": "", "color": ""}
+    for r in rows:
+        r.update(attrs.get(r["card_id"], blank))
+    return rows
+
+
+def tweak_report(rows):
+    """The numeric-tweak set with what limits the solo card-reward design, nothing filtered:
+    [(card_id, stable_build, [reasons])], reasons from multiplayer_only, a rarity outside
+    Common/Uncommon/Rare, or a color outside the five characters (colorless, token)."""
+    first = {}
+    for r in rows:
+        if r["change_kind"] == "tweak":
+            first.setdefault((r["card_id"], r["stable_build"]), r)
+    out = []
+    for card, stable in numeric_tweaks(rows):
+        r, why = first[(card, stable)], []
+        if r.get("multiplayer_only") == "yes":
+            why.append("multiplayer only")
+        if r.get("rarity") and r["rarity"] not in REWARD_RARITIES:
+            why.append(f"rarity {r['rarity']}")
+        if r.get("color") and r["color"] not in CHARACTER_COLORS:
+            why.append(f"color {r['color']}")
+        if not r.get("rarity"):
+            why.append("not in the card list")
+        out.append((card, stable, why))
+    return out
+
+
+def numeric_tweaks(rows):
+    """(card_id, stable_build) of the pure numeric tweaks: the minimum result's set."""
+    return sorted({(r["card_id"], r["stable_build"]) for r in rows
+                   if r["change_kind"] == "tweak"}, key=lambda t: (vkey(t[1]), t[0]))
+
 
 # Card fields, after collapsing list indices to [i]. Gameplay whitelist, by role:
 TEXT_FIELDS = {"description", "description_raw", "upgrade_description"}
@@ -118,6 +221,23 @@ def enchantments_path():
     return RAW / "enchantments.json"
 
 
+# Game entity lists spirometry.runs checks run ids against (mod markers). The main
+# endpoint serves the stable build's data; `?version=` serves a beta build's (an empty list
+# for builds Spire Codex didn't ingest).
+ENTITY_LISTS = ("events", "encounters", "monsters")
+
+
+def entity_list_path(name, version=None):
+    return RAW / name / f"{version}.json" if version else RAW / f"{name}.json"
+
+
+def beta_versions(builds_csv=REF / "builds.csv"):
+    """Plain beta versions in builds.csv ('v0.111.0'; not 'v0.99.0-beta')."""
+    with open(builds_csv, newline="") as f:
+        return [r["build_id"] for r in csv.DictReader(f)
+                if r["branch"] == "beta" and "-" not in r["build_id"]]
+
+
 def changelog_index_path():
     return RAW / "changelogs.json"
 
@@ -143,6 +263,11 @@ def changelog_card_ids(changelog):
 def fetch():
     cards = get_cached(cards_path(), f"{API}/cards")
     get_cached(enchantments_path(), f"{API}/enchantments")     # for spirometry.runs' mod check
+    for name in ENTITY_LISTS:                                   # likewise, main + each beta
+        get_cached(entity_list_path(name), f"{API}/{name}")
+        if (REF / "builds.csv").exists():
+            for v in beta_versions():
+                get_cached(entity_list_path(name, v), f"{API}/{name}?version={v}")
     index = get_cached(changelog_index_path(), f"{API}/changelogs")
     changelogs = [get_cached(changelog_path(e["tag"]), f"{API}/changelogs/{e['tag']}")
                   for e in index]
@@ -465,14 +590,24 @@ def build():
     write_csv(REF / "builds.csv", builds,
               ["build_id", "branch", "release_date", "source", "notes"])
     rows, text_rows, excl, unmatched, non_card = build_changes(changelogs, histories, card_ids)
-    change_cols = ["card_id", "field", "old", "new", "beta_build", "beta_date", "stable_build",
-                   "stable_date", "change_kind", "changed_fields", "source"]
-    write_csv(REF / "card_changes.csv", rows, change_cols)
-    write_csv(REF / "text_only_changes.csv", text_rows, change_cols)
+    apply_decisions(rows)
+    attrs = card_attrs(cards)
+    add_card_attrs(rows, attrs)
+    write_csv(REF / "card_changes.csv", rows, CHANGE_COLS)
+    write_csv(REF / "text_only_changes.csv", text_rows, CHANGE_COLS)
     write_csv(REF / "excluded_fields.csv", excl,
               ["field", "reason", "count", "changelogs", "example_cards"])
     write_csv(REF / "history_unmatched.csv", unmatched, ["card_id", "version", "date", "fields"])
     print("non-card entity types skipped in game changelogs:", dict(non_card))
+    tweaks = numeric_tweaks(rows)
+    print(f"numeric tweaks (change_kind = tweak): {len(tweaks)} card-patches")
+    for card, stable, why in tweak_report(rows):
+        if why:
+            print(f"  {stable} {card}: {', '.join(why)}")
+    if (REF / "patch_notes_cards.csv").exists():
+        # adds the notes-only rows to card_changes.csv and rebuilds the cross-check tables
+        from spirometry import notes_crosscheck
+        notes_crosscheck.build()
 
 
 def main():

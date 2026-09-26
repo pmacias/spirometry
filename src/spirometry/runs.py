@@ -34,7 +34,7 @@ import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-PARSER_VERSION = "1.2.0"
+PARSER_VERSION = "1.3.0"
 REF = pathlib.Path("reference")
 SALT_ENV = "SPIROMETRY_SALT"
 SALT_FILE = pathlib.Path(".spirometry_salt")
@@ -48,12 +48,15 @@ LASTING_CANDY = "RELIC.LASTING_CANDY"
 COMBAT_SOURCES = ("combat", "elite", "boss", "event_combat")
 # Mod markers: a quoted id with a '-' ("CARD.MULTIPLAYEREXPANDED-VULTURE"), BaseLib's
 # save_dict_* keys, a mod modifier, a character outside the five real ones
-# (CHARACTER.WATCHER has no '-'), or an enchantment outside the game's list
-# (ENCHANTMENT.RUNE_OF_CORRUPTION), on any card or in cards_enchanted.
+# (CHARACTER.WATCHER has no '-'), an enchantment outside the game's list
+# (ENCHANTMENT.RUNE_OF_CORRUPTION), on any card or in cards_enchanted, or an event,
+# encounter or monster id outside the game's lists (EVENT.NINE_TAILED_FOX_EVENT).
 VANILLA_CHARACTERS = {"CHARACTER.IRONCLAD", "CHARACTER.SILENT", "CHARACTER.DEFECT",
                       "CHARACTER.REGENT", "CHARACTER.NECROBINDER"}
 MOD_ID_RE = re.compile(r'"[A-Z][A-Z_]*\.[A-Za-z0-9_]*-')
 ENCHANTMENT_RE = re.compile(r'"ENCHANTMENT\.([^"]*)"')
+ENTITY_RE = re.compile(r'"((?:EVENT|ENCOUNTER|MONSTER)\.[^"]*)"')
+ENTITY_LISTS = {"EVENT": "events", "ENCOUNTER": "encounters", "MONSTER": "monsters"}
 MPT_SOURCE = {"monster": "combat", "elite": "elite", "boss": "boss", "ancient": "ancient",
               "shop": "shop", "rest_site": "rest_site", "treasure": "treasure"}
 ROOM_SOURCE = {"monster": "combat", "elite": "elite", "boss": "boss", "event": "event",
@@ -69,12 +72,13 @@ SCHEMAS = {
         ("build_id", S), ("branch", S), ("schema_version", I32),
         ("start_time", pa.timestamp("s")), ("run_time_s", I64), ("seed", S),
         ("game_mode", S), ("modifiers", pa.list_(S)), ("is_custom", B), ("is_modded", B),
+        ("mod_markers", pa.list_(S)),
         ("ascension", I32), ("n_players", I32), ("win", B), ("was_abandoned", B),
         ("abandoned_at_neow", B), ("acts", pa.list_(S)), ("acts_reached", I16),
         ("floors_reached", I32), ("act1", S), ("killed_by_encounter", S),
         ("killed_by_event", S), ("released", B), ("before_release", B), ("neow_start", B),
         ("uploader_tag", S), ("has_player_token", B), ("uploader_hash", S),
-        ("platform_type", S), ("record_digest", S),
+        ("platform_type", S), ("mod_entities", pa.list_(S)), ("record_digest", S),
     ]),
     "run_players": pa.schema([
         ("run_hash", S), ("run_key", S), ("source_page", I32), ("source_line", I32),
@@ -163,6 +167,27 @@ def load_enchantments(path=REF / "raw" / "enchantments.json"):
     return {"ENCHANTMENT." + e["id"] for e in json.loads(pathlib.Path(path).read_text())}
 
 
+def load_game_entities(raw=REF / "raw"):
+    """Every event, encounter and monster id the game has had, as run files write them
+    ('EVENT.NEOW', 'ENCOUNTER.DOORMAKER_BOSS', 'MONSTER.DOOR'): the cached Spire Codex lists
+    for the stable build (raw/<name>.json) and each beta build (raw/<name>/<version>.json),
+    plus every id a cached changelog adds, removes or changes (content removed before the
+    beta lists begin, e.g. Toadpoles and Door in v0.103.2). Fetched by
+    `python -m spirometry.patch_history fetch`."""
+    raw = pathlib.Path(raw)
+    ids = set()
+    for prefix, name in ENTITY_LISTS.items():
+        for f in [raw / f"{name}.json", *sorted((raw / name).glob("*.json"))]:
+            ids |= {f"{prefix}.{e['id']}" for e in json.loads(f.read_text())}
+    for f in sorted((raw / "changelogs").glob("*.json")):
+        for cat in json.loads(f.read_text()).get("categories", []):
+            prefix = {v: k for k, v in ENTITY_LISTS.items()}.get(cat["id"])
+            if prefix:
+                ids |= {f"{prefix}.{e['id']}" for k in ("added", "removed", "changed")
+                        for e in cat.get(k, [])}
+    return ids
+
+
 def load_cards(path=REF / "raw" / "cards.json"):
     """card_id -> color ('colorless', 'ironclad', ...), for the current card list."""
     return {c["id"]: c.get("color") for c in json.loads(pathlib.Path(path).read_text())}
@@ -186,13 +211,32 @@ def screen_sizes(n, candy):
     return sizes[0] if len(sizes) == 1 else None
 
 
-def is_modded(run, line, enchantments):
-    return bool(MOD_ID_RE.search(line) or "save_dict_" in line
-                or any("ENCHANTMENT." + e not in enchantments
-                       for e in ENCHANTMENT_RE.findall(line))
-                or any(m.get("id", "").endswith("_MODIFIER") for m in run.get("modifiers", []))
-                or any(p.get("character") not in VANILLA_CHARACTERS
-                       for p in run.get("players") or []))
+def mod_entities(line, entities):
+    """Event, encounter and monster ids in the record that aren't in the game's lists."""
+    return sorted({e for e in ENTITY_RE.findall(line) if e not in entities})
+
+
+def mod_markers(run, line, enchantments, entities=None):
+    """Which mod markers the record carries, in a fixed order: 'dash_id', 'save_dict',
+    'mod_enchantment', 'mod_modifier', 'mod_character', 'mod_entity'. `entities`
+    (load_game_entities) enables the event/encounter/monster check; without it that check
+    is skipped."""
+    found = {
+        "dash_id": bool(MOD_ID_RE.search(line)),
+        "save_dict": "save_dict_" in line,
+        "mod_enchantment": any("ENCHANTMENT." + e not in enchantments
+                               for e in ENCHANTMENT_RE.findall(line)),
+        "mod_modifier": any(m.get("id", "").endswith("_MODIFIER")
+                            for m in run.get("modifiers") or []),
+        "mod_character": any(p.get("character") not in VANILLA_CHARACTERS
+                             for p in run.get("players") or []),
+        "mod_entity": entities is not None and bool(mod_entities(line, entities)),
+    }
+    return [k for k, v in found.items() if v]
+
+
+def is_modded(run, line, enchantments, entities=None):
+    return bool(mod_markers(run, line, enchantments, entities))
 
 
 def started_before_release(start_time, release_date):
@@ -230,6 +274,7 @@ class Table:
 
 def parse_run(run, line, page, line_no, ctx, out):
     key, builds, cards, enchs = ctx["key"], ctx["builds"], ctx["cards"], ctx["enchantments"]
+    entities = ctx["entities"]
     players = run.get("players") or []
     solo = len(players) == 1
     rh, rk = run["run_hash"], run_key(run.get("seed"), run.get("start_time"))
@@ -243,13 +288,14 @@ def parse_run(run, line, page, line_no, ctx, out):
     acts = run.get("acts") or []
     build_id = run.get("build_id")
     branch, release_date = builds.get(build_id, (None, None))
+    markers = mod_markers(run, line, enchs, entities)
 
     out["runs"].add(
         **base, build_id=build_id, branch=branch,
         schema_version=run.get("schema_version"), start_time=run.get("start_time"),
         run_time_s=run.get("run_time"), seed=run.get("seed"), game_mode=run.get("game_mode"),
         modifiers=[m.get("id") for m in run.get("modifiers") or []],
-        is_custom=bool(run.get("modifiers")), is_modded=is_modded(run, line, enchs),
+        is_custom=bool(run.get("modifiers")), is_modded=bool(markers), mod_markers=markers,
         ascension=run.get("ascension"), n_players=len(players), win=run.get("win"),
         was_abandoned=run.get("was_abandoned"),
         abandoned_at_neow=bool(run.get("was_abandoned")) and n_floors <= 1,
@@ -263,7 +309,7 @@ def parse_run(run, line, page, line_no, ctx, out):
         # player_token is only on pages downloaded from ~2026-09-25: key absent -> NULL
         has_player_token=(token is not None) if "player_token" in run else None,
         uploader_hash=keyed_hash(key, token) if token is not None else None,
-        platform_type=run.get("platform_type"),
+        platform_type=run.get("platform_type"), mod_entities=mod_entities(line, entities),
         record_digest=hashlib.blake2b(line.encode(), digest_size=8).hexdigest())
 
     for i, p in enumerate(players):
@@ -365,9 +411,9 @@ def shop_rows(tab, base, who, loc, st, cc, solo, cards):
 _CTX = {}
 
 
-def _init_worker(key, builds, cards, enchantments, out_dir):
+def _init_worker(key, builds, cards, enchantments, entities, out_dir):
     _CTX.update(key=key, builds=builds, cards=cards, enchantments=enchantments,
-                out_dir=pathlib.Path(out_dir))
+                entities=entities, out_dir=pathlib.Path(out_dir))
 
 
 def locate_bad_value(tab):
@@ -485,7 +531,9 @@ def table_stats(out_dir):
                count(*) FILTER (WHERE NOT neow_start), count(*) FILTER (WHERE is_modded),
                count(*) FILTER (WHERE uploader_tag IS NOT NULL),
                count(*) FILTER (WHERE has_player_token IS NULL),
-               count(*) FILTER (WHERE has_player_token)
+               count(*) FILTER (WHERE has_player_token),
+               count(*) FILTER (WHERE list_contains(mod_markers, 'mod_entity')),
+               count(*) FILTER (WHERE mod_markers = ['mod_entity'])
         FROM {g('runs')}""").fetchone()
     multi_pick = con.execute(f"""
         SELECT count(*) FROM (
@@ -504,7 +552,8 @@ def table_stats(out_dir):
             "shop_bought_rows": bought,
             **dict(zip(["runs_not_released", "runs_before_release", "runs_not_neow_start",
                         "runs_modded", "runs_uploader_tag", "runs_player_token_absent",
-                        "runs_player_token_present"], flags))}
+                        "runs_player_token_present", "runs_mod_entity",
+                        "runs_mod_entity_only"], flags))}
 
 
 VIEWS = f"""
@@ -564,6 +613,7 @@ def build(snapshot="sts2_snapshot", out="data/runs", workers=None, pages=None, k
     builds = load_builds(ref / "builds.csv")
     cards = load_cards(ref / "raw" / "cards.json")
     enchantments = load_enchantments(ref / "raw" / "enchantments.json")
+    entities = load_game_entities(ref / "raw")
     out_dir.mkdir(parents=True, exist_ok=True)
     clear_output(out_dir)
     say(f"parsing {len(files)} pages from {snapshot} with {workers} worker(s) -> {out_dir}")
@@ -571,12 +621,12 @@ def build(snapshot="sts2_snapshot", out="data/runs", workers=None, pages=None, k
     results = []
     if workers == 1:
         ctx = dict(key=key, builds=builds, cards=cards, enchantments=enchantments,
-                   out_dir=out_dir)
+                   entities=entities, out_dir=out_dir)
         results = [parse_page(f, ctx) for f in files]
     else:
         with concurrent.futures.ProcessPoolExecutor(
                 workers, initializer=_init_worker,
-                initargs=(key, builds, cards, enchantments, str(out_dir))) as ex:
+                initargs=(key, builds, cards, enchantments, entities, str(out_dir))) as ex:
             futs = {ex.submit(parse_page, f): f for f in files}
             for i, fut in enumerate(concurrent.futures.as_completed(futs), 1):
                 try:

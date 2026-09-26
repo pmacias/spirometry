@@ -296,6 +296,14 @@ mods: `HEXTECH_MAYHEM_MODIFIER`, `UNCAPPED_SPIRE_MODIFIER`, `LIMITLESS_MODIFIER`
 - Modded runs (any of: a mod modifier, a `-` in a card id, `save_dict_*` keys,
   `ACTSFROMTHEPAST` acts): 0 in p1, 0 in p2, 24 in p3. Some mods (e.g. the BaseLib loader
   alone) leave no mark other than `save_dict_*`, so there may be more that can't be seen.
+- Later markers (parser 1.1.0–1.3.0): a character outside the five real ones, an
+  enchantment outside the game's list, and an event, encounter or monster id outside the
+  game's lists (`EVENT.NINE_TAILED_FOX_EVENT` + `ENCOUNTER.SHANGHAI_JIAOTONG_ENCOUNTER` on an
+  event-then-fight floor, found in the full local build with no other marker). "The game's
+  lists" = Spire Codex's stable and per-beta lists plus every id a changelog added or removed
+  (see SPIROMETRY.md), so removed content (`ENCOUNTER.DOORMAKER_BOSS`,
+  `ENCOUNTER.TOADPOLES_NORMAL`, `MONSTER.DOOR`) and beta-only content
+  (`ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER`, v0.108.0+) are not mod markers.
 
 ## Runs per build, with branch from `builds.csv`
 
@@ -356,7 +364,8 @@ list (`list_pos`, `list_len`, `list_n_picked`, `screen_size`, `set_idx`); `schem
 `ascension`, `n_players`, `floors_reached`, `player_idx`, `floor`, `final_deck_size`,
 `final_relic_count` and `enchantment_amount` are INTEGER; `run_time_s` is BIGINT. A mod
 enchantment's amount reached 123,013 (SMALLINT tops out at 32,767). `card_offers` also has
-`is_mod_enchantment` (enchantment id not in `reference/raw/enchantments.json`).*
+`is_mod_enchantment` (enchantment id not in `reference/raw/enchantments.json`). Parser
+1.3.0 adds `runs.mod_markers` and `runs.mod_entities` (below).*
 
 ### `runs` — one row per record (keep co-op copies; dedup is a view)
 
@@ -373,7 +382,9 @@ enchantment's amount reached 123,013 (SMALLINT tops out at 32,767). `card_offers
 | `game_mode` | VARCHAR | |
 | `modifiers` | VARCHAR[] | `modifiers[].id` |
 | `is_custom` | BOOLEAN | `modifiers` non-empty (any mode) |
-| `is_modded` | BOOLEAN | mod markers listed above |
+| `is_modded` | BOOLEAN | mod markers listed above (any entry in `mod_markers`) |
+| `mod_markers` | VARCHAR[] | parser 1.3.0: which markers the record carries, in this order: `dash_id` (a quoted id with a `-`), `save_dict`, `mod_enchantment`, `mod_modifier` (id ending `_MODIFIER`), `mod_character`, `mod_entity`; empty if none |
+| `mod_entities` | VARCHAR[] | parser 1.3.0: `EVENT.` / `ENCOUNTER.` / `MONSTER.` ids anywhere in the record that aren't in the game's lists, sorted; empty if none |
 | `ascension` | SMALLINT | |
 | `n_players` | SMALLINT | `len(players)` |
 | `win`, `was_abandoned` | BOOLEAN | |

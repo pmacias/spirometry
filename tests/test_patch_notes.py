@@ -159,3 +159,70 @@ def test_crosscheck_reverted_and_table_only_and_labels():
     assert rows["C"]["agreement"] == "notes only: reverted within beta"
     assert rows["T"]["agreement"] == "table only"
     assert "label mechanic but notes list it under writing" in rows["W"]["agreement"]
+
+
+def test_crosscheck_kind_relabeled_by_decision():
+    notes = [note("G", "v0.100.0", q="Damage", b0="7", b1="10",
+                  text="Buffed G card: Damage 7 -> 10; now Exhausts")]
+    tweak = change("G", "damage", "7", "10")
+    [row] = nc.crosscheck(notes, [tweak], [])
+    assert row["agreement"] == "disagree: kind; agree: numbers match"
+    relabeled = dict(tweak, change_kind="rework", classified_as="tweak")
+    [row] = nc.crosscheck(notes, [relabeled], [])
+    assert row["agreement"] == "kind relabeled tweak -> rework; agree: numbers match"
+
+
+def test_notes_only_rows():
+    notes = [note("Y", "v0.104.0", verb="Changed", text="Changed Y card: now triggers first"),
+             note("Y", "v0.107.1", section="content+balance", verb="Changed",
+                  text="Changed Y card: now triggers first")]
+    cc = nc.crosscheck(notes, [change("X", "damage", "1", "2")], [])
+    builds = [{"build_id": "v0.104.0", "release_date": "2026-04-23"},
+              {"build_id": "v0.107.1", "release_date": "2026-06-18"}]
+    [row] = nc.notes_only_rows(cc, notes, builds)
+    assert (row["card_id"], row["field"], row["change_kind"], row["source"]) == (
+        "Y", "(patch notes)", "mechanic", "patch notes")
+    assert (row["beta_build"], row["beta_date"], row["stable_build"], row["stable_date"]) == (
+        "v0.104.0", "2026-04-23", "v0.107.1", "2026-06-18")
+    assert "v0.104.0: Changed Y card" in row["decision"]
+    assert "v0.107.1:" not in row["decision"]               # major update not quoted
+
+
+def test_beta_rows_to_none_are_artifacts():
+    histories = {"A": [{"version": "V0.106.1", "date": "2026-05-22",
+                        "changes": ["Damage: 13 → none", "Vars.damage: 13 → none"]}],
+                 "B": [{"version": "V0.106.0", "date": "2026-05-21",
+                        "changes": ["Cost: 1 → -1", "Keywords[1]: Retain → none"]}]}
+    unmatched = [{"card_id": c, "version": h[0]["version"].lower(), "date": h[0]["date"],
+                  "fields": "damage"} for c, h in histories.items()]
+    got = {r["card_id"]: r["change_kind"] for r in nc.history_beta_rows(histories, unmatched, [])}
+    assert got == {"A": "artifact", "B": ""}
+
+
+def test_committed_beta_artifacts():
+    with open(REPO / "reference" / "beta_card_changes.csv") as f:
+        rows = list(csv.DictReader(f))
+    assert {(r["card_id"], r["version"]) for r in rows if r["change_kind"] == "artifact"} == {
+        (c, "v0.106.1") for c in ("ASCENDERS_BANE", "FOLLY", "GENETIC_ALGORITHM",
+                                  "SUMMON_FORTH", "THE_SCYTHE")}
+
+
+def test_notes_only_beta_build_from_listing_version():
+    # a writing note on an earlier beta and a major-update summary don't set beta_build;
+    # several listing betas -> the first, the others named in `decision`
+    notes = [note("Y", "v0.104.0", section="writing", verb="", text="Y card wording"),
+             note("Y", "v0.105.0", verb="Buffed", text="Buffed Y card: now Retains"),
+             note("Y", "v0.106.0", verb="Buffed", text="Buffed Y card: now Retains, again"),
+             note("Y", "v0.107.1", section="content+balance", text="Buffed Y card: now Retains")]
+    cc = [dict(c, version="v0.104.0") for c in nc.crosscheck(notes, [], [])]
+    [row] = nc.notes_only_rows(cc, notes, [])
+    assert row["beta_build"] == "v0.105.0"
+    assert "also listed on v0.106.0 (beta_build = first)" in row["decision"]
+
+
+def test_committed_notes_only_beta_builds():
+    with open(REPO / "reference" / "card_changes.csv") as f:
+        got = {r["card_id"]: r["beta_build"] for r in csv.DictReader(f)
+               if r["source"] == "patch notes"}
+    assert (got["ENTRENCH"], got["BLADE_OF_INK"], got["GOLD_AXE"], got["TYRANNY"]) == (
+        "v0.106.0", "v0.105.0", "v0.105.0", "v0.104.0")

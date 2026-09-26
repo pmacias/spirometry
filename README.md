@@ -30,7 +30,7 @@ See [PLAN.md](PLAN.md) for the research questions and methods.
 | `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
 | `scripts/audit_extract.py` | Interim: compact audit tables from the snapshot (runs, aggregated offer counts) into `data/audit/` |
 | `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power |
-| `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes (+ raw caches in `reference/raw/`: Spire Codex API, wiki pages) |
+| `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages) |
 | `data/runs/` | Run tables built locally by `spirometry.runs` (git-ignored, never committed) |
 | `data/audit/` | Audit tables built locally by `scripts/audit_extract.py` (git-ignored) |
 | `tests/` | pytest tests; `tests/fixtures/sample_runs.jsonl` holds 6 sample runs (the only run data in git; co-op player IDs replaced) |
@@ -75,7 +75,9 @@ python scripts/audit_extract.py --pages 20   # quick test
 ```
 
 Rebuild the card patch dataset in `reference/` (reads the committed API cache; fetches only
-what's missing, at most 10 requests per minute):
+what's missing, at most 10 requests per minute). The build applies the card-change decisions
+in PLAN.md's decision log and, when `patch_notes_cards.csv` exists, reruns the cross-check
+and adds the notes-only rows to `card_changes.csv`:
 
 ```bash
 python -m spirometry.patch_history          # fetch missing + build

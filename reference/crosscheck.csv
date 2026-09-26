@@ -34,14 +34,14 @@ FLAK_CANNON,v0.103.0,v0.103.2,v0.103.0,writing,,yes,yes,text_only,wording,agree:
 FLANKING,v0.103.0,v0.103.2,v0.103.0,writing,,yes,yes,text_only,wording,agree: writing note,only in the writing section
 FLICK_FLACK,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,tweak,,agree: numbers match,damage 7(9) -> 6(8): matches damage
 FOLLOW_THROUGH,v0.103.0,v0.103.2,v0.103.0,content+balance,Reworked,yes,yes,rework+rarity_change,,agree: no numbers to compare,Reworked
-FOLLY,v0.100.0,v0.103.2,,,,no,yes,rework,,table only,no mention in the patch notes for this window
+FOLLY,v0.100.0,v0.103.2,,,,no,yes,artifact,,table only,no mention in the patch notes for this window
 FORGOTTEN_RITUAL,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,rework,,agree: no numbers to compare,Nerfed
 GATHER_LIGHT,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,block 7(10) -> 8(11): matches block
 GLITTERSTREAM,v0.101.0,v0.103.2,v0.101.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,next turn block 4(6) -> 5(7): matches vars.BlockNextTurn
-GLOW,v0.100.0,v0.103.2,v0.100.0,content,Reworked,yes,yes,tweak,,disagree: kind; agree: no numbers to compare,"table says tweak, notes also say: v0.100.0 Reworked; Reworked"
+GLOW,v0.100.0,v0.103.2,v0.100.0,content,Reworked,yes,yes,rework,,kind relabeled tweak -> rework; agree: no numbers to compare,"classifier says tweak, notes also say: v0.100.0 Reworked; Reworked"
 GRAND_FINALE,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 50(60) -> 60(75): matches damage
 GRAPPLE,v0.103.0,v0.103.2,v0.103.0,content+balance,Deprecated,yes,yes,removed,,agree: no numbers to compare,Deprecated
-GRAVE_WARDEN,v0.100.0,v0.103.2,v0.100.0,balance,Changed,yes,yes,tweak,,disagree: kind; agree: numbers match,"table says tweak, notes also say: v0.100.0 'no longer upgrades the Soul'; upgrade 8(10) -> 8(11): base unchanged"
+GRAVE_WARDEN,v0.100.0,v0.103.2,v0.100.0,balance,Changed,yes,yes,rework,,kind relabeled tweak -> rework; agree: numbers match,"classifier says tweak, notes also say: v0.100.0 'no longer upgrades the Soul'; upgrade 8(10) -> 8(11): base unchanged"
 GUIDING_STAR,v0.101.0,v0.103.2,v0.101.0,balance,Buffed,yes,yes,text_only,mechanic,agree: no numbers to compare,Buffed
 HEIRLOOM_HAMMER,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 17(22) -> 20(25): matches damage
 HEMOKINESIS,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 14(19) -> 15(20): matches damage
@@ -73,7 +73,7 @@ SCULPTING_STRIKE,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree:
 SEANCE,v0.100.0,v0.103.2,v0.100.0,balance,Nerfed,yes,yes,cost_change,,agree: numbers match,cost 0 -> 1(0): matches cost
 SEEKER_STRIKE,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 6(9) -> 9(12): matches damage
 SERPENT_FORM,v0.101.0,v0.103.2,v0.101.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 4(5) -> 4(6): base unchanged
-SHIV,v0.102.0,v0.103.2,,,,no,yes,rework,,table only,no mention in the patch notes for this window
+SHIV,v0.102.0,v0.103.2,,,,no,yes,artifact,,table only,no mention in the patch notes for this window
 SKEWER,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 7(10) -> 8(11): matches damage
 SOLAR_STRIKE,v0.100.0,v0.103.2,v0.100.0,balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 8(9) -> 9(10): matches damage
 SPEEDSTER,v0.103.0,v0.103.2,v0.102.0 v0.103.0,balance content+balance,Nerfed Buffed,yes,yes,rework,,agree: numbers match,damage 2(3) -> 2: base unchanged
@@ -121,10 +121,10 @@ PREDATOR,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Changed,yes,yes,rar
 REAPER_FORM,v0.104.0,v0.107.1,v0.104.0 v0.107.1,writing,,yes,yes,text_only,wording,agree: writing note,only in the writing section
 REFLECT,v0.104.0,v0.107.1,v0.104.0 v0.107.0 v0.107.1,balance content+balance,Nerfed,yes,yes,tweak,,agree: numbers match,block 17(21) -> 15(20): matches block
 ROYALTIES,v0.105.0,v0.107.1,v0.105.0 v0.107.1,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,gold 30(35) -> 30(40): base unchanged
-SACRIFICE,,v0.107.1,,,,no,yes,rework,,table only,no mention in the patch notes for this window
+SACRIFICE,,v0.107.1,,,,no,yes,artifact,,table only,no mention in the patch notes for this window
 SCARE,v0.106.0,v0.107.1,,,,no,yes,added,,table only,no mention in the patch notes for this window
 SEVEN_STARS,,v0.107.1,,,,no,yes,text_only,wording,table only,no mention in the patch notes for this window
-SHATTER,v0.106.0,v0.107.1,v0.105.0 v0.106.0 v0.107.1,content+balance,Buffed Nerfed Changed,yes,yes,tweak,,disagree: kind; agree: numbers match,"table says tweak, notes also say: v0.105.0 'now Evokes all of your Orbs twice' | v0.107.1 'now Evokes all of your Orbs twice'; damage 11(15) -> 7(11): matches damage"
+SHATTER,v0.106.0,v0.107.1,v0.105.0 v0.106.0 v0.107.1,content+balance,Buffed Nerfed Changed,yes,yes,rework,,kind relabeled tweak -> rework; agree: numbers match,"classifier says tweak, notes also say: v0.105.0 'now Evokes all of your Orbs twice' | v0.107.1 'now Evokes all of your Orbs twice'; damage 11(15) -> 7(11): matches damage"
 SIC_EM,v0.107.0,v0.107.1,v0.107.0 v0.107.1,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,summon 2(3) -> 3(4): matches powers_applied[0].amount
 SOVEREIGN_BLADE,v0.104.0,v0.107.1,,,,no,yes,text_only,wording,table only,no mention in the patch notes for this window
 STRATAGEM,v0.104.0,v0.107.1,v0.104.0 v0.107.1,balance content+balance,,yes,no,,,notes only: missing from card_changes,no numbers in the notes
@@ -132,7 +132,7 @@ SUMMON_FORTH,v0.104.0,v0.107.1,,,,no,yes,text_only,mechanic,table only,mentioned
 SWORD_SAGE,v0.105.0,v0.107.1,v0.105.0 v0.107.1,content+balance,,yes,yes,text_only,mechanic,agree: no numbers to compare,
 SYNTHESIS,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 12(18) -> 14(20): matches damage
 TAG_TEAM,v0.104.0,v0.107.1,v0.104.0 v0.107.1,balance content+balance,Buffed,yes,no,,,notes only: missing from card_changes,no numbers in the notes
-TESLA_COIL,v0.105.0,v0.107.1,v0.105.0 v0.107.1,content+balance,Buffed Changed,yes,yes,tweak,,disagree: kind; agree: numbers match,"table says tweak, notes also say: v0.105.0 'Lightning Triggers increased from once -> twice' | v0.107.1 'Lightning triggers increased from once -> twice'; damage 6 -> 4: matches the upgraded card via upgrade.damage (current base from the card list)"
+TESLA_COIL,v0.105.0,v0.107.1,v0.105.0 v0.107.1,content+balance,Buffed Changed,yes,yes,rework,,kind relabeled tweak -> rework; agree: numbers match,"classifier says tweak, notes also say: v0.105.0 'Lightning Triggers increased from once -> twice' | v0.107.1 'Lightning triggers increased from once -> twice'; damage 6 -> 4: matches the upgraded card via upgrade.damage (current base from the card list)"
 THE_SCYTHE,v0.107.0,v0.107.1,v0.107.0 v0.107.1,content+balance,Buffed,yes,yes,tweak,,agree: numbers match,damage 3(4) -> 4(5): matches vars.Increase
 THE_SEALED_THRONE,v0.106.0,v0.107.1,v0.106.0 v0.107.1,content+balance,Changed,yes,yes,rework+cost_change,,agree: no numbers to compare,Changed
 TYRANNY,v0.104.0,v0.107.1,v0.104.0 v0.107.1,balance content+balance,Changed,yes,no,,,notes only: missing from card_changes,no numbers in the notes

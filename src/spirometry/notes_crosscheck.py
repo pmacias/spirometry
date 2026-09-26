@@ -6,8 +6,12 @@ text_only_labels.csv and builds.csv, and writes:
     reference/crosscheck.csv        one row per (card, stable window): notes vs card_changes
     reference/behavior_changes.csv  bug-fix-only mentions that change how a card plays
     reference/beta_card_changes.csv card changes that never reached stable as written
+    reference/card_changes.csv      rewritten: the changelog rows (from spirometry.patch_history)
+                                    plus one `mechanic` row per notes-only change
 
-text_only_labels.csv is hand-labeled and only read, never written.
+The cross-check compares the notes with card_changes' changelog rows only (its notes-only
+rows come from this comparison). text_only_labels.csv is hand-labeled and only read, never
+written.
 
 Usage (from the repo root; run after `python -m spirometry.patch_notes build`):
     python -m spirometry.notes_crosscheck
@@ -30,9 +34,13 @@ CC_FIELDS = ["card_id", "version", "stable_build", "notes_versions", "notes_sect
              "agreement", "detail"]
 BEHAVIOR_FIELDS = ["card_id", "version", "branch", "date", "kind", "also_in_notes_as",
                    "in_card_changes", "text"]
-BETA_FIELDS = ["card_id", "version", "branch", "date", "status", "verb", "quantity",
+BETA_FIELDS = ["card_id", "version", "branch", "date", "status", "change_kind", "verb", "quantity",
                "before_base", "before_upg", "after_base", "after_upg", "reached_stable_as",
                "source", "text"]
+
+
+NOTES_SOURCE = "patch notes"
+NOTES_ONLY = "notes only: missing from card_changes"
 
 
 def vt(v):
@@ -232,6 +240,8 @@ def crosscheck(notes, changes, labels):
         nrows = sorted(by_card_window.get(key, []), key=lambda r: vt(r["version"]))
         crows = cc.get(key, [])
         kind = crows[0]["change_kind"] if crows else ""
+        # the classifier's label, before any decision relabeled it
+        auto_kind = crows[0].get("classified_as") or kind if crows else ""
         label = lab.get(key, "")
         versions = list(dict.fromkeys(r["version"] for r in nrows))
         sections = sorted({r["section"] for r in nrows})
@@ -285,11 +295,14 @@ def crosscheck(notes, changes, labels):
                 agreement, detail = "agree: writing note", "only in the writing section"
         # A numeric tweak in the table, but the notes also describe a non-numeric change
         # (a rework, a new keyword, a changed trigger): the tweak label may be wrong.
-        if kind in ("tweak", "tweak+cost_change") and change_notes:
+        if auto_kind in ("tweak", "tweak+cost_change") and change_notes:
             extra = [c for r in change_notes for c in non_numeric_clauses(r)]
             if extra:
-                agreement = "disagree: kind; " + agreement
-                detail = (f"table says {kind}, notes also say: " + " | ".join(
+                if kind != auto_kind:        # resolved by a decision (patch_history.RELABELS)
+                    agreement = f"kind relabeled {auto_kind} -> {kind}; " + agreement
+                else:
+                    agreement = "disagree: kind; " + agreement
+                detail = (f"classifier says {auto_kind}, notes also say: " + " | ".join(
                     dict.fromkeys(extra)) + "; " + detail).strip("; ")
         # text_only hand labels vs where the notes put the change
         if label and nrows:
@@ -440,9 +453,14 @@ def history_beta_rows(histories, unmatched, notes_rows):
             continue
         entry = next((e for e in histories.get(u["card_id"], [])
                       if e["version"].lower() == v), {})
-        text = "; ".join(c for c in entry.get("changes", []) if not HISTORY_NOISE.match(c))
+        changes = [c for c in entry.get("changes", []) if not HISTORY_NOISE.match(c)]
+        text = "; ".join(changes)
+        # every field going to 'none' with no changelog behind it: a parser artifact
+        # (PLAN.md decision log), kept and labeled
+        artifact = bool(changes) and all(re.search(r"→ none$", c) for c in changes)
         out.append({"card_id": u["card_id"], "version": v, "branch": "", "date": u["date"],
                     "status": "not in a stable changelog (reverted before stable, or parser)",
+                    "change_kind": "artifact" if artifact else "",
                     "source": "update-history (history_unmatched.csv)", "text": text})
     return out
 
@@ -469,16 +487,59 @@ def load_card_base(ref=REF):
     return out
 
 
+def notes_only_rows(crosscheck_rows, notes, builds):
+    """One card_changes row per notes-only change (PLAN.md decision log: changes found only
+    in the patch notes get rows, so those cards leave control groups): change_kind
+    `mechanic`, source `patch notes`, field '(patch notes)', old/new blank (the change is
+    not a card field). beta_build = the beta whose patch notes list the change (a
+    `role = subject` content/balance row in patch_notes_cards.csv; major-update summaries
+    don't count); when several betas in the window list it, the first, and `decision` says
+    which others do. `decision` also quotes the beta notes."""
+    date = {r["build_id"]: r["release_date"] for r in builds}
+    listed = {}
+    for r in sorted(notes, key=lambda r: vt(r["version"])):
+        if (r["role"] == "subject" and r["section"] in CHANGE_SECTIONS
+                and r["version"] not in MAJOR_UPDATES):
+            listed.setdefault((r["card_id"], window_of(r["version"])), []).append(r)
+    out = []
+    for c in crosscheck_rows:
+        if c["agreement"] != NOTES_ONLY:
+            continue
+        rs = listed.get((c["card_id"], c["stable_build"]), [])
+        versions = list(dict.fromkeys(r["version"] for r in rs))
+        beta = versions[0] if versions else ""
+        quotes = list(dict.fromkeys(f"{r['version']}: {r['raw_text']}" for r in rs))
+        also = (f"; also listed on {' '.join(versions[1:])} (beta_build = first)"
+                if len(versions) > 1 else "")
+        out.append({"card_id": c["card_id"], "field": "(patch notes)", "old": "", "new": "",
+                    "beta_build": beta, "beta_date": date.get(beta, ""),
+                    "stable_build": c["stable_build"],
+                    "stable_date": date.get(c["stable_build"], ""),
+                    "change_kind": "mechanic", "classified_as": "", "changed_fields": "",
+                    "source": NOTES_SOURCE,
+                    "decision": "notes-only change: row added so the card leaves control "
+                                "groups (PLAN.md decision log)" + also + "; notes: "
+                                + " | ".join(quotes)})
+    return out
+
+
 CARD_BASE = {}
 
 
 def build():
+    from spirometry.patch_history import CHANGE_COLS
     CARD_BASE.update(load_card_base())
     notes = read_csv(REF / "patch_notes_cards.csv")
-    changes = read_csv(REF / "card_changes.csv")
+    # changelog rows only: the notes-only rows are derived from this comparison
+    changes = [r for r in read_csv(REF / "card_changes.csv") if r["source"] != NOTES_SOURCE]
     labels = read_csv(REF / "text_only_labels.csv")
     rows = crosscheck(notes, changes, labels)
     write_csv(REF / "crosscheck.csv", rows, CC_FIELDS)
+    added = notes_only_rows(rows, notes, read_csv(REF / "builds.csv"))
+    import json
+    from spirometry.patch_history import add_card_attrs, card_attrs
+    add_card_attrs(added, card_attrs(json.loads((REF / "raw" / "cards.json").read_bytes())))
+    write_csv(REF / "card_changes.csv", changes + added, CHANGE_COLS)
     write_csv(REF / "behavior_changes.csv", behavior_changes(notes, changes), BEHAVIOR_FIELDS)
     beta = beta_card_changes(notes, rows)
     beta += history_beta_rows(load_histories(), read_csv(REF / "history_unmatched.csv"),

@@ -9,7 +9,9 @@ worker process, and writes one Parquet file per page per table:
     <out>/shop_offers/page_NNNNN.parquet  shop offers: solo shelf + rebuilt purchases; co-op raw
     <out>/build_info.parquet              parser version, build time, counts
     <out>/runs.duckdb                     views over the Parquet files (absolute paths),
-                                          plus runs_dedup, card_offers_dedup, primary_offers
+                                          plus runs_dedup, card_offers_dedup, primary_offers,
+                                          and offers_with_version (primary_offers joined to
+                                          reference/card_versions.csv) when that file exists
 
 Base tables keep every row and carry flags; filtering happens in the views. source_page is
 the page file's number, source_line the record's 0-based line in it. Exact repeats
@@ -34,7 +36,7 @@ import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-PARSER_VERSION = "1.3.0"
+PARSER_VERSION = "1.4.0"
 REF = pathlib.Path("reference")
 SALT_ENV = "SPIROMETRY_SALT"
 SALT_FILE = pathlib.Path(".spirometry_salt")
@@ -575,13 +577,28 @@ CREATE VIEW primary_offers AS
 """
 
 
-def write_duckdb(out_dir, info):
+# primary_offers with the card version live on the run's build (spirometry.treatment). The
+# CSV is read at query time (absolute path): rebuild the views if the repo moves.
+VERSION_VIEW = """
+CREATE VIEW offers_with_version AS
+    SELECT o.*, TRY_CAST(v.version AS INTEGER) AS card_version, v.event_ids,
+           v.behavior_event_ids
+    FROM primary_offers o
+    LEFT JOIN read_csv('{path}', header = true, all_varchar = true) v
+      ON v.card_id = o.card_id AND v.build_id = o.build_id;
+"""
+
+
+def write_duckdb(out_dir, info, ref=REF):
     db = out_dir / "runs.duckdb"
     con = duckdb.connect(str(db))
     for t in TABLES:
         glob = (out_dir / t).resolve() / "*.parquet"
         con.execute(f"CREATE VIEW {t} AS SELECT * FROM read_parquet('{glob}')")
     con.execute(VIEWS)
+    versions = pathlib.Path(ref) / "card_versions.csv"
+    if versions.exists():
+        con.execute(VERSION_VIEW.format(path=versions.resolve()))
     con.execute("CREATE TABLE build_info (key VARCHAR, value VARCHAR)")
     con.executemany("INSERT INTO build_info VALUES (?, ?)", [[k, str(v)] for k, v in info.items()])
     con.close()
@@ -674,7 +691,7 @@ def build(snapshot="sts2_snapshot", out="data/runs", workers=None, pages=None, k
         "duckdb": duckdb.__version__, "pyarrow": pa.__version__,
         "parse_seconds_total_cpu": round(tot("seconds"), 1),
     }
-    write_duckdb(out_dir, info)
+    write_duckdb(out_dir, info, ref)
     info["wall_seconds"] = round(time.perf_counter() - t_start, 1)
     say(f"records read {info['records_read']:,}; exact repeats dropped {dropped:,}"
         f" ({differ} with different content); unparseable lines {info['unparseable_lines']}")

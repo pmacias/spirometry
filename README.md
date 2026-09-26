@@ -25,12 +25,12 @@ See [PLAN.md](PLAN.md) for the research questions and methods.
 | [PLAN.md](PLAN.md) | Research questions, phases, status, decision log |
 | [SPIROMETRY.md](SPIROMETRY.md) | Reference: data sources, record structure, known data issues |
 | [CLAUDE.md](CLAUDE.md) | Standing instructions for Claude Code sessions |
-| `notes/` | Investigation notes: patch history endpoints (`patch_history.md`), run file structure and table proposal (`run_schema.md`), patch notes vs. card tables (`patch_notes_crosscheck.md`) |
-| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `runs.py` parses the run snapshot into Parquet + DuckDB run tables |
+| `notes/` | Investigation notes: patch history endpoints (`patch_history.md`), run file structure and table proposal (`run_schema.md`), patch notes vs. card tables (`patch_notes_crosscheck.md`), card versions and DiD windows (`treatment_table.md`) |
+| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `runs.py` parses the run snapshot into Parquet + DuckDB run tables |
 | `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
 | `scripts/audit_extract.py` | Interim: compact audit tables from the snapshot (runs, aggregated offer counts) into `data/audit/` |
 | `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power |
-| `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages) |
+| `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes, change events, card-patch net fields, per-build card versions, DiD windows (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages) |
 | `data/runs/` | Run tables built locally by `spirometry.runs` (git-ignored, never committed) |
 | `data/audit/` | Audit tables built locally by `scripts/audit_extract.py` (git-ignored) |
 | `tests/` | pytest tests; `tests/fixtures/sample_runs.jsonl` holds 6 sample runs (the only run data in git; co-op player IDs replaced) |
@@ -91,6 +91,16 @@ Parse the official patch notes (wiki mirror, cached in `reference/raw/wiki/`), r
 python -m spirometry.patch_notes            # fetch missing pages + build
 python -m spirometry.patch_notes build      # build from the cache only
 ```
+
+Build the treatment tables (card change events, card-patch net fields, per-build card versions, DiD windows at event and card-patch level) from
+the reference tables above; prints the stable-window check and the counts:
+
+```bash
+python -m spirometry.treatment
+```
+
+`python -m spirometry.runs build` then adds `offers_with_version` to `runs.duckdb`
+(`primary_offers` with the card version on each run's build).
 
 ## Data
 

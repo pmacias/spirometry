@@ -1,0 +1,387 @@
+card_patch_id,card_id,stable_build,change_kind,field,old,new,rel_change,events
+ACROBATICS@v0.103.2/patch,ACROBATICS,v0.103.2,rarity_change,rarity,Common,Uncommon,,ACROBATICS@v0.103.0
+ALIGNMENT@v0.103.2/patch,ALIGNMENT,v0.103.2,tweak+cost_change,star_cost,2,3,0.5000,ALIGNMENT@v0.100.0
+ALIGNMENT@v0.103.2/patch,ALIGNMENT,v0.103.2,tweak+cost_change,vars.StarCost,2,3,0.5000,ALIGNMENT@v0.100.0
+ANTICIPATE@v0.103.2/patch,ANTICIPATE,v0.103.2,tweak,powers_applied[0].amount,3,2,-0.3333,ANTICIPATE@v0.100.0
+ANTICIPATE@v0.103.2/patch,ANTICIPATE,v0.103.2,tweak,upgrade.dexterity,+2,+1,-0.5000,ANTICIPATE@v0.100.0
+ANTICIPATE@v0.103.2/patch,ANTICIPATE,v0.103.2,tweak,vars.Dexterity,3,2,-0.3333,ANTICIPATE@v0.100.0
+ANTICIPATE@v0.103.2/patch,ANTICIPATE,v0.103.2,tweak,vars.DexterityPower,3,2,-0.3333,ANTICIPATE@v0.100.0
+ARSENAL@v0.103.2/patch,ARSENAL,v0.103.2,rework,upgrade.add_innate,none,yes,,ARSENAL@v0.101.0
+ARSENAL@v0.103.2/patch,ARSENAL,v0.103.2,rework,upgrade.arsenalpower,+1,none,,ARSENAL@v0.101.0
+BANSHEES_CRY@v0.103.2/patch,BANSHEES_CRY,v0.103.2,rework+cost_change,cost,6,9,0.5000,BANSHEES_CRY@v0.100.0
+BANSHEES_CRY@v0.103.2/patch,BANSHEES_CRY,v0.103.2,rework+cost_change,upgrade.cost,none,7,,BANSHEES_CRY@v0.100.0
+BANSHEES_CRY@v0.103.2/patch,BANSHEES_CRY,v0.103.2,rework+cost_change,upgrade.damage,+6,none,,BANSHEES_CRY@v0.100.0
+BEACON_OF_HOPE@v0.103.2/patch,BEACON_OF_HOPE,v0.103.2,mechanic,(patch notes),,,,BEACON_OF_HOPE@v0.100.0
+BEGONE@v0.103.2/patch,BEGONE,v0.103.2,rework,damage,4,none,,BEGONE@v0.100.0
+BEGONE@v0.103.2/patch,BEGONE,v0.103.2,rework,spawns_cards[0],MINION_DIVE_BOMB,MINION_STRIKE,,BEGONE@v0.100.0
+BEGONE@v0.103.2/patch,BEGONE,v0.103.2,rework,target,AnyEnemy,Self,,BEGONE@v0.100.0
+BEGONE@v0.103.2/patch,BEGONE,v0.103.2,rework,type,Attack,Skill,,BEGONE@v0.100.0
+BEGONE@v0.103.2/patch,BEGONE,v0.103.2,rework,upgrade.damage,+1,none,,BEGONE@v0.100.0
+BEGONE@v0.103.2/patch,BEGONE,v0.103.2,rework,vars.Damage,4,none,,BEGONE@v0.100.0
+BELIEVE_IN_YOU@v0.103.2/patch,BELIEVE_IN_YOU,v0.103.2,tweak,energy_gain,3,2,-0.3333,BELIEVE_IN_YOU@v0.100.0
+BELIEVE_IN_YOU@v0.103.2/patch,BELIEVE_IN_YOU,v0.103.2,tweak,vars.Energy,3,2,-0.3333,BELIEVE_IN_YOU@v0.100.0
+BLADE_OF_INK@v0.103.2/patch,BLADE_OF_INK,v0.103.2,rework,cards_draw,none,2,,BLADE_OF_INK@v0.102.0
+BLADE_OF_INK@v0.103.2/patch,BLADE_OF_INK,v0.103.2,rework,powers_applied[0].amount,2,none,,BLADE_OF_INK@v0.102.0
+BLADE_OF_INK@v0.103.2/patch,BLADE_OF_INK,v0.103.2,rework,powers_applied[0].power,Strength,none,,BLADE_OF_INK@v0.102.0
+BLADE_OF_INK@v0.103.2/patch,BLADE_OF_INK,v0.103.2,rework,spawns_cards[0],none,SHIV,,BLADE_OF_INK@v0.102.0
+BLADE_OF_INK@v0.103.2/patch,BLADE_OF_INK,v0.103.2,rework,upgrade.cards,none,+1,,BLADE_OF_INK@v0.102.0
+BLADE_OF_INK@v0.103.2/patch,BLADE_OF_INK,v0.103.2,rework,upgrade.strength,+1,none,,BLADE_OF_INK@v0.102.0
+BLADE_OF_INK@v0.103.2/patch,BLADE_OF_INK,v0.103.2,rework,vars.Cards,none,2,,BLADE_OF_INK@v0.102.0
+BLADE_OF_INK@v0.103.2/patch,BLADE_OF_INK,v0.103.2,rework,vars.Strength,2,none,,BLADE_OF_INK@v0.102.0
+BLADE_OF_INK@v0.103.2/patch,BLADE_OF_INK,v0.103.2,rework,vars.StrengthPower,2,none,,BLADE_OF_INK@v0.102.0
+BOMBARDMENT@v0.103.2/patch,BOMBARDMENT,v0.103.2,text_only,description,"Deal 18 damage.
+At the start of your turn, plays from the [gold]Exhaust Pile[...","Deal 18 damage.
+At the start of your turn, if this is in your [gold]Exhaust P...",,BOMBARDMENT@v0.100.0
+BOMBARDMENT@v0.103.2/patch,BOMBARDMENT,v0.103.2,text_only,description_raw,"Deal {Damage:diff()} damage.
+At the start of your turn, plays from the [gold]...","Deal {Damage:diff()} damage.
+At the start of your turn, if this is in your [g...",,BOMBARDMENT@v0.100.0
+BOMBARDMENT@v0.103.2/patch,BOMBARDMENT,v0.103.2,text_only,upgrade_description,"Deal 24 damage.
+At the start of your turn, plays from the [gold]Exhaust Pile[...","Deal 24 damage.
+At the start of your turn, if this is in your [gold]Exhaust P...",,BOMBARDMENT@v0.100.0
+BORROWED_TIME@v0.103.2/patch,BORROWED_TIME,v0.103.2,rework+cost_change,cost,0,1,,BORROWED_TIME@v0.100.0 BORROWED_TIME@v0.101.0 BORROWED_TIME@v0.102.0
+BORROWED_TIME@v0.103.2/patch,BORROWED_TIME,v0.103.2,rework+cost_change,energy_gain,1,4,3.0000,BORROWED_TIME@v0.100.0 BORROWED_TIME@v0.101.0 BORROWED_TIME@v0.102.0
+BORROWED_TIME@v0.103.2/patch,BORROWED_TIME,v0.103.2,rework+cost_change,powers_applied[0].amount,3,none,,BORROWED_TIME@v0.100.0 BORROWED_TIME@v0.101.0 BORROWED_TIME@v0.102.0
+BORROWED_TIME@v0.103.2/patch,BORROWED_TIME,v0.103.2,rework+cost_change,powers_applied[0].power,Doom,none,,BORROWED_TIME@v0.100.0 BORROWED_TIME@v0.101.0 BORROWED_TIME@v0.102.0
+BORROWED_TIME@v0.103.2/patch,BORROWED_TIME,v0.103.2,rework+cost_change,upgrade.energy,+1,+2,1.0000,BORROWED_TIME@v0.100.0 BORROWED_TIME@v0.101.0 BORROWED_TIME@v0.102.0
+BORROWED_TIME@v0.103.2/patch,BORROWED_TIME,v0.103.2,rework+cost_change,vars.Doom,3,none,,BORROWED_TIME@v0.100.0 BORROWED_TIME@v0.101.0 BORROWED_TIME@v0.102.0
+BORROWED_TIME@v0.103.2/patch,BORROWED_TIME,v0.103.2,rework+cost_change,vars.DoomPower,3,none,,BORROWED_TIME@v0.100.0 BORROWED_TIME@v0.101.0 BORROWED_TIME@v0.102.0
+BORROWED_TIME@v0.103.2/patch,BORROWED_TIME,v0.103.2,rework+cost_change,vars.Energy,1,4,3.0000,BORROWED_TIME@v0.100.0 BORROWED_TIME@v0.101.0 BORROWED_TIME@v0.102.0
+BORROWED_TIME@v0.103.2/patch,BORROWED_TIME,v0.103.2,rework+cost_change,vars.ExtraCost,none,1,,BORROWED_TIME@v0.100.0 BORROWED_TIME@v0.101.0 BORROWED_TIME@v0.102.0
+BREAK@v0.103.2/patch,BREAK,v0.103.2,tweak+cost_change,cost,2,1,-0.5000,BREAK@v0.100.0
+BREAK@v0.103.2/patch,BREAK,v0.103.2,tweak+cost_change,upgrade.damage,+5,+10,1.0000,BREAK@v0.100.0
+BUNDLE_OF_JOY@v0.103.2/patch,BUNDLE_OF_JOY,v0.103.2,cost_change,cost,2,1,-0.5000,BUNDLE_OF_JOY@v0.100.0
+CELESTIAL_MIGHT@v0.103.2/patch,CELESTIAL_MIGHT,v0.103.2,rework,upgrade.damage,+2,none,,CELESTIAL_MIGHT@v0.101.0
+CELESTIAL_MIGHT@v0.103.2/patch,CELESTIAL_MIGHT,v0.103.2,rework,upgrade.repeat,none,+1,,CELESTIAL_MIGHT@v0.101.0
+CHARGE@v0.103.2/patch,CHARGE,v0.103.2,rework,spawns_cards[0],MINION_STRIKE,MINION_DIVE_BOMB,,CHARGE@v0.100.0
+CINDER@v0.103.2/patch,CINDER,v0.103.2,rework,damage,17,18,0.0588,CINDER@v0.100.0 CINDER@v0.101.0
+CINDER@v0.103.2/patch,CINDER,v0.103.2,rework,upgrade.damage,+5,+6,0.2000,CINDER@v0.100.0 CINDER@v0.101.0
+CINDER@v0.103.2/patch,CINDER,v0.103.2,rework,vars.CardsToExhaust,1,none,,CINDER@v0.100.0 CINDER@v0.101.0
+CINDER@v0.103.2/patch,CINDER,v0.103.2,rework,vars.Damage,17,18,0.0588,CINDER@v0.100.0 CINDER@v0.101.0
+COLLISION_COURSE@v0.103.2/patch,COLLISION_COURSE,v0.103.2,tweak,damage,9,11,0.2222,COLLISION_COURSE@v0.100.0
+COLLISION_COURSE@v0.103.2/patch,COLLISION_COURSE,v0.103.2,tweak,upgrade.damage,+3,+4,0.3333,COLLISION_COURSE@v0.100.0
+COLLISION_COURSE@v0.103.2/patch,COLLISION_COURSE,v0.103.2,tweak,vars.Damage,9,11,0.2222,COLLISION_COURSE@v0.100.0
+COLOSSUS@v0.103.2/patch,COLOSSUS,v0.103.2,rarity_change,rarity,Rare,Uncommon,,COLOSSUS@v0.103.0
+CORROSIVE_WAVE@v0.103.2/patch,CORROSIVE_WAVE,v0.103.2,tweak,vars.CorrosiveWave,3,2,-0.3333,CORROSIVE_WAVE@v0.100.0
+DANSE_MACABRE@v0.103.2/patch,DANSE_MACABRE,v0.103.2,tweak,powers_applied[0].amount,3,4,0.3333,DANSE_MACABRE@v0.100.0
+DANSE_MACABRE@v0.103.2/patch,DANSE_MACABRE,v0.103.2,tweak,upgrade.dansemacabrepower,+1,+2,1.0000,DANSE_MACABRE@v0.100.0
+DANSE_MACABRE@v0.103.2/patch,DANSE_MACABRE,v0.103.2,tweak,vars.DanseMacabre,3,4,0.3333,DANSE_MACABRE@v0.100.0
+DANSE_MACABRE@v0.103.2/patch,DANSE_MACABRE,v0.103.2,tweak,vars.DanseMacabrePower,3,4,0.3333,DANSE_MACABRE@v0.100.0
+DAZED@v0.103.2/patch,DAZED,v0.103.2,mechanic,(patch notes),,,,DAZED@v0.100.0 DAZED@v0.101.0
+DEBILITATE@v0.103.2/patch,DEBILITATE,v0.103.2,tweak,damage,7,10,0.4286,DEBILITATE@v0.100.0
+DEBILITATE@v0.103.2/patch,DEBILITATE,v0.103.2,tweak,vars.Damage,7,10,0.4286,DEBILITATE@v0.100.0
+DEFY@v0.103.2/patch,DEFY,v0.103.2,rework,upgrade.block,+1,+3,2.0000,DEFY@v0.100.0
+DEFY@v0.103.2/patch,DEFY,v0.103.2,rework,upgrade.weak,+1,none,,DEFY@v0.100.0
+DIRGE@v0.103.2/patch,DIRGE,v0.103.2,rework,keywords[0],none,Exhaust,,DIRGE@v0.100.0
+DISCOVERY@v0.103.2/patch,DISCOVERY,v0.103.2,text_only,description,Choose 1 of 3 random cards to add into your [gold]Hand[/gold]. It costs 0 [en...,Choose 1 of 3 random cards to add into your [gold]Hand[/gold]. It's free to p...,,DISCOVERY@v0.100.0
+DISCOVERY@v0.103.2/patch,DISCOVERY,v0.103.2,text_only,description_raw,Choose 1 of 3 random cards to add into your [gold]Hand[/gold]. It costs 0 {en...,Choose 1 of 3 random cards to add into your [gold]Hand[/gold]. It's free to p...,,DISCOVERY@v0.100.0
+DOMINATE@v0.103.2/patch,DOMINATE,v0.103.2,rework,powers_applied[0].amount,none,1,,DOMINATE@v0.100.0
+DOMINATE@v0.103.2/patch,DOMINATE,v0.103.2,rework,powers_applied[0].power,none,Vulnerable,,DOMINATE@v0.100.0
+DOMINATE@v0.103.2/patch,DOMINATE,v0.103.2,rework,upgrade.remove_exhaust,yes,none,,DOMINATE@v0.100.0
+DOMINATE@v0.103.2/patch,DOMINATE,v0.103.2,rework,upgrade.vulnerablepower,none,+1,,DOMINATE@v0.100.0
+DOMINATE@v0.103.2/patch,DOMINATE,v0.103.2,rework,vars.Vulnerable,none,1,,DOMINATE@v0.100.0
+DOMINATE@v0.103.2/patch,DOMINATE,v0.103.2,rework,vars.VulnerablePower,none,1,,DOMINATE@v0.100.0
+ETERNAL_ARMOR@v0.103.2/patch,ETERNAL_ARMOR,v0.103.2,tweak,powers_applied[0].amount,7,9,0.2857,ETERNAL_ARMOR@v0.100.0
+ETERNAL_ARMOR@v0.103.2/patch,ETERNAL_ARMOR,v0.103.2,tweak,upgrade.platingpower,+2,+3,0.5000,ETERNAL_ARMOR@v0.100.0
+ETERNAL_ARMOR@v0.103.2/patch,ETERNAL_ARMOR,v0.103.2,tweak,vars.Plating,7,9,0.2857,ETERNAL_ARMOR@v0.100.0
+ETERNAL_ARMOR@v0.103.2/patch,ETERNAL_ARMOR,v0.103.2,tweak,vars.PlatingPower,7,9,0.2857,ETERNAL_ARMOR@v0.100.0
+EXPECT_A_FIGHT@v0.103.2/patch,EXPECT_A_FIGHT,v0.103.2,text_only,description,Gain [energy:1] for each Attack in your [gold]Hand[/gold].,"Gain [energy:1] for each Attack in your [gold]Hand[/gold].
+You cannot gain
+ad...",,EXPECT_A_FIGHT@v0.100.0
+EXPECT_A_FIGHT@v0.103.2/patch,EXPECT_A_FIGHT,v0.103.2,text_only,description_raw,Gain {energyPrefix:energyIcons(1)} for each Attack in your [gold]Hand[/gold]....,Gain {energyPrefix:energyIcons(1)} for each Attack in your [gold]Hand[/gold]....,,EXPECT_A_FIGHT@v0.100.0
+FALLING_STAR@v0.103.2/patch,FALLING_STAR,v0.103.2,tweak,damage,7,8,0.1429,FALLING_STAR@v0.101.0
+FALLING_STAR@v0.103.2/patch,FALLING_STAR,v0.103.2,tweak,vars.Damage,7,8,0.1429,FALLING_STAR@v0.101.0
+FIGHT_ME@v0.103.2/patch,FIGHT_ME,v0.103.2,tweak,powers_applied[0].amount,2,3,0.5000,FIGHT_ME@v0.100.0
+FIGHT_ME@v0.103.2/patch,FIGHT_ME,v0.103.2,tweak,vars.Strength,2,3,0.5000,FIGHT_ME@v0.100.0
+FIGHT_ME@v0.103.2/patch,FIGHT_ME,v0.103.2,tweak,vars.StrengthPower,2,3,0.5000,FIGHT_ME@v0.100.0
+FLAK_CANNON@v0.103.2/patch,FLAK_CANNON,v0.103.2,text_only,description,"[gold]Exhaust[/gold] ALL your [gold]Status[/gold] cards.
+Deal 8 damage to a r...","[gold]Exhaust[/gold] ALL your Status cards.
+Deal 8 damage to a random enemy f...",,FLAK_CANNON@v0.103.0
+FLAK_CANNON@v0.103.2/patch,FLAK_CANNON,v0.103.2,text_only,description_raw,"[gold]Exhaust[/gold] ALL your [gold]Status[/gold] cards.
+Deal {Damage:diff()}...","[gold]Exhaust[/gold] ALL your Status cards.
+Deal {Damage:diff()} damage to a ...",,FLAK_CANNON@v0.103.0
+FLAK_CANNON@v0.103.2/patch,FLAK_CANNON,v0.103.2,text_only,upgrade_description,"[gold]Exhaust[/gold] ALL your [gold]Status[/gold] cards.
+Deal 11 damage to a ...","[gold]Exhaust[/gold] ALL your Status cards.
+Deal 11 damage to a random enemy ...",,FLAK_CANNON@v0.103.0
+FLANKING@v0.103.2/patch,FLANKING,v0.103.2,text_only,description,The enemy takes double damage from other players this turn.,The enemy takes double attack damage from other players this turn.,,FLANKING@v0.103.0
+FLANKING@v0.103.2/patch,FLANKING,v0.103.2,text_only,description_raw,The enemy takes double damage from other players this turn.,The enemy takes double attack damage from other players this turn.,,FLANKING@v0.103.0
+FLICK_FLACK@v0.103.2/patch,FLICK_FLACK,v0.103.2,tweak,damage,7,6,-0.1429,FLICK_FLACK@v0.100.0
+FLICK_FLACK@v0.103.2/patch,FLICK_FLACK,v0.103.2,tweak,vars.Damage,7,6,-0.1429,FLICK_FLACK@v0.100.0
+FOLLOW_THROUGH@v0.103.2/patch,FOLLOW_THROUGH,v0.103.2,rework+rarity_change,damage,6,7,0.1667,FOLLOW_THROUGH@v0.103.0
+FOLLOW_THROUGH@v0.103.2/patch,FOLLOW_THROUGH,v0.103.2,rework+rarity_change,powers_applied[0].amount,1,none,,FOLLOW_THROUGH@v0.103.0
+FOLLOW_THROUGH@v0.103.2/patch,FOLLOW_THROUGH,v0.103.2,rework+rarity_change,powers_applied[0].power,Weak,none,,FOLLOW_THROUGH@v0.103.0
+FOLLOW_THROUGH@v0.103.2/patch,FOLLOW_THROUGH,v0.103.2,rework+rarity_change,rarity,Uncommon,Common,,FOLLOW_THROUGH@v0.103.0
+FOLLOW_THROUGH@v0.103.2/patch,FOLLOW_THROUGH,v0.103.2,rework+rarity_change,target,AllEnemies,AnyEnemy,,FOLLOW_THROUGH@v0.103.0
+FOLLOW_THROUGH@v0.103.2/patch,FOLLOW_THROUGH,v0.103.2,rework+rarity_change,upgrade.weak,+1,none,,FOLLOW_THROUGH@v0.103.0
+FOLLOW_THROUGH@v0.103.2/patch,FOLLOW_THROUGH,v0.103.2,rework+rarity_change,vars.CardCount,none,5,,FOLLOW_THROUGH@v0.103.0
+FOLLOW_THROUGH@v0.103.2/patch,FOLLOW_THROUGH,v0.103.2,rework+rarity_change,vars.Damage,6,7,0.1667,FOLLOW_THROUGH@v0.103.0
+FOLLOW_THROUGH@v0.103.2/patch,FOLLOW_THROUGH,v0.103.2,rework+rarity_change,vars.Weak,1,none,,FOLLOW_THROUGH@v0.103.0
+FOLLOW_THROUGH@v0.103.2/patch,FOLLOW_THROUGH,v0.103.2,rework+rarity_change,vars.WeakPower,1,none,,FOLLOW_THROUGH@v0.103.0
+FORGOTTEN_RITUAL@v0.103.2/patch,FORGOTTEN_RITUAL,v0.103.2,rework,keywords[0],none,Exhaust,,FORGOTTEN_RITUAL@v0.100.0
+GATHER_LIGHT@v0.103.2/patch,GATHER_LIGHT,v0.103.2,tweak,block,7,8,0.1429,GATHER_LIGHT@v0.100.0
+GATHER_LIGHT@v0.103.2/patch,GATHER_LIGHT,v0.103.2,tweak,vars.Block,7,8,0.1429,GATHER_LIGHT@v0.100.0
+GLITTERSTREAM@v0.103.2/patch,GLITTERSTREAM,v0.103.2,tweak,vars.BlockNextTurn,4,5,0.2500,GLITTERSTREAM@v0.101.0
+GLOW@v0.103.2/patch,GLOW,v0.103.2,rework,cards_draw,2,1,-0.5000,GLOW@v0.100.0
+GLOW@v0.103.2/patch,GLOW,v0.103.2,rework,vars.Cards,2,1,-0.5000,GLOW@v0.100.0
+GRAND_FINALE@v0.103.2/patch,GRAND_FINALE,v0.103.2,tweak,damage,50,60,0.2000,GRAND_FINALE@v0.100.0
+GRAND_FINALE@v0.103.2/patch,GRAND_FINALE,v0.103.2,tweak,upgrade.damage,+10,+15,0.5000,GRAND_FINALE@v0.100.0
+GRAND_FINALE@v0.103.2/patch,GRAND_FINALE,v0.103.2,tweak,vars.Damage,50,60,0.2000,GRAND_FINALE@v0.100.0
+GRAPPLE@v0.103.2/patch,GRAPPLE,v0.103.2,removed,(card),present,none,,GRAPPLE@v0.103.0
+GRAVE_WARDEN@v0.103.2/patch,GRAVE_WARDEN,v0.103.2,rework,upgrade.block,+2,+3,0.5000,GRAVE_WARDEN@v0.100.0
+GUIDING_STAR@v0.103.2/patch,GUIDING_STAR,v0.103.2,text_only,description,"Deal 12 damage.
+Next turn, draw 2 cards.","Deal 12 damage.
+Draw 2 cards.",,GUIDING_STAR@v0.101.0
+GUIDING_STAR@v0.103.2/patch,GUIDING_STAR,v0.103.2,text_only,description_raw,"Deal {Damage:diff()} damage.
+Next turn, draw {Cards:diff()} {Cards:plural:car...","Deal {Damage:diff()} damage.
+Draw {Cards:diff()} {Cards:plural:card|cards}.",,GUIDING_STAR@v0.101.0
+GUIDING_STAR@v0.103.2/patch,GUIDING_STAR,v0.103.2,text_only,upgrade_description,"Deal 13 damage.
+Next turn, draw 3 cards.","Deal 13 damage.
+Draw 3 cards.",,GUIDING_STAR@v0.101.0
+HEIRLOOM_HAMMER@v0.103.2/patch,HEIRLOOM_HAMMER,v0.103.2,tweak,damage,17,20,0.1765,HEIRLOOM_HAMMER@v0.100.0
+HEIRLOOM_HAMMER@v0.103.2/patch,HEIRLOOM_HAMMER,v0.103.2,tweak,vars.Damage,17,20,0.1765,HEIRLOOM_HAMMER@v0.100.0
+HEMOKINESIS@v0.103.2/patch,HEMOKINESIS,v0.103.2,tweak,damage,14,15,0.0714,HEMOKINESIS@v0.100.0
+HEMOKINESIS@v0.103.2/patch,HEMOKINESIS,v0.103.2,tweak,vars.Damage,14,15,0.0714,HEMOKINESIS@v0.100.0
+HIDDEN_GEM@v0.103.2/patch,HIDDEN_GEM,v0.103.2,text_only,description,A random card in your [gold]Draw Pile[/gold] gains [gold]Replay[/gold] 2.,A random card without [gold]Replay[/gold] in your [gold]Draw Pile[/gold] gain...,,HIDDEN_GEM@v0.100.0
+HIDDEN_GEM@v0.103.2/patch,HIDDEN_GEM,v0.103.2,text_only,description_raw,A random card in your [gold]Draw Pile[/gold] gains [gold]Replay[/gold] {Repla...,A random card without [gold]Replay[/gold] in your [gold]Draw Pile[/gold] gain...,,HIDDEN_GEM@v0.100.0
+HIDDEN_GEM@v0.103.2/patch,HIDDEN_GEM,v0.103.2,text_only,upgrade_description,A random card in your [gold]Draw Pile[/gold] gains [gold]Replay[/gold] 3.,A random card without [gold]Replay[/gold] in your [gold]Draw Pile[/gold] gain...,,HIDDEN_GEM@v0.100.0
+HOTFIX@v0.103.2/patch,HOTFIX,v0.103.2,rework,keywords[0],none,Exhaust,,HOTFIX@v0.100.0
+HOTFIX@v0.103.2/patch,HOTFIX,v0.103.2,rework,upgrade.focuspower,+1,none,,HOTFIX@v0.100.0
+HOTFIX@v0.103.2/patch,HOTFIX,v0.103.2,rework,upgrade.remove_exhaust,none,yes,,HOTFIX@v0.100.0
+HOWL_FROM_BEYOND@v0.103.2/patch,HOWL_FROM_BEYOND,v0.103.2,text_only,description,"Deal 16 damage to ALL enemies.
+At the start of your turn, plays from the [gol...","Deal 16 damage to ALL enemies.
+At the start of your turn, if this is in your ...",,HOWL_FROM_BEYOND@v0.100.0
+HOWL_FROM_BEYOND@v0.103.2/patch,HOWL_FROM_BEYOND,v0.103.2,text_only,description_raw,"Deal {Damage:diff()} damage to ALL enemies.
+At the start of your turn, plays ...","Deal {Damage:diff()} damage to ALL enemies.
+At the start of your turn, if thi...",,HOWL_FROM_BEYOND@v0.100.0
+HOWL_FROM_BEYOND@v0.103.2/patch,HOWL_FROM_BEYOND,v0.103.2,text_only,upgrade_description,"Deal 21 damage to ALL enemies.
+At the start of your turn, plays from the [gol...","Deal 21 damage to ALL enemies.
+At the start of your turn, if this is in your ...",,HOWL_FROM_BEYOND@v0.100.0
+HUDDLE_UP@v0.103.2/patch,HUDDLE_UP,v0.103.2,rework,keywords[0],none,Exhaust,,HUDDLE_UP@v0.100.0
+ITERATION@v0.103.2/patch,ITERATION,v0.103.2,text_only,description,"The first time you draw a Status card each turn, draw 2 cards.","The first time you draw a Status each turn, draw 2 cards.",,ITERATION@v0.103.0
+ITERATION@v0.103.2/patch,ITERATION,v0.103.2,text_only,description_raw,"The first time you draw a Status card each turn, draw {IterationPower:diff()}...","The first time you draw a Status each turn, draw {IterationPower:diff()} {Ite...",,ITERATION@v0.103.0
+ITERATION@v0.103.2/patch,ITERATION,v0.103.2,text_only,upgrade_description,"The first time you draw a Status card each turn, draw 3 cards.","The first time you draw a Status each turn, draw 3 cards.",,ITERATION@v0.103.0
+I_AM_INVINCIBLE@v0.103.2/patch,I_AM_INVINCIBLE,v0.103.2,tweak,block,9,10,0.1111,I_AM_INVINCIBLE@v0.100.0
+I_AM_INVINCIBLE@v0.103.2/patch,I_AM_INVINCIBLE,v0.103.2,tweak,vars.Block,9,10,0.1111,I_AM_INVINCIBLE@v0.100.0
+KINGLY_KICK@v0.103.2/patch,KINGLY_KICK,v0.103.2,tweak,damage,24,27,0.1250,KINGLY_KICK@v0.100.0
+KINGLY_KICK@v0.103.2/patch,KINGLY_KICK,v0.103.2,tweak,upgrade.damage,+6,+8,0.3333,KINGLY_KICK@v0.100.0
+KINGLY_KICK@v0.103.2/patch,KINGLY_KICK,v0.103.2,tweak,vars.Damage,24,27,0.1250,KINGLY_KICK@v0.100.0
+KINGLY_PUNCH@v0.103.2/patch,KINGLY_PUNCH,v0.103.2,rework,upgrade.damage,none,+2,,KINGLY_PUNCH@v0.100.0
+KINGLY_PUNCH@v0.103.2/patch,KINGLY_PUNCH,v0.103.2,rework,vars.Increase,3,4,0.3333,KINGLY_PUNCH@v0.100.0
+LEADING_STRIKE@v0.103.2/patch,LEADING_STRIKE,v0.103.2,tweak,damage,7,3,-0.5714,LEADING_STRIKE@v0.102.0
+LEADING_STRIKE@v0.103.2/patch,LEADING_STRIKE,v0.103.2,tweak,vars.Damage,7,3,-0.5714,LEADING_STRIKE@v0.102.0
+LEADING_STRIKE@v0.103.2/patch,LEADING_STRIKE,v0.103.2,tweak,vars.Shivs,1,2,1.0000,LEADING_STRIKE@v0.102.0
+MAD_SCIENCE@v0.103.2/patch,MAD_SCIENCE,v0.103.2,text_only,description_raw,{CardType:choose(Attack|Skill|Power):Deal {Damage:diff()} damage{Violence: {V...,{CardType:choose(Attack|Skill|Power):Deal {Damage:diff()} damage{Violence: {V...,,MAD_SCIENCE@v0.101.0
+MEMENTO_MORI@v0.103.2/patch,MEMENTO_MORI,v0.103.2,tweak,damage,8,9,0.1250,MEMENTO_MORI@v0.103.0
+MEMENTO_MORI@v0.103.2/patch,MEMENTO_MORI,v0.103.2,tweak,vars.CalculatedDamage,8,9,0.1250,MEMENTO_MORI@v0.103.0
+MEMENTO_MORI@v0.103.2/patch,MEMENTO_MORI,v0.103.2,tweak,vars.CalculationBase,8,9,0.1250,MEMENTO_MORI@v0.103.0
+MINION_DIVE_BOMB@v0.103.2/patch,MINION_DIVE_BOMB,v0.103.2,cost_change,cost,1,0,-1.0000,MINION_DIVE_BOMB@v0.100.0
+MINION_STRIKE@v0.103.2/patch,MINION_STRIKE,v0.103.2,tweak,damage,7,6,-0.1429,MINION_STRIKE@v0.100.0
+MINION_STRIKE@v0.103.2/patch,MINION_STRIKE,v0.103.2,tweak,vars.Damage,7,6,-0.1429,MINION_STRIKE@v0.100.0
+NEOWS_FURY@v0.103.2/patch,NEOWS_FURY,v0.103.2,rework,upgrade.cards,none,+1,,NEOWS_FURY@v0.100.0
+NOT_YET@v0.103.2/patch,NOT_YET,v0.103.2,added,(card),none,present,,NOT_YET@v0.103.0
+PARRY@v0.103.2/patch,PARRY,v0.103.2,tweak,powers_applied[0].amount,6,10,0.6667,PARRY@v0.100.0 PARRY@v0.101.0
+PARRY@v0.103.2/patch,PARRY,v0.103.2,tweak,upgrade.parrypower,+3,+4,0.3333,PARRY@v0.100.0 PARRY@v0.101.0
+PARRY@v0.103.2/patch,PARRY,v0.103.2,tweak,vars.Parry,6,10,0.6667,PARRY@v0.100.0 PARRY@v0.101.0
+PARRY@v0.103.2/patch,PARRY,v0.103.2,tweak,vars.ParryPower,6,10,0.6667,PARRY@v0.100.0 PARRY@v0.101.0
+PATTER@v0.103.2/patch,PATTER,v0.103.2,tweak,block,8,9,0.1250,PATTER@v0.100.0
+PATTER@v0.103.2/patch,PATTER,v0.103.2,tweak,vars.Block,8,9,0.1250,PATTER@v0.100.0
+PINPOINT@v0.103.2/patch,PINPOINT,v0.103.2,tweak,damage,17,15,-0.1176,PINPOINT@v0.100.0
+PINPOINT@v0.103.2/patch,PINPOINT,v0.103.2,tweak,upgrade.damage,+5,+4,-0.2000,PINPOINT@v0.100.0
+PINPOINT@v0.103.2/patch,PINPOINT,v0.103.2,tweak,vars.Damage,17,15,-0.1176,PINPOINT@v0.100.0
+PREPARE@v0.103.2/patch,PREPARE,v0.103.2,mechanic,(patch notes),,,,PREPARE@v0.101.0
+PREPARED@v0.103.2/patch,PREPARED,v0.103.2,mechanic,(patch notes),,,,PREPARED@v0.100.0 PREPARED@v0.101.0
+PRODUCTION@v0.103.2/patch,PRODUCTION,v0.103.2,rework,upgrade.energy,none,+1,,PRODUCTION@v0.100.0
+PRODUCTION@v0.103.2/patch,PRODUCTION,v0.103.2,rework,upgrade.remove_exhaust,yes,none,,PRODUCTION@v0.100.0
+REFINE_BLADE@v0.103.2/patch,REFINE_BLADE,v0.103.2,tweak,vars.Forge,6,9,0.5000,REFINE_BLADE@v0.101.0
+RIP_AND_TEAR@v0.103.2/patch,RIP_AND_TEAR,v0.103.2,rarity_change,rarity,Uncommon,Event,,RIP_AND_TEAR@v0.100.0
+ROCKET_PUNCH@v0.103.2/patch,ROCKET_PUNCH,v0.103.2,text_only,description,"Deal 13 damage.
+Draw 1 card.
+When a Status card is created, reduce this card'...","Deal 13 damage.
+Draw 1 card.
+Whenever you create a Status, reduce this card's...",,ROCKET_PUNCH@v0.100.0 ROCKET_PUNCH@v0.103.0
+ROCKET_PUNCH@v0.103.2/patch,ROCKET_PUNCH,v0.103.2,text_only,description_raw,"Deal {Damage:diff()} damage.
+Draw {Cards:diff()} {Cards:plural:card|cards}.
+W...","Deal {Damage:diff()} damage.
+Draw {Cards:diff()} {Cards:plural:card|cards}.
+W...",,ROCKET_PUNCH@v0.100.0 ROCKET_PUNCH@v0.103.0
+ROCKET_PUNCH@v0.103.2/patch,ROCKET_PUNCH,v0.103.2,text_only,upgrade_description,"Deal 14 damage.
+Draw 2 cards.
+When a Status card is created, reduce this card...","Deal 14 damage.
+Draw 2 cards.
+Whenever you create a Status, reduce this card'...",,ROCKET_PUNCH@v0.100.0 ROCKET_PUNCH@v0.103.0
+SCULPTING_STRIKE@v0.103.2/patch,SCULPTING_STRIKE,v0.103.2,tweak,damage,8,9,0.1250,SCULPTING_STRIKE@v0.100.0
+SCULPTING_STRIKE@v0.103.2/patch,SCULPTING_STRIKE,v0.103.2,tweak,vars.Damage,8,9,0.1250,SCULPTING_STRIKE@v0.100.0
+SEANCE@v0.103.2/patch,SEANCE,v0.103.2,cost_change,cost,0,1,,SEANCE@v0.100.0
+SEANCE@v0.103.2/patch,SEANCE,v0.103.2,cost_change,upgrade.cost,none,0,,SEANCE@v0.100.0
+SEEKER_STRIKE@v0.103.2/patch,SEEKER_STRIKE,v0.103.2,tweak,damage,6,9,0.5000,SEEKER_STRIKE@v0.100.0
+SEEKER_STRIKE@v0.103.2/patch,SEEKER_STRIKE,v0.103.2,tweak,vars.Damage,6,9,0.5000,SEEKER_STRIKE@v0.100.0
+SERPENT_FORM@v0.103.2/patch,SERPENT_FORM,v0.103.2,tweak,upgrade.serpentformpower,+1,+2,1.0000,SERPENT_FORM@v0.101.0
+SKEWER@v0.103.2/patch,SKEWER,v0.103.2,tweak,damage,7,8,0.1429,SKEWER@v0.100.0
+SKEWER@v0.103.2/patch,SKEWER,v0.103.2,tweak,vars.Damage,7,8,0.1429,SKEWER@v0.100.0
+SOLAR_STRIKE@v0.103.2/patch,SOLAR_STRIKE,v0.103.2,tweak,damage,8,9,0.1250,SOLAR_STRIKE@v0.100.0
+SOLAR_STRIKE@v0.103.2/patch,SOLAR_STRIKE,v0.103.2,tweak,vars.Damage,8,9,0.1250,SOLAR_STRIKE@v0.100.0
+SPEEDSTER@v0.103.2/patch,SPEEDSTER,v0.103.2,rework,upgrade.add_innate,none,yes,,SPEEDSTER@v0.102.0 SPEEDSTER@v0.103.0
+SPEEDSTER@v0.103.2/patch,SPEEDSTER,v0.103.2,rework,upgrade.speedsterpower,+1,none,,SPEEDSTER@v0.102.0 SPEEDSTER@v0.103.0
+SPITE@v0.103.2/patch,SPITE,v0.103.2,rework,cards_draw,1,none,,SPITE@v0.100.0
+SPITE@v0.103.2/patch,SPITE,v0.103.2,rework,damage,6,5,-0.1667,SPITE@v0.100.0
+SPITE@v0.103.2/patch,SPITE,v0.103.2,rework,hit_count,none,2,,SPITE@v0.100.0
+SPITE@v0.103.2/patch,SPITE,v0.103.2,rework,upgrade.damage,+3,none,,SPITE@v0.100.0
+SPITE@v0.103.2/patch,SPITE,v0.103.2,rework,upgrade.repeat,none,+1,,SPITE@v0.100.0
+SPITE@v0.103.2/patch,SPITE,v0.103.2,rework,vars.Cards,1,none,,SPITE@v0.100.0
+SPITE@v0.103.2/patch,SPITE,v0.103.2,rework,vars.Damage,6,5,-0.1667,SPITE@v0.100.0
+SPITE@v0.103.2/patch,SPITE,v0.103.2,rework,vars.Repeat,none,2,,SPITE@v0.100.0
+SPOILS_OF_BATTLE@v0.103.2/patch,SPOILS_OF_BATTLE,v0.103.2,rework,cards_draw,none,2,,SPOILS_OF_BATTLE@v0.100.0 SPOILS_OF_BATTLE@v0.101.0
+SPOILS_OF_BATTLE@v0.103.2/patch,SPOILS_OF_BATTLE,v0.103.2,rework,upgrade.forge,+5,+3,-0.4000,SPOILS_OF_BATTLE@v0.100.0 SPOILS_OF_BATTLE@v0.101.0
+SPOILS_OF_BATTLE@v0.103.2/patch,SPOILS_OF_BATTLE,v0.103.2,rework,vars.Cards,none,2,,SPOILS_OF_BATTLE@v0.100.0 SPOILS_OF_BATTLE@v0.101.0
+SPOILS_OF_BATTLE@v0.103.2/patch,SPOILS_OF_BATTLE,v0.103.2,rework,vars.Forge,10,5,-0.5000,SPOILS_OF_BATTLE@v0.100.0 SPOILS_OF_BATTLE@v0.101.0
+STACK@v0.103.2/patch,STACK,v0.103.2,text_only,description_raw,Gain [gold]Block[/gold] equal to the number of cards in your [gold]Discard Pi...,Gain [gold]Block[/gold] equal to the number of cards in your [gold]Discard Pi...,,STACK@v0.103.2
+STOKE@v0.103.2/patch,STOKE,v0.103.2,rework+cost_change,keywords[0],Exhaust,none,,STOKE@v0.100.0
+STOKE@v0.103.2/patch,STOKE,v0.103.2,rework+cost_change,upgrade.cost,0,none,,STOKE@v0.100.0
+SWORD_SAGE@v0.103.2/patch,SWORD_SAGE,v0.103.2,text_only,description,Increase the cost of [gold]Sovereign Blade[/gold] by 1. [gold]Sovereign Blade...,[gold]Sovereign Blade[/gold] now hits an additional time.,,SWORD_SAGE@v0.101.0
+SWORD_SAGE@v0.103.2/patch,SWORD_SAGE,v0.103.2,text_only,description_raw,Increase the cost of [gold]Sovereign Blade[/gold] by 1. [gold]Sovereign Blade...,[gold]Sovereign Blade[/gold] now hits an additional time.,,SWORD_SAGE@v0.101.0
+TEAR_ASUNDER@v0.103.2/patch,TEAR_ASUNDER,v0.103.2,text_only,description_raw,"Deal {Damage:diff()} damage.
+Hits an additional time for each time you lost H...","Deal {Damage:diff()} damage.
+Hits an additional time for each time you lost H...",,TEAR_ASUNDER@v0.103.2
+TRASH_TO_TREASURE@v0.103.2/patch,TRASH_TO_TREASURE,v0.103.2,text_only,description,"Whenever you create a Status card, [gold]Channel[/gold] 1 random Orb.","Whenever you create a Status, [gold]Channel[/gold] 1 random Orb.",,TRASH_TO_TREASURE@v0.103.0
+TRASH_TO_TREASURE@v0.103.2/patch,TRASH_TO_TREASURE,v0.103.2,text_only,description_raw,"Whenever you create a Status card, [gold]Channel[/gold] 1 random Orb.","Whenever you create a Status, [gold]Channel[/gold] 1 random Orb.",,TRASH_TO_TREASURE@v0.103.0
+TREMBLE@v0.103.2/patch,TREMBLE,v0.103.2,rework,keywords[0],none,Exhaust,,TREMBLE@v0.100.0 TREMBLE@v0.101.0
+TREMBLE@v0.103.2/patch,TREMBLE,v0.103.2,rework,powers_applied[0].amount,2,3,0.5000,TREMBLE@v0.100.0 TREMBLE@v0.101.0
+TREMBLE@v0.103.2/patch,TREMBLE,v0.103.2,rework,vars.Vulnerable,2,3,0.5000,TREMBLE@v0.100.0 TREMBLE@v0.101.0
+TREMBLE@v0.103.2/patch,TREMBLE,v0.103.2,rework,vars.VulnerablePower,2,3,0.5000,TREMBLE@v0.100.0 TREMBLE@v0.101.0
+UNTOUCHABLE@v0.103.2/patch,UNTOUCHABLE,v0.103.2,tweak,block,9,6,-0.3333,UNTOUCHABLE@v0.100.0 UNTOUCHABLE@v0.102.0
+UNTOUCHABLE@v0.103.2/patch,UNTOUCHABLE,v0.103.2,tweak,upgrade.block,+3,+2,-0.3333,UNTOUCHABLE@v0.100.0 UNTOUCHABLE@v0.102.0
+UNTOUCHABLE@v0.103.2/patch,UNTOUCHABLE,v0.103.2,tweak,vars.Block,9,6,-0.3333,UNTOUCHABLE@v0.100.0 UNTOUCHABLE@v0.102.0
+VOID_FORM@v0.103.2/patch,VOID_FORM,v0.103.2,rework,keywords[0],none,Ethereal,,VOID_FORM@v0.100.0
+VOID_FORM@v0.103.2/patch,VOID_FORM,v0.103.2,rework,upgrade.remove_ethereal,none,yes,,VOID_FORM@v0.100.0
+VOID_FORM@v0.103.2/patch,VOID_FORM,v0.103.2,rework,upgrade.voidformpower,+1,none,,VOID_FORM@v0.100.0
+VOLTAIC@v0.103.2/patch,VOLTAIC,v0.103.2,cost_change,cost,2,3,0.5000,VOLTAIC@v0.101.0
+WROUGHT_IN_WAR@v0.103.2/patch,WROUGHT_IN_WAR,v0.103.2,tweak,vars.Forge,5,7,0.4000,WROUGHT_IN_WAR@v0.100.0
+ASTRAL_PULSE@v0.107.1/patch,ASTRAL_PULSE,v0.107.1,rework,damage,14,6,-0.5714,ASTRAL_PULSE@v0.106.0
+ASTRAL_PULSE@v0.107.1/patch,ASTRAL_PULSE,v0.107.1,rework,hit_count,none,2,,ASTRAL_PULSE@v0.106.0
+ASTRAL_PULSE@v0.107.1/patch,ASTRAL_PULSE,v0.107.1,rework,upgrade.damage,+4,+2,-0.5000,ASTRAL_PULSE@v0.106.0
+ASTRAL_PULSE@v0.107.1/patch,ASTRAL_PULSE,v0.107.1,rework,vars.Damage,14,6,-0.5714,ASTRAL_PULSE@v0.106.0
+BLADE_OF_INK@v0.107.1/patch,BLADE_OF_INK,v0.107.1,mechanic,(patch notes),,,,BLADE_OF_INK@v0.105.0
+BULWARK@v0.107.1/patch,BULWARK,v0.107.1,tweak,block,13,12,-0.0769,BULWARK@v0.105.0
+BULWARK@v0.107.1/patch,BULWARK,v0.107.1,tweak,vars.Block,13,12,-0.0769,BULWARK@v0.105.0
+CONFLAGRATION@v0.107.1/patch,CONFLAGRATION,v0.107.1,rework,damage,8,2,-0.7500,CONFLAGRATION@v0.104.0
+CONFLAGRATION@v0.107.1/patch,CONFLAGRATION,v0.107.1,rework,hit_count,none,4,,CONFLAGRATION@v0.104.0
+CONFLAGRATION@v0.107.1/patch,CONFLAGRATION,v0.107.1,rework,upgrade.calculationbase,+1,none,,CONFLAGRATION@v0.104.0
+CONFLAGRATION@v0.107.1/patch,CONFLAGRATION,v0.107.1,rework,upgrade.extradamage,+1,none,,CONFLAGRATION@v0.104.0
+CONFLAGRATION@v0.107.1/patch,CONFLAGRATION,v0.107.1,rework,upgrade.repeat,none,+1,,CONFLAGRATION@v0.104.0
+CONFLAGRATION@v0.107.1/patch,CONFLAGRATION,v0.107.1,rework,vars.CalculatedDamage,8,none,,CONFLAGRATION@v0.104.0
+CONFLAGRATION@v0.107.1/patch,CONFLAGRATION,v0.107.1,rework,vars.CalculationBase,8,none,,CONFLAGRATION@v0.104.0
+CONFLAGRATION@v0.107.1/patch,CONFLAGRATION,v0.107.1,rework,vars.Damage,none,2,,CONFLAGRATION@v0.104.0
+CONFLAGRATION@v0.107.1/patch,CONFLAGRATION,v0.107.1,rework,vars.ExtraDamage,2,none,,CONFLAGRATION@v0.104.0
+CONFLAGRATION@v0.107.1/patch,CONFLAGRATION,v0.107.1,rework,vars.Repeat,none,4,,CONFLAGRATION@v0.104.0
+CRESCENT_SPEAR@v0.107.1/patch,CRESCENT_SPEAR,v0.107.1,tweak,damage,6,8,0.3333,CRESCENT_SPEAR@v0.105.0
+CRESCENT_SPEAR@v0.107.1/patch,CRESCENT_SPEAR,v0.107.1,tweak,vars.CalculatedDamage,6,8,0.3333,CRESCENT_SPEAR@v0.105.0
+CRESCENT_SPEAR@v0.107.1/patch,CRESCENT_SPEAR,v0.107.1,tweak,vars.CalculationBase,6,8,0.3333,CRESCENT_SPEAR@v0.105.0
+DEATH_MARCH@v0.107.1/patch,DEATH_MARCH,v0.107.1,tweak,upgrade.extradamage,+1,+2,1.0000,DEATH_MARCH@v0.106.0
+DEATH_MARCH@v0.107.1/patch,DEATH_MARCH,v0.107.1,tweak,vars.ExtraDamage,3,4,0.3333,DEATH_MARCH@v0.106.0
+DEBILITATE@v0.107.1/patch,DEBILITATE,v0.107.1,tweak,powers_applied[0].amount,3,2,-0.3333,DEBILITATE@v0.106.0
+DEBILITATE@v0.107.1/patch,DEBILITATE,v0.107.1,tweak,vars.Debilitate,3,2,-0.3333,DEBILITATE@v0.106.0
+DEBILITATE@v0.107.1/patch,DEBILITATE,v0.107.1,tweak,vars.DebilitatePower,3,2,-0.3333,DEBILITATE@v0.106.0
+DRUM_OF_BATTLE@v0.107.1/patch,DRUM_OF_BATTLE,v0.107.1,rework+cost_change,cost,0,1,,DRUM_OF_BATTLE@v0.104.0 DRUM_OF_BATTLE@v0.106.0
+DRUM_OF_BATTLE@v0.107.1/patch,DRUM_OF_BATTLE,v0.107.1,rework+cost_change,energy_gain,none,2,,DRUM_OF_BATTLE@v0.104.0 DRUM_OF_BATTLE@v0.106.0
+DRUM_OF_BATTLE@v0.107.1/patch,DRUM_OF_BATTLE,v0.107.1,rework+cost_change,powers_applied[0].amount,1,none,,DRUM_OF_BATTLE@v0.104.0 DRUM_OF_BATTLE@v0.106.0
+DRUM_OF_BATTLE@v0.107.1/patch,DRUM_OF_BATTLE,v0.107.1,rework+cost_change,powers_applied[0].power,Drum of Battle,none,,DRUM_OF_BATTLE@v0.104.0 DRUM_OF_BATTLE@v0.106.0
+DRUM_OF_BATTLE@v0.107.1/patch,DRUM_OF_BATTLE,v0.107.1,rework+cost_change,type,Power,Skill,,DRUM_OF_BATTLE@v0.104.0 DRUM_OF_BATTLE@v0.106.0
+DRUM_OF_BATTLE@v0.107.1/patch,DRUM_OF_BATTLE,v0.107.1,rework+cost_change,upgrade.cards,+1,none,,DRUM_OF_BATTLE@v0.104.0 DRUM_OF_BATTLE@v0.106.0
+DRUM_OF_BATTLE@v0.107.1/patch,DRUM_OF_BATTLE,v0.107.1,rework+cost_change,upgrade.energy,none,+1,,DRUM_OF_BATTLE@v0.104.0 DRUM_OF_BATTLE@v0.106.0
+DRUM_OF_BATTLE@v0.107.1/patch,DRUM_OF_BATTLE,v0.107.1,rework+cost_change,vars.DrumOfBattle,1,none,,DRUM_OF_BATTLE@v0.104.0 DRUM_OF_BATTLE@v0.106.0
+DRUM_OF_BATTLE@v0.107.1/patch,DRUM_OF_BATTLE,v0.107.1,rework+cost_change,vars.DrumOfBattlePower,1,none,,DRUM_OF_BATTLE@v0.104.0 DRUM_OF_BATTLE@v0.106.0
+DRUM_OF_BATTLE@v0.107.1/patch,DRUM_OF_BATTLE,v0.107.1,rework+cost_change,vars.Energy,none,2,,DRUM_OF_BATTLE@v0.104.0 DRUM_OF_BATTLE@v0.106.0
+ENTRENCH@v0.107.1/patch,ENTRENCH,v0.107.1,mechanic,(patch notes),,,,ENTRENCH@v0.106.0
+EXTERMINATE@v0.107.1/patch,EXTERMINATE,v0.107.1,text_only,description,Deal 3 damage 4 times to ALL enemies.,Deal 3 damage to ALL enemies 4 times.,,EXTERMINATE@v0.106.0
+EXTERMINATE@v0.107.1/patch,EXTERMINATE,v0.107.1,text_only,description_raw,Deal {Damage:diff()} damage {Repeat:diff()} times to ALL enemies.,Deal {Damage:diff()} damage to ALL enemies {Repeat:diff()} times.,,EXTERMINATE@v0.106.0
+EXTERMINATE@v0.107.1/patch,EXTERMINATE,v0.107.1,text_only,upgrade_description,Deal 4 damage 4 times to ALL enemies.,Deal 4 damage to ALL enemies 4 times.,,EXTERMINATE@v0.106.0
+FASTEN@v0.107.1/patch,FASTEN,v0.107.1,tweak,vars.ExtraBlock,5,4,-0.2000,FASTEN@v0.106.0
+FOLLOW_THROUGH@v0.107.1/patch,FOLLOW_THROUGH,v0.107.1,removed,(card),present,none,,FOLLOW_THROUGH@v0.106.0
+FURNACE@v0.107.1/patch,FURNACE,v0.107.1,tweak,vars.Forge,4,5,0.2500,FURNACE@v0.106.0
+FUSION@v0.107.1/patch,FUSION,v0.107.1,rework+cost_change,cost,2,1,-0.5000,FUSION@v0.106.0
+FUSION@v0.107.1/patch,FUSION,v0.107.1,rework+cost_change,keywords[0],none,Exhaust,,FUSION@v0.106.0
+FUSION@v0.107.1/patch,FUSION,v0.107.1,rework+cost_change,upgrade.cost,1,none,,FUSION@v0.106.0
+FUSION@v0.107.1/patch,FUSION,v0.107.1,rework+cost_change,upgrade.remove_exhaust,none,yes,,FUSION@v0.106.0
+GOLD_AXE@v0.107.1/patch,GOLD_AXE,v0.107.1,mechanic,(patch notes),,,,GOLD_AXE@v0.105.0
+HOWL_FROM_BEYOND@v0.107.1/patch,HOWL_FROM_BEYOND,v0.107.1,text_only,description,"Deal 16 damage to ALL enemies.
+At the start of your turn, if this is in your ...","Deal 16 damage to ALL enemies.
+At the end of your turn, if this is in your [g...",,HOWL_FROM_BEYOND@v0.106.0
+HOWL_FROM_BEYOND@v0.107.1/patch,HOWL_FROM_BEYOND,v0.107.1,text_only,description_raw,"Deal {Damage:diff()} damage to ALL enemies.
+At the start of your turn, if thi...","Deal {Damage:diff()} damage to ALL enemies.
+At the end of your turn, if this ...",,HOWL_FROM_BEYOND@v0.106.0
+HOWL_FROM_BEYOND@v0.107.1/patch,HOWL_FROM_BEYOND,v0.107.1,text_only,upgrade_description,"Deal 21 damage to ALL enemies.
+At the start of your turn, if this is in your ...","Deal 21 damage to ALL enemies.
+At the end of your turn, if this is in your [g...",,HOWL_FROM_BEYOND@v0.106.0
+HYPERBEAM@v0.107.1/patch,HYPERBEAM,v0.107.1,tweak,damage,26,28,0.0769,HYPERBEAM@v0.105.0
+HYPERBEAM@v0.107.1/patch,HYPERBEAM,v0.107.1,tweak,vars.Damage,26,28,0.0769,HYPERBEAM@v0.105.0
+JUGGERNAUT@v0.107.1/patch,JUGGERNAUT,v0.107.1,tweak,powers_applied[0].amount,5,6,0.2000,JUGGERNAUT@v0.107.0
+JUGGERNAUT@v0.107.1/patch,JUGGERNAUT,v0.107.1,tweak,vars.Juggernaut,5,6,0.2000,JUGGERNAUT@v0.107.0
+JUGGERNAUT@v0.107.1/patch,JUGGERNAUT,v0.107.1,tweak,vars.JuggernautPower,5,6,0.2000,JUGGERNAUT@v0.107.0
+LANTERN_KEY@v0.107.1/patch,LANTERN_KEY,v0.107.1,mechanic,(patch notes),,,,LANTERN_KEY@v0.105.0
+MAD_SCIENCE@v0.107.1/patch,MAD_SCIENCE,v0.107.1,text_only,description_raw,{CardType:choose(Attack|Skill|Power):Deal {Damage:diff()} damage{Violence: {V...,{CardType:choose(Attack|Skill|Power):Deal {Damage:diff()} damage{Violence: {V...,,MAD_SCIENCE@v0.106.1
+MINION_SACRIFICE@v0.107.1/patch,MINION_SACRIFICE,v0.107.1,tweak,block,9,8,-0.1111,MINION_SACRIFICE@v0.106.0
+MINION_SACRIFICE@v0.107.1/patch,MINION_SACRIFICE,v0.107.1,tweak,vars.Block,9,8,-0.1111,MINION_SACRIFICE@v0.106.0
+MONARCHS_GAZE@v0.107.1/patch,MONARCHS_GAZE,v0.107.1,cost_change,cost,3,2,-0.3333,MONARCHS_GAZE@v0.107.0
+MONARCHS_GAZE@v0.107.1/patch,MONARCHS_GAZE,v0.107.1,cost_change,upgrade.cost,2,1,-0.5000,MONARCHS_GAZE@v0.107.0
+NEOWS_FURY@v0.107.1/patch,NEOWS_FURY,v0.107.1,text_only,description,"Deal 10 damage.
+Put 2 random cards from your [gold]Discard Pile[/gold] into y...","Deal 10 damage.
+Put up to 2 cards from your [gold]Discard Pile[/gold] into yo...",,NEOWS_FURY@v0.104.0
+NEOWS_FURY@v0.107.1/patch,NEOWS_FURY,v0.107.1,text_only,description_raw,"Deal {Damage:diff()} damage.
+Put {Cards:plural:a random card|{:diff()} random...","Deal {Damage:diff()} damage.
+Put up to {Cards:diff()} {Cards:plural:card|card...",,NEOWS_FURY@v0.104.0
+NEOWS_FURY@v0.107.1/patch,NEOWS_FURY,v0.107.1,text_only,upgrade_description,"Deal 14 damage.
+Put 3 random cards from your [gold]Discard Pile[/gold] into y...","Deal 14 damage.
+Put up to 3 cards from your [gold]Discard Pile[/gold] into yo...",,NEOWS_FURY@v0.104.0
+NIGHTMARE@v0.107.1/patch,NIGHTMARE,v0.107.1,mechanic,(patch notes),,,,NIGHTMARE@v0.104.0
+PACTS_END@v0.107.1/patch,PACTS_END,v0.107.1,text_only,description,Can only be played if you have 3 or more cards in your [gold]Exhaust Pile[/go...,"If you have 3 or more cards in your [gold]Exhaust Pile[/gold],
+deal 17 damage...",,PACTS_END@v0.104.0
+PACTS_END@v0.107.1/patch,PACTS_END,v0.107.1,text_only,description_raw,Can only be played if you have {Cards:diff()} or more {Cards:plural:card|card...,If you have {Cards:diff()} or more {Cards:plural:card|cards} in your [gold]Ex...,,PACTS_END@v0.104.0
+PACTS_END@v0.107.1/patch,PACTS_END,v0.107.1,text_only,upgrade_description,Can only be played if you have 3 or more cards in your [gold]Exhaust Pile[/go...,"If you have 3 or more cards in your [gold]Exhaust Pile[/gold],
+deal 23 damage...",,PACTS_END@v0.104.0
+PARRY@v0.107.1/patch,PARRY,v0.107.1,text_only,description,"Whenever you play [gold]Sovereign Blade[/gold], gain 10 [gold]Block[/gold].",[gold]Sovereign Blade[/gold] now gains 10 [gold]Block[/gold].,,PARRY@v0.104.0
+PARRY@v0.107.1/patch,PARRY,v0.107.1,text_only,description_raw,"Whenever you play [gold]Sovereign Blade[/gold], gain {ParryPower:diff()} [gol...",[gold]Sovereign Blade[/gold] now gains {ParryPower:diff()} [gold]Block[/gold].,,PARRY@v0.104.0
+PARRY@v0.107.1/patch,PARRY,v0.107.1,text_only,upgrade_description,"Whenever you play [gold]Sovereign Blade[/gold], gain 14 [gold]Block[/gold].",[gold]Sovereign Blade[/gold] now gains 14 [gold]Block[/gold].,,PARRY@v0.104.0
+PATTER@v0.107.1/patch,PATTER,v0.107.1,tweak,block,9,8,-0.1111,PATTER@v0.105.0
+PATTER@v0.107.1/patch,PATTER,v0.107.1,tweak,vars.Block,9,8,-0.1111,PATTER@v0.105.0
+POUNCE@v0.107.1/patch,POUNCE,v0.107.1,tweak,damage,12,14,0.1667,POUNCE@v0.106.0
+POUNCE@v0.107.1/patch,POUNCE,v0.107.1,tweak,vars.Damage,12,14,0.1667,POUNCE@v0.106.0
+PREDATOR@v0.107.1/patch,PREDATOR,v0.107.1,rarity_change,rarity,Uncommon,Common,,PREDATOR@v0.106.0
+REAPER_FORM@v0.107.1/patch,REAPER_FORM,v0.107.1,text_only,description,"Whenever Attacks deal damage, they also apply that much [gold]Doom[/gold].","Whenever Attacks deal damage, apply that much [gold]Doom[/gold].",,REAPER_FORM@v0.104.0
+REAPER_FORM@v0.107.1/patch,REAPER_FORM,v0.107.1,text_only,description_raw,"Whenever Attacks deal damage, they also apply that much [gold]Doom[/gold].","Whenever Attacks deal damage, apply that much [gold]Doom[/gold].",,REAPER_FORM@v0.104.0
+REFLECT@v0.107.1/patch,REFLECT,v0.107.1,tweak,block,17,15,-0.1176,REFLECT@v0.104.0 REFLECT@v0.107.0
+REFLECT@v0.107.1/patch,REFLECT,v0.107.1,tweak,upgrade.block,+4,+5,0.2500,REFLECT@v0.104.0 REFLECT@v0.107.0
+REFLECT@v0.107.1/patch,REFLECT,v0.107.1,tweak,vars.Block,17,15,-0.1176,REFLECT@v0.104.0 REFLECT@v0.107.0
+ROYALTIES@v0.107.1/patch,ROYALTIES,v0.107.1,tweak,upgrade.gold,+5,+10,1.0000,ROYALTIES@v0.105.0
+SCARE@v0.107.1/patch,SCARE,v0.107.1,added,(card),none,present,,SCARE@v0.106.0
+SEVEN_STARS@v0.107.1/patch,SEVEN_STARS,v0.107.1,text_only,description_raw,Deal {Damage:diff()} damage to ALL enemies {Repeat:plural:{} time|{} times}.,Deal {Damage:diff()} damage to ALL enemies {Repeat:diff()} {Repeat:plural:tim...,,SEVEN_STARS@v0.107.1
+SHATTER@v0.107.1/patch,SHATTER,v0.107.1,rework,damage,11,7,-0.3636,SHATTER@v0.105.0 SHATTER@v0.106.0
+SHATTER@v0.107.1/patch,SHATTER,v0.107.1,rework,vars.Damage,11,7,-0.3636,SHATTER@v0.105.0 SHATTER@v0.106.0
+SIC_EM@v0.107.1/patch,SIC_EM,v0.107.1,tweak,powers_applied[0].amount,2,3,0.5000,SIC_EM@v0.107.0
+SIC_EM@v0.107.1/patch,SIC_EM,v0.107.1,tweak,vars.SicEm,2,3,0.5000,SIC_EM@v0.107.0
+SIC_EM@v0.107.1/patch,SIC_EM,v0.107.1,tweak,vars.SicEmPower,2,3,0.5000,SIC_EM@v0.107.0
+SOVEREIGN_BLADE@v0.107.1/patch,SOVEREIGN_BLADE,v0.107.1,text_only,description_raw,Deal {Damage:diff()} damage{SeekingEdgeAmount:cond:>0? to ALL enemies|}{Repea...,Deal {Damage:diff()} damage{TargetType:choose(AllEnemies): to ALL enemies|}{R...,,SOVEREIGN_BLADE@v0.104.0
+STRATAGEM@v0.107.1/patch,STRATAGEM,v0.107.1,mechanic,(patch notes),,,,STRATAGEM@v0.104.0
+SUMMON_FORTH@v0.107.1/patch,SUMMON_FORTH,v0.107.1,text_only,description,"[gold]Forge[/gold] 8.
+Put [gold]Sovereign Blade[/gold] into your [gold]Hand[/...","Put [gold]Sovereign Blade[/gold] into your [gold]Hand[/gold] from anywhere.
+[...",,SUMMON_FORTH@v0.104.0
+SUMMON_FORTH@v0.107.1/patch,SUMMON_FORTH,v0.107.1,text_only,description_raw,"[gold]Forge[/gold] {Forge:diff()}.
+Put [gold]Sovereign Blade[/gold] into your...","Put [gold]Sovereign Blade[/gold] into your [gold]Hand[/gold] from anywhere.
+[...",,SUMMON_FORTH@v0.104.0
+SUMMON_FORTH@v0.107.1/patch,SUMMON_FORTH,v0.107.1,text_only,upgrade_description,"[gold]Forge[/gold] 11.
+Put [gold]Sovereign Blade[/gold] into your [gold]Hand[...","Put [gold]Sovereign Blade[/gold] into your [gold]Hand[/gold] from anywhere.
+[...",,SUMMON_FORTH@v0.104.0
+SWORD_SAGE@v0.107.1/patch,SWORD_SAGE,v0.107.1,text_only,description,[gold]Sovereign Blade[/gold] now hits an additional time.,[gold]Sovereign Blade[/gold] gains [gold]Replay[/gold] 1.,,SWORD_SAGE@v0.105.0
+SWORD_SAGE@v0.107.1/patch,SWORD_SAGE,v0.107.1,text_only,description_raw,[gold]Sovereign Blade[/gold] now hits an additional time.,[gold]Sovereign Blade[/gold] gains [gold]Replay[/gold] {SwordSagePower:diff()}.,,SWORD_SAGE@v0.105.0
+SYNTHESIS@v0.107.1/patch,SYNTHESIS,v0.107.1,tweak,damage,12,14,0.1667,SYNTHESIS@v0.106.0
+SYNTHESIS@v0.107.1/patch,SYNTHESIS,v0.107.1,tweak,vars.Damage,12,14,0.1667,SYNTHESIS@v0.106.0
+TAG_TEAM@v0.107.1/patch,TAG_TEAM,v0.107.1,mechanic,(patch notes),,,,TAG_TEAM@v0.104.0
+TESLA_COIL@v0.107.1/patch,TESLA_COIL,v0.107.1,rework,upgrade.damage,+3,+1,-0.6667,TESLA_COIL@v0.105.0
+THE_SCYTHE@v0.107.1/patch,THE_SCYTHE,v0.107.1,tweak,vars.Increase,3,4,0.3333,THE_SCYTHE@v0.107.0
+THE_SEALED_THRONE@v0.107.1/patch,THE_SEALED_THRONE,v0.107.1,rework+cost_change,upgrade.add_innate,yes,none,,THE_SEALED_THRONE@v0.106.0
+THE_SEALED_THRONE@v0.107.1/patch,THE_SEALED_THRONE,v0.107.1,rework+cost_change,upgrade.cost,none,0,,THE_SEALED_THRONE@v0.106.0
+TYRANNY@v0.107.1/patch,TYRANNY,v0.107.1,mechanic,(patch notes),,,,TYRANNY@v0.104.0
+UNRELENTING@v0.107.1/patch,UNRELENTING,v0.107.1,tweak,damage,12,14,0.1667,UNRELENTING@v0.106.0
+UNRELENTING@v0.107.1/patch,UNRELENTING,v0.107.1,tweak,vars.Damage,12,14,0.1667,UNRELENTING@v0.106.0
+UNTOUCHABLE@v0.107.1/patch,UNTOUCHABLE,v0.107.1,tweak,upgrade.block,+2,+3,0.5000,UNTOUCHABLE@v0.104.0
+UPROAR@v0.107.1/patch,UPROAR,v0.107.1,tweak,damage,5,6,0.2000,UPROAR@v0.105.0
+UPROAR@v0.107.1/patch,UPROAR,v0.107.1,tweak,vars.Damage,5,6,0.2000,UPROAR@v0.105.0
+WITHER@v0.107.1/patch,WITHER,v0.107.1,added,(card),none,present,,WITHER@v0.105.0 WITHER@v0.106.0

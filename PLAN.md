@@ -112,8 +112,21 @@ Next: Phil reruns the full build. `deck_final`, `deaths` and relic/event choices
 started.*
 
 ### 4. Treatment table — CC
-*Status: not started. Inputs ready: card-change decisions applied to `card_changes.csv`
-(relabels, notes-only rows, artifacts); thin betas checked for pooling.*
+*Status: reference tables built (PR), `python -m spirometry.treatment`:
+`change_events.csv` (262 card change events + 64 behavior events), `change_event_fields.csv`,
+`card_versions.csv` (every card × build), `windows.csv` (per event and branch: before/after
+builds, clean or not, control exclusions, behavior flags); notes in
+`notes/treatment_table.md`. Stable-window check: 0 mismatches against `card_changes.csv`.
+Card-patch level (the minimum result's unit: net change between stable builds,
+`windows.csv` `level = card_patch`, `card_patch_fields.csv`): all 50 numeric tweaks have a
+clean window. At event level 47 do on stable; Parry, Untouchable (v0.103.2) and Reflect
+(v0.107.1) changed twice within beta, so their steps are clean only on beta (Parry's and
+Untouchable's first steps nowhere). `kind_source` says where each label comes from. Ambiguous and left blank: 2 events with
+unknown beta timing (Tear Asunder, Seven Stars, both wording), 9 events on 4 cards where
+update-history can't say which beta changed a field (none a numeric tweak). Optional
+`offers_with_version` view added to `runs.duckdb` (parser 1.4.0; fixture-tested). Next:
+Phil reviews the rule-labeled kinds (116 events) and the choices in the decision log,
+then builds the run tables with parser 1.4.0 to get the view.*
 Join `card_offers` to the card version live in each run's build: for each (card, build), which
 version was live and whether it's pre- or post-change. Also list, for each change, the other
 cards of the same character changed in the same patch (candidates to exclude from its control
@@ -160,7 +173,11 @@ README with results, portfolio card on pmacias.github.io.
    bulk dump, stable-only hotfixes, when `player_token` was added).
 5. Build the run tables on the full snapshot (`python -m spirometry.runs build`) and move
    the audit notebook onto them.
-6. Phase 4: per-build card version table and treatment table.
+6. Phase 4: review the treatment tables (`notes/treatment_table.md`), then rebuild the
+   run tables (parser 1.4.0) for `offers_with_version`.
+7. When official act 4 (or other new content) ships: re-cache the game lists for the new
+   builds and switch the mod-entity rule to per-build lists (see SPIROMETRY.md, custom and
+   modded runs).
 
 ## Decision log
 - Spire Codex export is the primary source; sts2runs.com only for cross-checks.
@@ -330,3 +347,36 @@ README with results, portfolio card on pmacias.github.io.
   cached changelog adds, removes or changes, so removed content (Doormaker, Toadpoles,
   Door) and beta-only content (`BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER`, v0.108.0+) are not
   markers. `runs.mod_markers` lists which markers a record carries.
+- Treatment tables (CC's choices, open to review): an event is one card changing on one
+  build. Stable-window card-patches are split into one event per beta that touched them
+  (`beta_build`, "field also changed in", the card's notes and `beta_card_changes.csv` in
+  the window); a field several betas touched is split by a patch-note chain from its old
+  to its new value, or else marked `?` between the first and last beta (not guessed).
+  Events carry the card-patch's `change_kind` when they hold card_changes fields; the
+  others (notes-only steps, everything after v0.107.1) get a kind by rule
+  (`treatment.notes_kind`). `stable_build` is blank for events reverted before stable.
+- Treatment windows at two levels (Phil): `event` (one card change on one build, both
+  branches) and `card_patch` (a card_changes card-patch, stable only; the minimum result
+  compares these). `kind_source` = card_changes / notes-only / beta_card_changes /
+  text rule / behavior, so analyses can keep curated labels only.
+- Card versions (CC's choices, open to review): betas carry every event first seen on a
+  beta at or before them; stables carry every event of their window and earlier ones,
+  reverted pairs included; hotfixes carry none of their own. Stable-only events reach betas
+  released after them; a stable bug-fix row with a pending beta row of the same card is
+  that fix's stable copy and doesn't reach betas. `version` numbers each distinct set of
+  carried card events in release-date order (a revert gets a new number); behavior events
+  are listed apart and never change the version. Blank: v0.98.0, the `-beta`
+  pseudo-versions, and betas where an event's timing is unknown.
+- Windows (CC's choices, open to review): per event and branch, after = the first block
+  carrying the event, before = the block just before; clean when the card's event sets
+  differ by that event only. Blocks = single builds, except the audit's thin builds
+  (v0.103.1, v0.105.0, v0.109.1) pooled with a neighbour carrying the same card events for
+  every card. Stable windows run v0.99.1 → v0.103.2 and v0.103.3 → v0.107.1. Control
+  exclusions = same-color cards whose card events differ between the blocks; behavior
+  events are flags only. v0.110.1 isn't on the thin list (the audit's snapshot ends
+  before it), so it isn't pooled.
+- Mod-entity rule, to change when new content ships: it checks ids against the union of
+  all cached game lists. When official act 4 (or any new content) ships, re-cache the lists
+  for the new builds and check each run against its own build's lists, plus a backstop
+  (act 4 content on a build before its release = modded), so a mod id that collides with
+  a new official one doesn't un-flag earlier modded runs.

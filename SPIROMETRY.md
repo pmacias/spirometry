@@ -266,6 +266,41 @@ version list to `builds.csv`):
   entries whose every field goes to `none` with no changelog behind it (Ascender's Bane,
   Folly, Genetic Algorithm, Summon Forth, The Scythe); blank on other rows.
 
+From those tables, built by `python -m spirometry.treatment` (no fetching, no run data;
+details and counts in `notes/treatment_table.md`):
+
+- `change_events.csv` — one row per card change event: a card changing on one build
+  (`event_id` = `CARD@build`). Stable-window card-patches are split per beta (Parry
+  `@v0.100.0` 6(9) → 8(11), `@v0.101.0` → 10(14)); beta revisions and reverts are their own
+  events; betas after v0.107.1 come from `beta_card_changes.csv`; bug fixes from
+  `behavior_changes.csv` are `change_kind = behavior`, `sensitivity_only = yes`
+  (`CARD@build/fixN`). Columns: `event_build`, `first_beta` (blank for stable-only
+  events), `stable_build` (blank if reverted before stable or after v0.107.1),
+  `window_stable`, `timing` (beta, stable_only, unknown), `change_kind` + `kind_source`
+  (`card_changes`, `notes-only` (card_changes' notes-only rows), `beta_card_changes`,
+  `text rule` (labeled by rule from the notes/update-history text), `behavior`), `text_only_label`,
+  `status` (reverted, revised, after_last_stable, ...), `field_changes` (summary).
+- `change_event_fields.csv` — per (event, field): `old`, `new`, `rel_change`
+  ((new − old)/|old|, blank if not numeric or old = 0), `via`. Changelog fields as in
+  card_changes; `notes:<quantity>` (and `(upgraded)`) from the patch notes;
+  `history:<field>` from update-history. `?` = the value between two betas isn't known.
+- `card_versions.csv` — every card (card list plus event-only cards) × every build in
+  `builds.csv`: `version` (0 = no events; each distinct set of carried events gets the next
+  number in release-date order), `event_ids` carried so far, `behavior_event_ids`, `note`.
+  Betas carry every earlier beta event, stables every event of their window and before,
+  hotfixes nothing of their own. Blank for v0.98.0, the `-beta` pseudo-versions, and
+  Tear Asunder / Seven Stars on the betas of their window (timing unknown).
+- `card_patch_fields.csv` — per (card-patch, field): the net old → new from one stable
+  build to the next (`card_changes.csv`, artifacts left out), `rel_change`, and the
+  member events. `card_patch_id` = `CARD@stable/patch`.
+- `windows.csv` — `level = event`: per (event, branch); `level = card_patch`: one stable
+  window per card-patch, clean when the card differs by exactly its member events (all
+  137 are, including all 50 numeric tweaks). Columns: `before_builds`, `after_builds`, `clean` (the card
+  differs by this event only), `reason`, `control_exclusions` (same-color cards changed
+  between the two blocks), `behavior_in_window`, `control_behavior_flags`. v0.99.0 is in
+  no window; the thin betas pool (v0.103.0+v0.103.1, v0.105.0+v0.105.1,
+  v0.109.0+v0.109.1).
+
 Caveats: update-history types every entry "Beta Patch" (including stable v0.103.2) and has
 no entries for stable-only hotfixes (v0.98.1–v0.98.3, v0.99.1, v0.103.1). The wiki fills
 their branch and date. Run export records have no `is_beta` field at all, so branch always
@@ -304,6 +339,9 @@ run_hash); the build finishes the other pages and exits 1.
   `is_mod_card`, `is_mod_enchantment`. `card_id` has no `CARD.` prefix.
 - `shop_offers`: solo shops as the list plus purchases (`origin = 'gained'`, `picked` =
   bought); co-op shops as recorded, `usable = false`.
+- `offers_with_version` (parser 1.4.0, when `reference/card_versions.csv` exists):
+  `primary_offers` joined to `card_versions` on (card_id, build_id), adding
+  `card_version`, `event_ids`, `behavior_event_ids`. NULL version on v0.98.0 by design.
 - Views: `runs_dedup` (first record per `run_key`, with `n_copies`), `card_offers_dedup`,
   `primary_offers` (the primary population below: solo, no modifiers, not modded, released
   build, not before release, Neow start; combat/elite/boss rewards plus event-then-fight
@@ -466,7 +504,12 @@ ascension per week).
   removed content (`ENCOUNTER.DOORMAKER_BOSS`, `ENCOUNTER.TOADPOLES_NORMAL`, `MONSTER.DOOR`,
   `MONSTER.DOORMAKER`); with the full lists that page has 0. That page is early data with no
   modded runs at all, so how many runs the rule newly flags is for the full build
-  (`build_info.runs_mod_entity_only`). Audit counts (records, 949 pages): `save_dict_*` 13,164, mod modifier
+  (`build_info.runs_mod_entity_only`). The rule checks against the union of every cached
+  list, which works while official content only gets added or removed. When official act 4
+  (or other new content) ships, re-cache the lists for the new builds and check each run
+  against its own build's lists, with a backstop (act 4 content on a build before its
+  release = modded), so a mod id that collides with a new official id doesn't un-flag
+  earlier modded runs. Audit counts (records, 949 pages): `save_dict_*` 13,164, mod modifier
   5,233, mod card 2,532, mod character 824, mod acts 1,008.
 - **Treatment timing.** Assign builds from each run's own `build_id` and `start_time`, not
   `submitted_at` — players often upload their whole history folder at once (the

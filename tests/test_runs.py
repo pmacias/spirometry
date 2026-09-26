@@ -445,3 +445,17 @@ def test_key_from_env_or_file(tmp_path, monkeypatch):
     assert runs.load_key() == (b"from-env", "env")
     assert runs.player_hash(b"k", 1) == "1"
     assert runs.player_hash(b"k", 76561198000000000) != runs.player_hash(b"j", 76561198000000000)
+
+
+def test_offers_with_version(db):
+    _, con = db
+    n_primary = rows(con, "SELECT count(*) FROM primary_offers")[0][0]
+    got = rows(con, """SELECT count(*), count(card_version),
+                              count(*) FILTER (WHERE build_id = 'v0.98.0')
+                       FROM offers_with_version""")[0]
+    assert got[0] == n_primary > 0                  # the join adds no rows and drops none
+    # every offer gets a version except on v0.98.0 (branch unknown: blank by design)
+    missing = rows(con, """SELECT DISTINCT build_id FROM offers_with_version
+                           WHERE card_version IS NULL""")
+    assert {b for (b,) in missing} <= {"v0.98.0"}
+    assert got[1] == got[0] - got[2]

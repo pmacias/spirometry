@@ -169,6 +169,9 @@ fit) and takes `max_week_after` (fixed horizon; `run_all` passes it to the place
 fixed (parser 1.6.0). Tested on synthetic offers; not run on real pages (the 2 fetched
 pages have no v0.103.2 runs). Next: Phil rebuilds with parser 1.6.0 and reruns the
 notebook with `se_hc`, `max_week_after=3` and `flag_rarity`.*
+*Notebook v2 (2026-09-26, same 949-page tables): robust SEs, fixed horizon, same-rarity
+flags and patch terms run; results in SPIROMETRY.md. New question: the second patch shows
+no dose-response.*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -200,14 +203,15 @@ README with results, portfolio card on pmacias.github.io.
    the audit notebook onto them.
 6. Phase 4: review the treatment tables (`notes/treatment_table.md`), then rebuild the
    run tables (parser 1.5.0) for `offers_with_version` and the deduplicated `primary_offers`.
-7. Phase 5 follow-ups from the first pass: (a) offer-rate flags (Patter, Sculpting
-   Strike): did same-rarity cards move too; (b) fixed-horizon β (weeks 0–3) so the two
-   patches compare; (c) a patch term in the dose-response meta-regression before any
-   buff/nerf claim; (d) CC: add heteroskedasticity-robust SEs (`se_hc`) to `fit_did`, the
-   right comparison for clustering; (e) CC: 18 solo `run_key`s are different runs (character
-   or ascension differ), so the dedup key needs the character; (f) the heavy-uploader
-   check, after the rebuild brings `player_token`. Tooling for (a), (b), (d) and (e) in the
-   follow-up PR (parser 1.6.0); (a) and (b) still need running, (c) and (f) open.
+7. Phase 5 follow-ups. Done on the 949-page tables: (a) same-rarity offer-rate check:
+   Patter, Sculpting Strike and The Scythe are card-specific, not pool changes; (b) fixed
+   horizon: not the cause of the gap between patches; (c) patch term: the second patch has no
+   dose-response (slope 0.02 ± 0.31 against 1.44 ± 0.19); (d) robust SEs: clustering adds
+   about 3%; (e) dedup key fixed in parser 1.6.0. Next: (g) fit per patch within each
+   uploader group (the tooltip hypothesis) and by kind of main field; (h) where the flagged
+   cards' extra offers come from (act, floor type, event fights); (i) after the rebuild,
+   which copy of a duplicated run to keep (copies often differ in floors or win: e.g. keep
+   the one with most floors); (f) the heavy-uploader check after the rebuild.
 8. When official act 4 (or other new content) ships: re-cache the game lists for the new
    builds and switch the mod-entity rule to per-build lists (see SPIROMETRY.md, custom and
    modded runs).
@@ -480,3 +484,7 @@ README with results, portfolio card on pmacias.github.io.
   - The collision fixture is built in the test (records derived from the sample file, as
     the other variant tests do) rather than added to `sample_runs.jsonl`, so the fixture's
     existing counts don't change.
+- Dose-response uses fixed-horizon estimates, after-build weeks 0–3 (Phil), so the two
+  patches compare at the same horizon; all-weeks estimates are the check.
+- Clustering measured against robust SEs: median 1.03, range 1.00–1.20 on the 43 tweaks.
+  (An earlier "about 8%" was an approximation from iid ratios and is superseded.)

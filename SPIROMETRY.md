@@ -6,7 +6,7 @@ Status: Phase 5, first pass done. The pipeline is complete through Phase 4 (refe
 run tables, treatment tables). The full snapshot is still downloading; the run tables used so
 far are built from the first 949 pages (submissions to about 2026-07-19, parser 1.4.0).
 First-pass pick-rate results for the numeric tweaks are under "Phase 5 results, first pass";
-the design and the reasoning behind it are in `notes/phase5_deck_v2.pdf`.
+the design and the reasoning behind it are in `notes/phase5_deck_v3.pdf`.
 
 ---
 
@@ -485,7 +485,9 @@ Not yet run on real pages: the 2 pages fetched for this have no v0.103.2 runs.
 
 From `notebooks/02_pick_rate_did.ipynb` on the run tables built from the first 949 pages
 (parser 1.4.0, not yet deduplicated by `run_key`). Results are saved in `data/analysis/`
-(git-ignored). Provisional: rerun after the rebuild on the full snapshot.
+(git-ignored). Provisional: rerun after the rebuild on the full snapshot. Updated the same
+day with notebook version 2 (after the follow-up PR): robust error bars, a fixed horizon,
+same-rarity offer-rate flags and patch terms in the dose-response fit.
 
 **Data checks.** 106 of 577,092 solo `run_key`s (0.02%) have more than one record, so the
 missing dedup doesn't matter here. 18 of the 106 differ in character or ascension: different
@@ -493,10 +495,19 @@ runs that share a seed and start time, which the 1.5.0 dedup would merge (fixed 
 characters and ascension).
 Offers per stable build: v0.99.1 2.46M (62k runs), v0.103.2 2.98M (78k), v0.103.3 1.89M
 (51k), v0.107.1 3.95M (106k). v0.103.3 is not thin.
+Copies of the same solo `run_key` often differ in the game itself: of the 106, the win
+differs in 24, floors reached in 70, abandonment in 33 (the 18 collisions included). So a
+duplicated run is not always one record uploaded twice; possibly a run reloaded from a save,
+or uploaded before it ended. Keeping the first copy by page can keep the less complete one.
+Negligible at 0.02%; recheck on the 1.6.0 tables.
 
-**Offer-rate check.** 3 of 43 flagged: Patter in both patches (offer share +17% and +12%
-against the controls' median) and Sculpting Strike (+11%). Not explained yet. Next check:
-did same-rarity cards of that character move too (a pool change)?
+**Offer-rate check.** 3 of 43 flagged against all controls: Patter in both patches (offer
+share +17% and +12% against the controls' median) and Sculpting Strike (+11%). All three
+still flag against controls of their own rarity (Common), so it isn't a rarity pool change:
+something specific to these cards changed how often they're offered. The Scythe (Rare,
+second patch) flags only against its own rarity (+6% against the Rares' −4%). Their
+pick-rate estimates carry a caveat until this is explained. Regent's Commons have only 8
+controls in the first window.
 
 **Pick-rate DiD, 43 tweaks** (β in percentage points, relative to unchanged cards of the
 same character; "clearly nonzero" = |β| > 2 SE):
@@ -514,20 +525,23 @@ same character; "clearly nonzero" = |β| > 2 SE):
   patch: Debilitate's nerf shows +2.6 (its first-patch buff was still rising).
 - Parry by hand: controls 27.5% → 27.5%, Parry 12.9% → 27.9%; raw DiD +15.0, regression
   +14.9 ± 0.8; every robustness option between +14.7 and +15.7.
-- The second patch's effects are smaller at similar change sizes. Candidate reasons: a
-  shorter after period (5 weeks vs. 8, while effects kept growing), more experienced
-  players by June. A fixed-horizon estimate (weeks 0–3) would separate them.
+- The second patch's effects are smaller at similar change sizes, and it isn't the
+  horizon. The first patch's after period runs 11–14 weeks against 5, but over after-build
+  weeks 0–3 alone the median |β| is still 4.8 against 1.3 points (21 and 7 clearly nonzero).
+  Most of each effect arrives in the first month: Leading Strike +9.4 at weeks 0–3 against
+  +10.4 overall, Pinpoint −7.6 against −8.6.
 
 **Error bars.** Clustered SE ÷ plain (iid) SE ranged 0.59–1.26, median 0.99. That ratio
 mostly measures unequal noise between cards: a 0/1 outcome's variance is p(1−p), plain OLS
 assumes one variance for all offers, and the ratio tracks √(p(1−p)) with correlation 0.96.
-Net of that, clustering by run widens the bars by about 8% (−3% to +26%), most for common
-cards offered many times per run (Crescent Spear, Uproar, Collision Course). Compare
-clustered errors with heteroskedasticity-robust ones, not plain ones.
+Against heteroskedasticity-robust errors, which allow that, clustering by run widens the bars
+by about 3% (clustered ÷ robust: median 1.03, range 1.00–1.20), most for common cards
+offered many times per run (Crescent Spear 1.20, Uproar 1.19, Collision Course 1.13). Parry:
+1.08. Compare clustered errors with robust ones, not plain ones.
 
 **Pre-trends.** Mostly flat. Weekly drift before the release of about 2 SE or more:
 Anticipate, Patter (v0.103.2), Gather Light (rising, about 1.5 points a week); weaker
-falling drift for Fight Me and Heirloom Hammer. Over a 4–8 week after period that is
+falling drift for Fight Me and Heirloom Hammer. Over a month or more after release that is
 comparable to the effects, so these are reported with a caveat or a trend adjustment
 (Anticipate's nerf is probably understated). The notebook's χ² screen flags six more cards
 at p < 0.01 on single odd weeks; it ignores correlation between weeks, so the slopes decide.
@@ -555,24 +569,33 @@ controls aren't the cause, so it is the treated cards drifting over time: v0.103
 stays the main design.
 
 **Dose-response** (38 tweaks; mixed-direction and upgrade-only kept off the line). x =
-direction × ln(new/old) of the main field; y = β in log-odds (delta method); random-effects
-meta-regression.
-- One slope: 1.10 ± 0.18 log-odds per unit of ln(new/old); intercept −0.02 ± 0.05, so no
-  sign that appearing in the patch notes moves picks by itself. +1 damage on a 7-damage
-  card (ln(8/7) = 0.13) ≈ +0.15 log-odds ≈ +2.3 points at a 20% pick rate.
-- Between-card scatter: τ ≈ 0.25 log-odds (Q = 1,100 on 36 df). Same-sized changes had
-  very different effects on different cards.
-- Buff slope 1.78 ± 0.38, nerf slope 0.37 ± 0.40. Not a finding yet: only 8 nerfs, 3 from
-  the weaker second patch. Needs a patch term in the model first.
+direction × ln(new/old) of the main field; y = β in log-odds (delta method), from after-build
+weeks 0–3 so both patches share a horizon; random-effects meta-regression. The all-weeks
+estimates give the same picture.
+- One slope: 1.03 ± 0.18 log-odds per unit of ln(new/old) (all weeks: 1.10 ± 0.18);
+  intercept −0.01 ± 0.05, so no sign that appearing in the patch notes moves picks by
+  itself. +1 damage on a 7-damage card (ln(8/7) = 0.13) ≈ +0.14 log-odds ≈ +2.2 points at
+  a 20% pick rate.
+- **By patch: first 1.44 ± 0.19, second 0.02 ± 0.31.** The second patch shows no
+  dose-response: in June, a bigger tweak didn't move picks more than a small one. A level
+  shift alone (−0.11 ± 0.09) doesn't capture the difference; the slope does. Cause open.
+  Candidates: the SlayTheStats mod's community-stats tooltips (from 2026-06-19, the day
+  after v0.107.1), more experienced players and a settled meta, the kind of number changed
+  (several second-patch mains are power amounts or Forge).
+- Between-card scatter: τ ≈ 0.25 log-odds (Q = 881 on 36 df). Same-sized changes had very
+  different effects on different cards.
+- Buffs vs. nerfs, with the patch term: buff slope 1.62 ± 0.38, nerf slope 0.43 ± 0.40.
+  About 2σ apart on 8 nerfs: suggestive only.
 
 **Upgrade-only placebos.** Un-upgraded offers of Serpent Form, Royalties and Untouchable
 (v0.107.1) moved −0.5 to +0.1 points, all within about 1.6 SE of zero: no attention effect.
 The upgraded-offer estimates are uninformative for Serpent Form and Royalties (126–162
 offers); Untouchable's is about zero.
 
-**Open.** Offer-rate flags (Patter, Sculpting Strike); fixed-horizon β; patch term in the
-dose-response fit; heteroskedasticity-robust SEs as the comparison; dedup key collisions;
-the heavy-uploader check after the rebuild.
+**Open.** Why the second patch has no dose-response (fit per patch within each uploader
+group; by kind of main field); why Patter, Sculpting Strike and The Scythe are offered more
+often; which copy of a duplicated run to keep; the heavy-uploader check and the rerun after
+the rebuild on the full snapshot (parser 1.6.0).
 
 ## Audit decisions (first pass: 949 pages, submissions to ~2026-07-19)
 

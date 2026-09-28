@@ -26,7 +26,7 @@ See [PLAN.md](PLAN.md) for the research questions and methods.
 | [SPIROMETRY.md](SPIROMETRY.md) | Reference: data sources, record structure, known data issues |
 | [CLAUDE.md](CLAUDE.md) | Standing instructions for Claude Code sessions |
 | `notes/` | Investigation notes: patch history endpoints (`patch_history.md`), run file structure and table proposal (`run_schema.md`), patch notes vs. card tables (`patch_notes_crosscheck.md`), card versions and DiD windows (`treatment_table.md`) |
-| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study) that the analysis notebook calls |
+| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens) |
 | `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
 | `scripts/audit_extract.py` | Interim: compact audit tables from the snapshot (runs, aggregated offer counts) into `data/audit/` |
 | `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power |
@@ -120,8 +120,18 @@ did.fit_did(df, "PARRY@v0.103.2/patch")
 results = did.run_all(con)            # every solo-estimable tweak
 ```
 
-`SPIROMETRY_SMOKE_DB=path/to/runs.duckdb python -m pytest tests/test_did.py` also runs the
-smoke test on a build from fetched pages.
+The win-effect functions in `spirometry.wins` (run tables from parser 1.7.0 or later):
+
+```python
+from spirometry import wins
+data = wins.load_early(con, "ironclad", ["v0.103.2"])        # first 3 reward screens per run
+wins.itt(data, "SETUP_STRIKE"); wins.first_stage(data, "SETUP_STRIKE"); wins.iv(data, "SETUP_STRIKE")
+wins.reach_share(wins.early_runs(con, None, ["v0.103.2"]))  # share of runs reaching screen 3
+results = wins.run_all_cards(con, "ironclad", ["v0.103.2"])  # every card with >= 500 offered runs
+```
+
+`SPIROMETRY_SMOKE_DB=path/to/runs.duckdb python -m pytest tests/test_did.py tests/test_wins.py`
+also runs the smoke tests on a build from fetched pages.
 
 ## Data
 

@@ -17,6 +17,7 @@ heteroskedasticity-robust and iid errors of the same fit alongside, for comparis
 
     picked ~ treat_post | card_id^upgraded + card_id^group + block^group + act + ascension
 
+(card_act_fe=True: card_id^upgraded^act in place of card_id^upgraded and act.)
 treat_post = offer of the treated card in the after block. The treated card and its
 controls (same color, unchanged in the window) are the only cards in the fit.
 """
@@ -87,19 +88,25 @@ LOAD_SQL = """
 SELECT o.run_key, o.card_id, o.build_id, o.picked, o.upgraded, o.act, o.ascension,
        o.uploader_tag IS NOT NULL AS tagged,
        o.run_key || '|' || o.floor || '|' || coalesce(o.set_idx::VARCHAR, 'list') AS screen_id,
-       o.start_time, r.uploader_hash
+       o.start_time, r.uploader_hash, o.set_picked_any{extra}
 FROM offers_with_version o JOIN runs r USING (run_hash)
 WHERE o.character = ? AND list_contains(?, o.build_id) AND list_contains(?, o.card_id)
 """
 CATEGORICAL = ["run_key", "card_id", "build_id", "block", "group", "screen_id",
                "uploader_hash"]
+COLUMNS = ["run_key", "card_id", "block", "picked", "upgraded", "act", "ascension", "group",
+           "screen_id", "start_time", "week", "build_id", "uploader_hash", "set_picked_any"]
+# load_window(extra_cols=True): where the offers come from
+EXTRA_COLUMNS = ["source", "map_point_type", "floor", "event_fight", "list_len", "set_idx"]
 
 
-def load_block_data(con, color, before_builds, after_builds, ref=REF):
+def load_block_data(con, color, before_builds, after_builds, ref=REF, extra_cols=False):
     """Offers of one character's cards on the given builds. See load_window."""
     before, after = before_builds.split(), after_builds.split()
     cards = sorted(c for c, col in card_colors(ref).items() if col == color)
-    df = con.execute(LOAD_SQL, [f"CHARACTER.{color.upper()}", before + after, cards]).df()
+    extra = "".join(f", o.{c}" for c in EXTRA_COLUMNS) if extra_cols else ""
+    df = con.execute(LOAD_SQL.format(extra=extra),
+                     [f"CHARACTER.{color.upper()}", before + after, cards]).df()
     df["block"] = np.where(df.build_id.isin(after), "after", "before")
     df["group"] = np.where(df.pop("tagged"), "tagged", "untagged")
     t0 = release_date(after[0], ref)
@@ -108,13 +115,20 @@ def load_block_data(con, color, before_builds, after_builds, ref=REF):
     df["upgraded"] = df.upgraded.astype(bool)
     df["act"] = df.act.astype("int8")
     df["ascension"] = df.ascension.astype("Int16")
+    df["set_picked_any"] = df.set_picked_any.astype("boolean")
     for c in CATEGORICAL:
         df[c] = df[c].astype("category")
-    return df[["run_key", "card_id", "block", "picked", "upgraded", "act", "ascension",
-               "group", "screen_id", "start_time", "week", "build_id", "uploader_hash"]]
+    if extra_cols:
+        for c in ("source", "map_point_type"):
+            df[c] = df[c].astype("category")
+        df["floor"] = df.floor.astype("int16")
+        df["event_fight"] = df.event_fight.astype(bool)
+        df["list_len"] = df.list_len.astype("int16")
+        df["set_idx"] = df.set_idx.astype("Int16")
+    return df[COLUMNS + (EXTRA_COLUMNS if extra_cols else [])]
 
 
-def load_window(con, card_patch_id, ref=REF):
+def load_window(con, card_patch_id, ref=REF, extra_cols=False):
     """Offers in a card-patch's window: the treated card's character (the player's
     `character` maps to the card's color, CHARACTER.IRONCLAD -> ironclad), cards of that
     color only, on the window's before_builds + after_builds (pooled blocks).
@@ -122,7 +136,13 @@ def load_window(con, card_patch_id, ref=REF):
     Columns: run_key, card_id, block ('before'/'after'), picked, upgraded, act, ascension,
     group ('tagged' when the record has an _sts uploader tag), screen_id (run_key|floor|
     set_idx, or run_key|floor|list when set_idx is NULL), start_time, week (whole weeks
-    from the first after-build's release date, negative before), build_id, uploader_hash.
+    from the first after-build's release date, negative before), build_id, uploader_hash,
+    set_picked_any (the player took a card on the offer's screen; NA when the list couldn't
+    be split into screens; fit_did's picked_screens_only uses it).
+
+    extra_cols=True adds where each offer comes from: source (combat, elite, boss,
+    event_combat), map_point_type, floor, event_fight, list_len (cards in the floor's list)
+    and set_idx (the screen within it; NA when the list couldn't be split).
 
     Offers come from primary_offers, which keeps one record per run_key (the copy
     runs_dedup keeps, first by page and line). So a run uploaded both with and without the
@@ -131,7 +151,8 @@ def load_window(con, card_patch_id, ref=REF):
     color = card_colors(ref).get(w["card_id"], "")
     if not color:
         raise ValueError(f"{w['card_id']} has no color in the card list")
-    return load_block_data(con, color, w["before_builds"], w["after_builds"], ref)
+    return load_block_data(con, color, w["before_builds"], w["after_builds"], ref,
+                           extra_cols=extra_cols)
 
 
 def control_cards(card_patch_id, drop_behavior_flags=False, *, df=None, ref=REF):
@@ -222,7 +243,8 @@ def offer_rate_check(df, card_patch_id, ref=REF):
 # ------------------------------------------------------------------------------ step 2
 
 def _subset(df, card_patch_id, *, upgraded=None, group=None, drop_shared_screens=False,
-            drop_behavior_flags=False, drop_uploaders=None, max_week_after=None, ref=REF):
+            drop_behavior_flags=False, drop_uploaders=None, max_week_after=None,
+            picked_screens_only=False, ref=REF):
     """Treated card + controls, with the fit options applied. Returns (data, treated)."""
     treated = window(card_patch_id, ref)["card_id"]
     cards = [treated] + control_cards(card_patch_id, drop_behavior_flags, df=df, ref=ref)
@@ -230,6 +252,8 @@ def _subset(df, card_patch_id, *, upgraded=None, group=None, drop_shared_screens
     if drop_shared_screens:                     # screens as offered, before other filters
         shared = d.screen_id[d.card_id == treated].unique()
         d = d[(d.card_id == treated) | ~d.screen_id.isin(shared)]
+    if picked_screens_only:                     # unsplit lists (NA) leave too
+        d = d[d.set_picked_any.fillna(False).astype(bool)]
     if upgraded is not None:
         d = d[d.upgraded == upgraded]
     if group is not None:
@@ -258,11 +282,11 @@ def _subset(df, card_patch_id, *, upgraded=None, group=None, drop_shared_screens
     return d, treated
 
 
-def _fixed_effects(d, group, pooled_groups, block_term="block"):
+def _fixed_effects(d, group, pooled_groups, block_term="block", card_act_fe=False):
     two_groups = group is None and not pooled_groups and d.group.nunique() > 1
-    fe = ["card_id^upg"]
+    fe = ["card_id^upg^act" if card_act_fe else "card_id^upg"]
     fe += ["card_id^group", f"{block_term}^group"] if two_groups else [block_term]
-    return fe + ["act", "asc"]
+    return fe + (["asc"] if card_act_fe else ["act", "asc"])
 
 
 def _feols(fml, d):
@@ -282,7 +306,7 @@ def _rates(d):
 
 def fit_did(df, card_patch_id, *, upgraded=None, group=None, drop_shared_screens=False,
             drop_behavior_flags=False, drop_uploaders=None, pooled_groups=False,
-            max_week_after=None, ref=REF):
+            max_week_after=None, card_act_fe=False, picked_screens_only=False, ref=REF):
     """One DiD for one card-patch. Returns beta (pick probability, in probability units),
     se (clustered by run_key, the main error; ci95 uses it), se_hc (the same fit with
     heteroskedasticity-robust errors, pyfixest's "hetero": the fair comparison for the
@@ -305,6 +329,14 @@ def fit_did(df, card_patch_id, *, upgraded=None, group=None, drop_shared_screens
       patches with after periods of different length compare at the same horizon. The
       before block is unchanged. Reported back as max_week_after, with after_week_max, the
       latest after-block week in the fit data (before the singleton drop).
+    card_act_fe: card_id^upg^act in place of card_id^upg (and the act term, now nested in
+      it): each card gets its own act profile, for cards whose value depends on when in the
+      run they're offered. A robustness check.
+    picked_screens_only: keep only offers on screens where the player took a card
+      (set_picked_any; offers from lists that couldn't be split into screens leave too).
+      Most of the fall in pick rate through a run is whether to take a card at all, so this
+      estimand is the choice among cards, free of that. Applied after drop_shared_screens
+      (which sees screens as offered) and before the other filters.
 
     Ascension enters as one fixed effect per level. If group has one level in the data
     (e.g. no tagged runs), the group terms are dropped automatically."""
@@ -312,8 +344,9 @@ def fit_did(df, card_patch_id, *, upgraded=None, group=None, drop_shared_screens
                          drop_shared_screens=drop_shared_screens,
                          drop_behavior_flags=drop_behavior_flags,
                          drop_uploaders=drop_uploaders, max_week_after=max_week_after,
-                         ref=ref)
-    fml = "picked ~ treat_post | " + " + ".join(_fixed_effects(d, group, pooled_groups))
+                         picked_screens_only=picked_screens_only, ref=ref)
+    fml = "picked ~ treat_post | " + " + ".join(
+        _fixed_effects(d, group, pooled_groups, card_act_fe=card_act_fe))
     fit = _feols(fml, d)
     beta, se = float(fit.coef()["treat_post"]), float(fit.se()["treat_post"])
     ci = fit.confint().loc["treat_post"].to_numpy(dtype=float)
@@ -322,7 +355,8 @@ def fit_did(df, card_patch_id, *, upgraded=None, group=None, drop_shared_screens
     se_iid = float(fit.vcov("iid").se()["treat_post"])
     return dict(card_patch_id=card_patch_id, card_id=treated, beta=beta, se=se,
                 ci95=(float(ci[0]), float(ci[1])), se_hc=se_hc, se_iid=se_iid,
-                max_week_after=max_week_after,
+                max_week_after=max_week_after, card_act_fe=card_act_fe,
+                picked_screens_only=picked_screens_only,
                 after_week_max=int(d.week[d.after].max()),
                 n_offers=int(fit._N),
                 n_singletons_dropped=len(d) - int(fit._N),
@@ -390,7 +424,8 @@ def run_all(con, *, tweaks=None, ref=REF, **fit_kwargs):
     log-odds versions (to_log_odds with the treated card's pick rate before). A tweak whose
     fit fails (e.g. no offers in a block) gets the reason in `error` (placebo_error for the
     placebo) and blank estimates; the others still run. `fit_kwargs` go to fit_did (both
-    the main and the placebo fit), e.g. max_week_after=3 for fixed-horizon estimates."""
+    the main and the placebo fit), e.g. max_week_after=3 for fixed-horizon estimates,
+    card_act_fe=True or picked_screens_only=True."""
     ts = _csv(pathlib.Path(ref) / "tweak_sizes.csv")
     ts = ts[ts.solo_estimable == "yes"]
     if tweaks is not None:

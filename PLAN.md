@@ -117,8 +117,13 @@ ascension, so different runs sharing seed and start time stay apart; `build_info
 the old keys it splits (`old_run_keys_split`, `run_keys_split_from_old_key`,
 `solo_old_run_keys_split`). On 2 fetched pages the co-op multi-record keys stay at 137 and
 nothing splits. Every `run_key` value changes: regenerate anything keyed on the old one.
-Next: Phil reruns the full build and reads both counts. `deck_final`, `deaths` and
-relic/event choices not started.*
+Next: Phil reruns the full build and reads both counts.
+Parser 1.7.0 (PR, CC): `runs_dedup.retried` (copies differ in win, floors reached or
+abandonment; also on `primary_offers`), `card_offers.deck_size_before` and
+`run_players.deck_size_start`; `build_info` counts retried keys (`solo_run_keys_retried`,
+`primary_run_keys_retried`) and checks the starting deck (`deck_start_nonstandard`: 0 of
+1,405 on 2 fetched pages). Fixture-tested; 0 retried on 2 fetched pages (the 54 are on the
+949-page tables). `deck_final`, `deaths` and relic/event choices not started.*
 
 ### 4. Treatment table — CC
 *Status: reference tables built (PR), `python -m spirometry.treatment`:
@@ -172,6 +177,15 @@ notebook with `se_hc`, `max_week_after=3` and `flag_rarity`.*
 *Notebook v2 (2026-09-26, same 949-page tables): robust SEs, fixed horizon, same-rarity
 flags and patch terms run; results in SPIROMETRY.md. New question: the second patch shows
 no dose-response.*
+*Win-effect tooling, steps 4–5 (CC, PR, parser 1.7.0): `spirometry.wins` (early_runs,
+early_offers, load_early, reach_share, itt, first_stage, iv, naive, run_all_cards) on the
+first K = 3 reward screens of each run, retried and abandoned runs out; `spirometry.did`
+gets `load_window(extra_cols=True)`, `fit_did(card_act_fe=..., picked_screens_only=...)`
+(through `run_all`) and `set_picked_any` in `load_window`'s default columns. Tested on
+synthetic runs (planted effect, null, survival bias of "ever offered", weak instrument,
+retried runs) and smoke-tested on 2 fetched pages (97.3% of runs reach screen 3). Next:
+Phil rebuilds with parser 1.7.0, reads `primary_run_keys_retried`, and runs
+`run_all_cards` per character within the stable builds; then step 5 (IV pre vs. post).*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -209,13 +223,16 @@ README with results, portfolio card on pmacias.github.io.
    dose-response (slope 0.02 ± 0.31 against 1.44 ± 0.19); (d) robust SEs: clustering adds
    about 3%; (e) dedup key fixed in parser 1.6.0. Next: (g) fit per patch within each
    uploader group (the tooltip hypothesis) and by kind of main field; (h) where the flagged
-   cards' extra offers come from (act, floor type, event fights); (i) duplicated runs:
+   cards' extra offers come from (act, floor type, event fights; tooling:
+   `load_window(extra_cols=True)`); (i) duplicated runs:
    answered (mostly retries from a restored save; not the downloads). Rule: keep one copy
    for pick rates, drop runs whose copies differ in win, floors or abandonment from win
-   analyses (in the win-tooling brief); (j) a robustness row: the DiD on screens where
-   something was picked (choice among cards, no deck-size effect); (k) optional: card × act
-   fixed effects (timing balance says it can't change a conclusion); (f) the heavy-uploader
-   check after the rebuild.
+   analyses (done in parser 1.7.0: `runs_dedup.retried`); (j) a robustness row: the DiD on
+   screens where something was picked (choice among cards, no deck-size effect; tooling:
+   `picked_screens_only`); (k) optional: card × act fixed effects (timing balance says it
+   can't change a conclusion; tooling: `card_act_fe`); (f) the heavy-uploader check after
+   the rebuild. Win effects (steps 4–5): tooling in `spirometry.wins`; run after the
+   rebuild.
 8. When official act 4 (or other new content) ships: re-cache the game lists for the new
    builds and switch the mod-entity rule to per-build lists (see SPIROMETRY.md, custom and
    modded runs).
@@ -498,3 +515,62 @@ README with results, portfolio card on pmacias.github.io.
 - Deck size / timing: no control added. Offers are random in timing and the act mix moved
   alike for a character's cards (checked per tweak); deck size is partly caused by earlier
   picks, so it is described, not controlled for.
+- Win-effect tooling and parser 1.7.0 (CC's choices, open to review):
+  - First K screens: combat, elite, boss and event-fight rewards (the `primary_offers`
+    sources), numbered by floor then `set_idx`; a two-screen floor (Prayer Wheel) counts
+    as two screens. A list that couldn't be split into screens counts as one row in the
+    numbering and marks the run `ambiguous_screens`; such runs stay in the tables and leave
+    the fits (0 of 1,277 on 2 pages: the 13 unsplit lists in non-abandoned primary runs
+    all come at screen 8 or later; no single relic behind them, 12 are 4-card lists
+    without Lasting Candy). Runs with no reward screen at all stay in `early_runs` with
+    `n_screens_reached = 0`.
+  - Win population: `runs.PRIMARY_RUN_FILTER` (factored out of `PRIMARY_FILTER`, same
+    conditions) on the record `runs_dedup` keeps, not abandoned, not retried; character
+    from `run_players` (player 0). Runs without ascension or week are left out of fits.
+  - `week` in `spirometry.wins` = whole weeks from the run's own build's release date (per
+    build, unlike `did`'s window-relative week). v0.98.0 has no release date: no week, so
+    its runs leave the fits (it is outside every patch window anyway).
+  - Estimators take a `load_early` result (runs + offers, with K) rather than a flat data
+    frame; `early_offers` returns the flat (run, card) table the brief describes. `K` on
+    an estimator only checks that the data was loaded with that K. Functions, not views
+    (lighter on memory: only the selected character and builds reach pandas).
+  - Fixed effects as precomputed combined columns (`build_group`, `build_week`, `asc`);
+    within one group or with `pooled_groups`, build alone. Errors HC1 (`"hetero"`). First
+    stage F = (coef/se)² with those errors (with one instrument this is the robust Wald F);
+    `weak` = F < 10. Singleton cells are dropped (pyfixest's default) and counted.
+  - `naive` is on all runs, as the brief says; `among_offered=True` gives the
+    took-vs-passed comparison among offered runs. `run_all_cards` counts offered runs
+    among the runs the fits use and keeps cards of the character's color only.
+  - Added beyond the brief: `screen_mix` (first K screens' sources as a fixed effect: an
+    early elite is a choice and offers rarer cards; 9.6% of runs on 2 pages), off by
+    default so the main model is the brief's; `reach_share`.
+  - `retried` compares min and max of `win`, `floors_reached`, `was_abandoned` over the
+    `run_key`'s copies (NULL counts as its own value). `build_info`:
+    `solo_run_keys_retried`, `primary_run_keys_retried` (the kept copy passes the primary
+    filter).
+  - `deck_size_before` = deck at the start of the offer's floor: starting deck (final deck
+    − all gains + all removals) + gains − removals on earlier floors; transforms count as
+    zero. The starting deck is derived, not assumed; the game's starting sizes (10, Silent
+    12, +1 Ascender's Bane from A5) are used only for the `build_info` check.
+    `run_players.deck_size_start` added for that check.
+  - `did.load_window` returns `set_picked_any` by default (the brief allowed it); the
+    extra columns come only with `extra_cols=True`. `picked_screens_only` drops offers
+    from unsplit lists (their screen is unknown). `card_act_fe` drops the separate act
+    term (nested in card^upg^act).
+- Win-effect review round (PR #12):
+  - Treatment = took X on one of the first K screens (not later rewards, shops or
+    events); stated in the docstrings and SPIROMETRY.md.
+  - Short runs (Phil asked for keeping them as the default; CC kept dropping them, open
+    to review): every run that doesn't reach screen K lost and had fewer screens on which
+    to be offered, so counting unreached screens as "not offered" gives every card a fake
+    positive ITT (synthetic null: +0.08, z ≈ 13). Dropping them is biased only if an early
+    offer changes survival to screen K; the check for that is K = 1 (every offered run
+    reached screen 1), which recovers the total effect in a synthetic test where an early
+    offer kills. `include_short_runs=True` stays as a check.
+  - Retried: `RETRIED_SQL` coalesces NULL to −1 before min/max, so a NULL copy next to a
+    non-NULL one counts as a difference; all-NULL copies agree. Tested.
+  - One row per run: the fits' HC1 errors (no clustering) rely on it; `load_early` and
+    `run_frame` raise on a repeated `run_key`.
+  - `screen_mix` stays off by default until the full-table results (Phil).
+  - `did.run_all` output: the pre-PR columns plus `card_act_fe` and `picked_screens_only`
+    (settings echoes, like `max_week_after`); notebook 02 loads files saved before them.

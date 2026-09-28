@@ -109,6 +109,7 @@ def synth(n_runs=1500, screens=20, effect=0.0, run_sd=0.1, run_card_sd=0.1,
         "build_id": np.where(rr.after, "v2", "v1"),
         "uploader_hash": np.where(rr.tagged, "u" + (pd.Series(r_idx) % 50).astype(str),
                                   None)})
+    df["set_picked_any"] = df.groupby("screen_id").picked.transform("any").astype("boolean")
     for c in did.CATEGORICAL:
         df[c] = df[c].astype("category")
     return df
@@ -216,6 +217,60 @@ def test_fit_options(ref):
         df.uploader_hash.isin(heavy) & (df.card_id != EXCLUDED)).sum()
 
 
+def test_card_act_fe(ref):
+    # C0 is picked 30 points more in act 3 than in acts 1-2, and its act-3 share of offers
+    # rises after the patch (every card's act profile is otherwise shared). With one act
+    # term for all cards, the extra act-3 offers look like an effect; card x act fixed
+    # effects absorb it. True effect 0.
+    df = synth(effect=0.0, run_card_sd=0.0, n_runs=3000, seed=20)
+    late = (df.card_id == "C0") & (df.act == 3)
+    rng = np.random.default_rng(20)
+    df.loc[late, "picked"] = df.loc[late, "picked"] | (rng.random(late.sum()) < 0.4)
+    # drop two thirds of C0's after-block offers outside act 3: its act mix shifts to act 3
+    drop = ((df.card_id == "C0") & (df.act < 3) & (df.block == "after")
+            & (rng.random(len(df)) < 0.67))
+    df = df[~drop]
+    plain = did.fit_did(df, CPID, ref=ref)
+    by_act = did.fit_did(df, CPID, card_act_fe=True, ref=ref)
+    assert plain["beta"] > 4 * plain["se"]
+    assert within(by_act, 0.0, 3)
+    assert by_act["formula"] == ("picked ~ treat_post | card_id^upg^act + card_id^group "
+                                 "+ block^group + asc")
+    assert (by_act["card_act_fe"], plain["card_act_fe"]) == (True, False)
+    # the same rows go in: only the fixed effects change
+    assert (by_act["n_offers"] + by_act["n_singletons_dropped"]
+            == plain["n_offers"] + plain["n_singletons_dropped"])
+    assert by_act["treated_rate_after"] == plain["treated_rate_after"]
+
+
+def test_picked_screens_only(ref):
+    df = synth(effect=0.06, seed=21)
+    df.loc[df.index[:30], "set_picked_any"] = pd.NA            # unsplit lists: dropped too
+    full = did.fit_did(df, CPID, ref=ref)
+    only = did.fit_did(df, CPID, picked_screens_only=True, ref=ref)
+    ctrl = df.card_id.isin([c for c in CARDS if c != EXCLUDED])
+    kept = ctrl & df.set_picked_any.fillna(False).astype(bool)
+    assert only["n_offers"] + only["n_singletons_dropped"] == kept.sum()
+    assert only["n_treated_offers"] == (kept & (df.card_id == "C0")).sum()
+    assert only["formula"] == full["formula"] and only["picked_screens_only"]
+    # every kept screen had a pick, so pick rates rise
+    assert only["control_rate_before"] > full["control_rate_before"]
+    assert only["treated_rate_after"] > full["treated_rate_after"]
+    # the shared-screen filter still sees screens as offered: same drop either order
+    both = did.fit_did(df, CPID, picked_screens_only=True, drop_shared_screens=True, ref=ref)
+    shared = df.screen_id.isin(df.screen_id[df.card_id == "C0"].unique())
+    assert both["n_offers"] + both["n_singletons_dropped"] == (
+        kept & ((df.card_id == "C0") | ~shared)).sum()
+    # run_all passes both options through
+    con = fake_db(synth(effect=0.06, n_runs=600, seed=22))
+    base = did.run_all(con, ref=ref).iloc[0]
+    for kw in (dict(picked_screens_only=True), dict(card_act_fe=True)):
+        row = did.run_all(con, ref=ref, **kw).iloc[0]
+        assert row.error == "" and row[next(iter(kw))]
+        assert row.beta != base.beta
+    assert did.run_all(con, ref=ref, picked_screens_only=True).iloc[0].n_offers < base.n_offers
+
+
 def test_to_log_odds():
     b, s = did.to_log_odds(0.05, 0.01, 0.2)
     assert b == pytest.approx(0.05 / 0.16) and s == pytest.approx(0.01 / 0.16)
@@ -304,6 +359,11 @@ def fake_db(df):
     o["set_idx"] = 0
     o["ascension"] = o.ascension.astype(int)
     o["uploader_hash"] = o.uploader_hash.replace("None", None)
+    o["set_picked_any"] = o.set_picked_any.astype(bool)
+    o["source"] = np.where(o.floor % 5 == 4, "elite", "combat")
+    o["map_point_type"] = np.where(o.source == "elite", "elite", "monster")
+    o["event_fight"] = False
+    o["list_len"] = 3
     runs = o.groupby("run_hash", as_index=False).uploader_hash.first()
     o = o.drop(columns=["group", "block", "screen_id", "week", "uploader_hash"])
     extra = o.iloc[:5].assign(card_id="X", character="CHARACTER.SILENT")   # other character
@@ -321,15 +381,33 @@ def test_load_window_and_run_all(ref):
     got = did.load_window(con, CPID, ref=ref)
     assert list(got.columns) == ["run_key", "card_id", "block", "picked", "upgraded", "act",
                                  "ascension", "group", "screen_id", "start_time", "week",
-                                 "build_id", "uploader_hash"]
+                                 "build_id", "uploader_hash", "set_picked_any"]
     assert len(got) == len(df) and set(got.card_id) == set(CARDS)
     assert (got.groupby(["block", "group"], observed=True).size()
             == df.groupby(["block", "group"], observed=True).size()).all()
     assert (got.sort_values(["run_key", "screen_id", "card_id"]).week.to_numpy()
             == df.sort_values(["run_key", "screen_id", "card_id"]).week.to_numpy()).all()
     assert isinstance(got.run_key.dtype, pd.CategoricalDtype)
+    extra = did.load_window(con, CPID, ref=ref, extra_cols=True)
+    assert list(extra.columns) == list(got.columns) + ["source", "map_point_type", "floor",
+                                                       "event_fight", "list_len", "set_idx"]
+    assert extra[got.columns].equals(got)               # the default columns are unchanged
+    assert set(extra.source) == {"combat", "elite"} and (extra.list_len == 3).all()
+    assert (extra.screen_id.astype(str).str.split("|").str[1].astype(int)
+            == extra.floor).all()
     res = did.run_all(con, ref=ref)
     assert len(res) == 1 and (res.error == "").all()
+    # the columns before PR #12 plus the two new settings, in fit_did's order (notebook 02
+    # reads saved results by name, so older saved files still load)
+    assert list(res.columns) == [
+        "card_patch_id", "card_id", "color", "stable_build", "before_builds", "after_builds",
+        "main_field", "old", "new", "log_ratio", "upgrade_only", "mixed_direction",
+        "solo_estimable", "direction", "fit_on", "error", "placebo_error", "beta", "se",
+        "ci95", "se_hc", "se_iid", "max_week_after", "card_act_fe", "picked_screens_only",
+        "after_week_max", "n_offers", "n_singletons_dropped", "n_runs", "n_treated_offers",
+        "treated_rate_before", "treated_rate_after", "control_rate_before",
+        "control_rate_after", "formula", "beta_lo", "se_lo", "placebo_beta", "placebo_se",
+        "placebo_n_offers", "placebo_treated_rate_before"]
     row = res.iloc[0]
     assert row.card_patch_id == CPID and row.log_ratio == "0.2877"
     assert row.beta == pytest.approx(did.fit_did(got, CPID, ref=ref)["beta"])

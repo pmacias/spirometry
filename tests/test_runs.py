@@ -194,6 +194,8 @@ def test_build_info(db):
         == ("1", "9")
     assert (meta["old_run_keys_split"], meta["run_keys_split_from_old_key"],
             meta["solo_old_run_keys_split"]) == ("0", "0", "0")
+    assert (meta["solo_run_keys_retried"], meta["primary_run_keys_retried"],
+            meta["deck_start_checked"], meta["deck_start_nonstandard"]) == ("0", "0", "6", "0")
     assert meta["key_fingerprint"] == runs.key_fingerprint(KEY)
     assert rows(con, "SELECT DISTINCT source_page FROM runs") == [(0,)]
 
@@ -251,6 +253,97 @@ def test_same_seed_and_start_different_runs_kept_apart(tmp_path):
     assert (info["solo_run_keys_multi_record"], info["primary_offers_dedup_removed"]) == (1, 9)
     assert (info["old_run_keys_split"], info["run_keys_split_from_old_key"],
             info["solo_old_run_keys_split"]) == (1, 3, 1)
+
+
+def test_retried_run_flagged_exact_copy_not(tmp_path):
+    # SCHEMA10_COPY is an exact double submission of SCHEMA10 (only run_hash and the _sts
+    # tag differ): not retried. A third copy of the run that ends two floors earlier (a
+    # restored save played on) makes the run_key retried. Pick-rate tables keep one copy as
+    # before; the win tables (spirometry.wins) drop the run.
+    from spirometry import wins
+    recs = lines()
+    retry = json.loads(recs[5])
+    retry["run_hash"] = "d" * 16
+    retry["map_point_history"] = [retry["map_point_history"][0][:4]]
+    _, con0 = build(tmp_path / "a", [recs])
+    assert rows(con0, f"SELECT retried FROM runs_dedup WHERE run_hash = '{SCHEMA10}'") \
+        == [(False,)]
+    assert not rows(con0, "SELECT count(*) FROM runs_dedup WHERE retried")[0][0]
+    early = wins.early_runs(con0, "necrobinder", ["v0.111.0"])
+    key = rows(con0, f"SELECT run_key FROM runs WHERE run_hash = '{SCHEMA10}'")[0][0]
+    assert early.run_key.tolist() == [key]
+    assert early.n_screens_reached.tolist() == [3]
+
+    info, con = build(tmp_path / "b", [recs, [json.dumps(retry)]])
+    assert rows(con, f"""SELECT run_hash, n_copies, retried FROM runs_dedup
+                         WHERE run_key = '{key}'""") == [(SCHEMA10, 3, True)]
+    assert rows(con, "SELECT run_hash FROM runs_dedup WHERE retried") == [(SCHEMA10,)]
+    assert (info["solo_run_keys_retried"], info["primary_run_keys_retried"]) == (1, 1)
+    # pick-rate tables unchanged: one copy, flagged
+    assert rows(con, "SELECT run_hash, count(*), bool_and(retried) FROM primary_offers "
+                     f"WHERE run_key = '{key}' GROUP BY 1") == [(SCHEMA10, 9, True)]
+    assert rows(con, "SELECT count(*) FROM primary_offers WHERE retried") == [(9,)]
+    # win tables: gone
+    assert wins.early_runs(con, "necrobinder", ["v0.111.0"]).empty
+    assert wins.early_offers(con, "necrobinder", ["v0.111.0"]).empty
+
+
+@pytest.mark.parametrize("field", ["win", "was_abandoned"])
+def test_retried_when_one_copy_is_null(tmp_path, field):
+    # min/max skip NULLs: without the coalesce in RETRIED_SQL, a copy with win (or
+    # was_abandoned) missing next to one that has it would look like agreement.
+    recs = lines()
+    copy = json.loads(recs[5])
+    copy["run_hash"] = "d" * 16
+    del copy[field]
+    _, con = build(tmp_path, [recs[:5] + [recs[5]], [json.dumps(copy)]])
+    assert rows(con, f"SELECT run_hash, {field} FROM runs WHERE run_key = "
+                     f"(SELECT run_key FROM runs WHERE run_hash = '{SCHEMA10}') ORDER BY 1") \
+        == [(SCHEMA10, False), ("d" * 16, None)]
+    assert rows(con, "SELECT run_hash FROM runs_dedup WHERE retried") == [(SCHEMA10,)]
+
+
+def test_retried_sql_nulls():
+    # The same rule on every column it compares, floors_reached included (the parser always
+    # fills floors_reached, so only SQL can make it NULL): one NULL copy -> retried; all
+    # NULL, or all equal -> not.
+    con = duckdb.connect()
+    con.execute("""CREATE TABLE r AS SELECT * FROM (VALUES
+        ('a', true, 10, false), ('a', true, 10, false),          -- exact copies
+        ('b', true, 10, false), ('b', NULL, 10, false),          -- win NULL in one
+        ('c', true, 10, false), ('c', true, NULL, false),        -- floors NULL in one
+        ('d', true, 10, false), ('d', true, 10, NULL),           -- abandoned NULL in one
+        ('e', NULL, NULL, NULL), ('e', NULL, NULL, NULL),        -- all NULL
+        ('f', true, 10, false))                                  -- one record
+        t(run_key, win, floors_reached, was_abandoned)""")
+    got = rows(con, f"""SELECT DISTINCT run_key, {runs.RETRIED_SQL} FROM r
+                        WINDOW k AS (PARTITION BY run_key) ORDER BY 1""")
+    assert got == [("a", False), ("b", True), ("c", True), ("d", True), ("e", False),
+                   ("f", False)]
+
+
+def test_deck_size_before(tmp_path):
+    # SCHEMA10 (Necrobinder, A10): starting deck 10 + Ascender's Bane. A removal on floor 3
+    # (with the card gone from the final deck) lowers the deck size from floor 4 on and
+    # leaves the starting deck unchanged; the floor's own gains count from the next floor.
+    rec = json.loads(lines()[5])
+    floors = rec["map_point_history"][0]
+    gained = [len(f["player_stats"][0].get("cards_gained") or []) for f in floors]
+    _, con = build(tmp_path / "a", [[json.dumps(rec)]])
+    start = runs.standard_start_deck("CHARACTER.NECROBINDER", 10)
+    assert start == 11
+    assert rows(con, "SELECT deck_size_start, final_deck_size FROM run_players") == [
+        (start, start + sum(gained))]
+    expect = {f + 1: start + sum(gained[:f]) for f in range(len(floors))}
+    got = rows(con, "SELECT DISTINCT floor, deck_size_before FROM card_offers ORDER BY 1")
+    assert got == [(f, expect[f]) for f, _ in got] and len(got) == 3
+
+    removed = rec["players"][0]["deck"].pop(0)
+    floors[2]["player_stats"][0]["cards_removed"] = [{"id": removed["id"]}]
+    _, con = build(tmp_path / "b", [[json.dumps(rec)]])
+    assert rows(con, "SELECT deck_size_start FROM run_players") == [(start,)]
+    got2 = dict(rows(con, "SELECT DISTINCT floor, deck_size_before FROM card_offers"))
+    assert got2 == {f: n - (f > 3) for f, n in got}
 
 
 def test_workers_pages_and_rebuild_overwrite(tmp_path):

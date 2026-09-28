@@ -37,7 +37,7 @@ import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-PARSER_VERSION = "1.6.0"
+PARSER_VERSION = "1.7.0"
 REF = pathlib.Path("reference")
 SALT_ENV = "SPIROMETRY_SALT"
 SALT_FILE = pathlib.Path(".spirometry_salt")
@@ -62,6 +62,12 @@ ENTITY_RE = re.compile(r'"((?:EVENT|ENCOUNTER|MONSTER)\.[^"]*)"')
 ENTITY_LISTS = {"EVENT": "events", "ENCOUNTER": "encounters", "MONSTER": "monsters"}
 MPT_SOURCE = {"monster": "combat", "elite": "elite", "boss": "boss", "ancient": "ancient",
               "shop": "shop", "rest_site": "rest_site", "treasure": "treasure"}
+# Starting deck sizes, checked against deck_size_start on 2 fetched pages (2026-09-28): every
+# one of 1,411 solo runs without modifiers matched (Ascender's Bane in the final deck of
+# every A5+ run whose implied start was one card larger).
+STARTING_DECK = {"CHARACTER.IRONCLAD": 10, "CHARACTER.SILENT": 12, "CHARACTER.DEFECT": 10,
+                 "CHARACTER.REGENT": 10, "CHARACTER.NECROBINDER": 10}
+ASCENDERS_BANE_FROM = 5
 ROOM_SOURCE = {"monster": "combat", "elite": "elite", "boss": "boss", "event": "event",
                "shop": "shop", "rest_site": "rest_site", "treasure": "treasure"}
 
@@ -86,7 +92,7 @@ SCHEMAS = {
     "run_players": pa.schema([
         ("run_hash", S), ("run_key", S), ("source_page", I32), ("source_line", I32),
         ("player_idx", I32), ("player_hash", S), ("character", S),
-        ("final_deck_size", I32), ("final_relic_count", I32),
+        ("final_deck_size", I32), ("final_relic_count", I32), ("deck_size_start", I32),
     ]),
     "card_offers": pa.schema([
         ("run_hash", S), ("run_key", S), ("source_page", I32), ("source_line", I32),
@@ -96,7 +102,7 @@ SCHEMAS = {
         ("list_n_picked", I16), ("screen_size", I16), ("set_idx", I16),
         ("card_id", S), ("upgraded", B), ("enchantment", S), ("enchantment_amount", I32),
         ("picked", B), ("set_picked_any", B), ("in_card_list", B), ("is_mod_card", B),
-        ("is_mod_enchantment", B),
+        ("is_mod_enchantment", B), ("deck_size_before", I32),
     ]),
     "shop_offers": pa.schema([
         ("run_hash", S), ("run_key", S), ("source_page", I32), ("source_line", I32),
@@ -260,6 +266,21 @@ def neow_start(mph):
     return any(r.get("model_id") == "EVENT.NEOW" for r in first.get("rooms") or [])
 
 
+def deck_change(st):
+    """Net change in a player's deck size on one floor: cards gained minus cards removed
+    (cards_transformed replaces a card by another and changes nothing)."""
+    return len(st.get("cards_gained") or []) - len(st.get("cards_removed") or [])
+
+
+def standard_start_deck(character, ascension):
+    """The game's starting deck size: 10 cards (Silent 12), plus Ascender's Bane from
+    ascension 5. Used only to check deck_size_start (build_info), never to set it."""
+    base = STARTING_DECK.get(character)
+    if base is None or ascension is None:
+        return None
+    return base + (ascension >= ASCENDERS_BANE_FROM)
+
+
 def strip_card(cid):
     return cid[5:] if cid.startswith("CARD.") else cid
 
@@ -322,11 +343,24 @@ def parse_run(run, line, page, line_no, ctx, out):
         platform_type=run.get("platform_type"), mod_entities=mod_entities(line, entities),
         record_digest=hashlib.blake2b(line.encode(), digest_size=8).hexdigest())
 
+    # Deck size at the start of each floor: the starting deck (final deck - every card gained
+    # + every card removed; transforms swap one card for one) plus gains minus removals on
+    # earlier floors. Gains and removals on the floor itself (its own reward pick included)
+    # count from the next floor on.
+    net = {pid: 0 for pid in pidx}
+    for act in mph:
+        for fl in act:
+            for st in fl.get("player_stats") or []:
+                pid = st.get("player_id")
+                net[pid] = net.get(pid, 0) + deck_change(st)
+    deck = {p.get("id"): len(p.get("deck") or []) - net.get(p.get("id"), 0) for p in players}
+
     for i, p in enumerate(players):
         out["run_players"].add(**base, player_idx=i, player_hash=phash[p.get("id")],
                                character=p.get("character"),
                                final_deck_size=len(p.get("deck") or []),
-                               final_relic_count=len(p.get("relics") or []))
+                               final_relic_count=len(p.get("relics") or []),
+                               deck_size_start=deck[p.get("id")])
 
     # Lasting Candy: held from its floor_added_to_deck in the final relics, or from the floor
     # it was picked/bought if it was later removed (then it's not in the final relics).
@@ -375,9 +409,12 @@ def parse_run(run, line, page, line_no, ctx, out):
                         if size else None,
                         in_card_list=cid in cards, is_mod_card="-" in cid,
                         is_mod_enchantment=ench.get("id") is not None
-                        and ench.get("id") not in enchs)
+                        and ench.get("id") not in enchs,
+                        deck_size_before=deck.get(pid))
                 if src == "shop":
                     shop_rows(out["shop_offers"], base, who, loc, st, cc, solo, cards)
+                if pid in deck:
+                    deck[pid] += deck_change(st)
                 if LASTING_CANDY in (st.get("relics_removed") or []):
                     candy_dyn[pid] = False
                     if cf is not None and cf <= floor:
@@ -417,6 +454,15 @@ def shop_rows(tab, base, who, loc, st, cc, solo, cards):
 
 
 # ------------------------------------------------------------------------------ pages
+
+def deck_start_check(con):
+    """(solo unmodded records checked, records whose deck_size_start isn't standard)."""
+    got = con.execute("""
+        SELECT p.character, r.ascension, p.deck_size_start
+        FROM runs r JOIN run_players p USING (run_hash)
+        WHERE r.n_players = 1 AND NOT r.is_custom AND NOT r.is_modded""").fetchall()
+    return len(got), sum(standard_start_deck(c, a) != n for c, a, n in got)
+
 
 _CTX = {}
 
@@ -530,7 +576,11 @@ def table_stats(out_dir):
     those extra records would add without runs_dedup. old_run_keys_split /
     solo_old_run_keys_split: (seed, start_time) pairs, the run_key up to parser 1.5.0, that
     now hold more than one run_key (different runs the old key merged), over all records /
-    solo records; run_keys_split_from_old_key: the run_keys in those pairs (all records)."""
+    solo records; run_keys_split_from_old_key: the run_keys in those pairs (all records).
+    solo_run_keys_retried / primary_run_keys_retried: retried run_keys (runs_dedup.retried)
+    among solo records / in the primary population (the runs win analyses drop).
+    deck_start_checked / deck_start_nonstandard: solo records without modifiers or mods, and
+    those whose deck_size_start isn't the game's starting deck (standard_start_deck)."""
     g = lambda t: f"read_parquet('{out_dir / t / '*.parquet'}')"
     con = duckdb.connect()
     for t in TABLES:
@@ -539,6 +589,11 @@ def table_stats(out_dir):
     solo_multi = con.execute("""
         SELECT count(*) FROM (SELECT run_key FROM runs WHERE n_players = 1
                               GROUP BY run_key HAVING count(*) > 1)""").fetchone()[0]
+    solo_retried, primary_retried = con.execute(f"""
+        SELECT count(*) FILTER (WHERE r.n_players = 1),
+               count(*) FILTER (WHERE {PRIMARY_RUN_FILTER})
+        FROM runs_dedup r WHERE r.retried""").fetchone()
+    deck_players, deck_nonstandard = deck_start_check(con)
     old_split, runs_split, solo_old_split = con.execute("""
         WITH k AS (SELECT seed, start_time, count(DISTINCT run_key) AS n,
                           count(DISTINCT run_key) FILTER (WHERE n_players = 1) AS n_solo
@@ -586,32 +641,48 @@ def table_stats(out_dir):
             "primary_offers_dedup_removed": primary_removed,
             "old_run_keys_split": old_split, "run_keys_split_from_old_key": runs_split,
             "solo_old_run_keys_split": solo_old_split,
+            "solo_run_keys_retried": solo_retried, "primary_run_keys_retried": primary_retried,
+            "deck_start_checked": deck_players, "deck_start_nonstandard": deck_nonstandard,
             **dict(zip(["runs_not_released", "runs_before_release", "runs_not_neow_start",
                         "runs_modded", "runs_uploader_tag", "runs_player_token_absent",
                         "runs_player_token_present", "runs_mod_entity",
                         "runs_mod_entity_only"], flags))}
 
 
-# The primary population (SPIROMETRY.md, Audit decisions), on offers o of runs r.
-PRIMARY_FILTER = f"""
+# The primary population (SPIROMETRY.md, Audit decisions): the run-level part on runs r
+# (spirometry.wins starts from it), and the whole filter on offers o of runs r.
+PRIMARY_RUN_FILTER = """
     r.n_players = 1 AND NOT r.is_custom AND NOT r.is_modded
-      AND r.released AND NOT r.before_release AND r.neow_start
+      AND r.released AND NOT r.before_release AND r.neow_start"""
+PRIMARY_FILTER = f"""{PRIMARY_RUN_FILTER}
       AND o.source IN {COMBAT_SOURCES} AND NOT o.is_mod_card"""
+
+# A retried run: copies of one run_key that differ in win, floors reached or abandonment
+# (same seed and start time; most likely a restored save played on). Pick-rate tables keep
+# one copy as usual; win analyses (spirometry.wins) drop the run. Co-op copies and exact
+# double submissions agree on all three, so they aren't retried.
+RETRIED_SQL = """(
+        min(coalesce(win::INT, -1)) OVER k <> max(coalesce(win::INT, -1)) OVER k
+        OR min(coalesce(floors_reached, -1)) OVER k <> max(coalesce(floors_reached, -1)) OVER k
+        OR min(coalesce(was_abandoned::INT, -1)) OVER k
+           <> max(coalesce(was_abandoned::INT, -1)) OVER k)"""
 
 # primary_offers takes runs from runs_dedup, so a solo run uploaded twice (same run_key,
 # different run_hash) counts once: the record runs_dedup keeps, first by (page, line).
 VIEWS = f"""
 CREATE VIEW runs_dedup AS
-    SELECT * EXCLUDE (rn), n_copies FROM (
-        SELECT *, row_number() OVER w AS rn, count(*) OVER (PARTITION BY run_key) AS n_copies
-        FROM runs WINDOW w AS (PARTITION BY run_key ORDER BY source_page, source_line))
+    SELECT * EXCLUDE (rn) FROM (
+        SELECT *, row_number() OVER w AS rn, count(*) OVER k AS n_copies,
+               {RETRIED_SQL} AS retried
+        FROM runs WINDOW w AS (PARTITION BY run_key ORDER BY source_page, source_line),
+                         k AS (PARTITION BY run_key))
     WHERE rn = 1;
 CREATE VIEW card_offers_dedup AS
     SELECT o.* FROM card_offers o SEMI JOIN runs_dedup d USING (run_hash);
 CREATE VIEW primary_offers AS
     SELECT o.*, o.source = 'event_combat' AS event_fight, r.build_id, r.branch,
            r.ascension, r.win, r.was_abandoned, r.abandoned_at_neow, r.start_time,
-           r.uploader_tag
+           r.uploader_tag, r.retried
     FROM card_offers o JOIN runs_dedup r USING (run_hash)
     WHERE {PRIMARY_FILTER};
 """

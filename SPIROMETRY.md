@@ -352,11 +352,20 @@ run_hash); the build finishes the other pages and exits 1.
   `has_player_token` (NULL when the record has no `player_token` key, i.e. its page was
   downloaded before ~2026-09-25), `uploader_hash` (hashed token). `source_page` /
   `source_line` locate the raw record.
-- `run_players`: one row per record × player (`player_hash`, `character`).
+- `run_players`: one row per record × player (`player_hash`, `character`,
+  `final_deck_size`, `final_relic_count`, `deck_size_start` from parser 1.7.0: the
+  starting deck implied by the final deck, see `card_offers.deck_size_before`).
 - `card_offers`: one row per `card_choices` entry, every source, with `source`, `set_idx`
   (combat/elite/boss/`event_combat` screens; NULL when the list can't be split), `set_picked_any`,
   `upgraded`, `enchantment`, `enchantment_amount` (as recorded, unclipped), `in_card_list`,
-  `is_mod_card`, `is_mod_enchantment`. `card_id` has no `CARD.` prefix.
+  `is_mod_card`, `is_mod_enchantment`. `card_id` has no `CARD.` prefix. Parser 1.7.0 adds
+  `deck_size_before`: the player's deck size at the start of the offer's floor = starting
+  deck + cards gained − cards removed on earlier floors. The starting deck is the final
+  deck − every `cards_gained` + every `cards_removed` over the run; `cards_transformed`
+  swaps one card for one and doesn't count. Gains and removals on the offer's own floor
+  (its reward pick, a shop removal) count from the next floor, so the second screen of a
+  two-screen floor has the same value as the first. For description (pick rate against deck
+  size), not as a control: deck size is partly caused by earlier picks.
 - `shop_offers`: solo shops as the list plus purchases (`origin = 'gained'`, `picked` =
   bought); co-op shops as recorded, `usable = false`.
 - `offers_with_version` (parser 1.4.0, when `reference/card_versions.csv` exists):
@@ -369,7 +378,10 @@ run_hash); the build finishes the other pages and exits 1.
   949-page tables, differing in character or ascension) get different keys. Up to parser
   1.5.0 it was `seed|start_time` only. Every `run_key` value changed with 1.6.0: anything
   keyed on an older `run_key` has to be regenerated.
-- Views: `runs_dedup` (first record per `run_key`, with `n_copies`), `card_offers_dedup`,
+- Views: `runs_dedup` (first record per `run_key`, with `n_copies`, and from parser 1.7.0
+  `retried`: the `run_key`'s copies differ in `win`, `floors_reached` or `was_abandoned`,
+  most likely a restored save played on; co-op copies and exact double submissions agree
+  on all three), `card_offers_dedup`,
   `primary_offers` (the primary population below: solo, no modifiers, not modded, released
   build, not before release, Neow start; combat/elite/boss rewards plus event-then-fight
   floors with `event_fight = true`; no mod cards; abandoned runs kept with
@@ -377,7 +389,9 @@ run_hash); the build finishes the other pages and exits 1.
   `primary_offers` (and so `offers_with_version`) takes its runs from `runs_dedup`: a solo
   run uploaded twice (same `run_key`, different `run_hash`) counts once, as the record
   `runs_dedup` keeps (first by page, line). The population filters apply to that record,
-  and its `uploader_tag` is the one the offers carry.
+  and its `uploader_tag` is the one the offers carry. `primary_offers` also carries
+  `retried` (parser 1.7.0); pick-rate tables keep retried runs (one copy), win tables
+  (`spirometry.wins`) drop them.
 - `build_info` also counts runs not released, before release, not starting at Neow, modded,
   tagged, and with `player_token` absent/present, runs with a mod event/encounter/monster
   (`runs_mod_entity`) and runs flagged by that marker alone (`runs_mod_entity_only`), plus
@@ -387,6 +401,11 @@ run_hash); the build finishes the other pages and exits 1.
   collisions it now separates: `old_run_keys_split` (`(seed, start_time)` pairs, the old
   key, that now hold more than one `run_key`), `run_keys_split_from_old_key` (the
   `run_key`s in them) and `solo_old_run_keys_split` (the pairs split among solo records).
+  Parser 1.7.0 adds `solo_run_keys_retried` and `primary_run_keys_retried` (retried
+  `run_key`s among solo records / in the primary population: the runs win analyses drop),
+  and `deck_start_checked` / `deck_start_nonstandard` (solo records without modifiers or
+  mods, and those whose `deck_size_start` isn't the game's starting deck: 10 cards, Silent
+  12, plus Ascender's Bane from ascension 5).
 
 On the 2 fetched pages, 0.55% of combat reward lists (0.19% of `primary_offers` rows)
 couldn't be split; none of the 966 split multi-screen lists had two picks in one screen.
@@ -408,6 +427,16 @@ different order; characters and ascension never differ within one); 0 keys split
 split is tested on the fixture only.
 Not yet verified on the full snapshot: how often a solo run is uploaded twice, and what
 differs between the copies (`_sts`, `player_token`).
+Parser 1.7.0 on 2 pages fetched 2026-09-28 (`start=2026-05-01` and `start=2026-07-01`,
+2,000 records): 0 retried `run_key`s (0 solo multi-record keys at all; the 54 retried runs
+are from the 949-page tables, not yet counted by the parser). Deck size: the implied
+starting deck is the game's (10, Silent 12, +1 Ascender's Bane from A5) on all 1,405 solo
+records without modifiers or mods; every A5+ run whose start was one card larger had
+Ascender's Bane in its final deck. Custom runs (e.g. Sealed Deck) start smaller. 53 co-op
+players have an implied start of 0 or 1 (an empty or near-empty final `deck` in the
+record; not checked further, co-op is outside the primary population). In
+`primary_offers`, `deck_size_before` runs 8–156 (median 19) and rises from about 11 at
+floor 2 to about 31 at floor 44.
 
 ## Phase 5 tooling (`spirometry.did`)
 
@@ -421,7 +450,12 @@ cached card list for colors).
   `block`, `picked`, `upgraded`, `act`, `ascension`, `group` (tagged / untagged, from the
   copy `runs_dedup` keeps), `screen_id` (run_key|floor|set_idx, or |list when set_idx is
   NULL), `start_time`, `week` (whole weeks from the first after-build's release date),
-  `build_id`, `uploader_hash`. Categorical columns to keep memory down.
+  `build_id`, `uploader_hash`, `set_picked_any` (the player took a card on the offer's
+  screen; NA for lists that couldn't be split; added to the default columns for
+  `picked_screens_only`). Categorical columns to keep memory down. `extra_cols=True` adds
+  where the offers come from: `source`, `map_point_type`, `floor`, `event_fight`,
+  `list_len`, `set_idx` (for breaking down the extra offers of Patter, Sculpting Strike and
+  The Scythe by act, floor type and event fights).
 - `control_cards(card_patch_id, drop_behavior_flags=False, df=...)`: same-color cards seen
   in the window minus the treated card and `control_exclusions` (and
   `control_behavior_flags` if asked).
@@ -451,7 +485,14 @@ cached card list for colors).
   the comparison for clustering), se_iid, ci95, `max_week_after` (the setting, None when
   unset) and `after_week_max` (latest after-block week in the fit data), counts and the
   four pick rates. pyfixest drops singleton fixed-effect cells;
-  `n_singletons_dropped` counts them.
+  `n_singletons_dropped` counts them. Two robustness options (both passed through by
+  `run_all`, both reported back in the result): `card_act_fe` (card_id^upg^act in place of
+  card_id^upg and the act term: each card its own act profile, for cards whose value
+  depends on when in the run they're offered) and `picked_screens_only` (only offers on
+  screens where the player took a card, `set_picked_any`; offers from unsplit lists leave
+  too. Most of the fall in pick rate through a run is whether to take anything at all, so
+  this estimand is the choice among cards, free of that deck-size effect. Applied after
+  `drop_shared_screens`, which sees screens as offered).
 - `fit_event_study(df, card_patch_id, weeks=(-6, 8), ref_week=-1)` (step 2b): the treated
   card's gap per (week, block) cell, week^block^group fixed effects, the before-block
   `ref_week` cell omitted; weeks outside the range binned into the end weeks; before-build
@@ -480,6 +521,138 @@ gives se/se_hc = 1.30 (while se/se_iid is 1.01: the two effects cancel). An effe
 often after the patch, all six Uncommon cards flag against all controls (|z_binom| ≈ 25–30)
 and none against the Uncommon controls (|z_binom_rarity| ≤ 3.3, |z_spread_rarity| ≤ 2).
 Not yet run on real pages: the 2 pages fetched for this have no v0.103.2 runs.
+New options (synthetic): a card picked 30 points more in act 3 whose after-block offers
+shift toward act 3 shows a fake effect with one act term and none with `card_act_fe`;
+`picked_screens_only` keeps exactly the screens with a pick. On 2 pages fetched 2026-09-28
+(`start=2026-05-01`, `start=2026-07-01`) the first stable window runs end to end with
+`extra_cols`, `card_act_fe` and `picked_screens_only`, and the smoke test passes.
+
+## Win-effect tooling (`spirometry.wins`)
+
+Phase 5 steps 4–5: within a build, does picking card X make a run more likely to win?
+Tables only. Input: a read-only connection to `runs.duckdb` (parser 1.7.0 or later:
+`runs_dedup.retried`, `run_players`, `offers_with_version`) and `builds.csv` (week) and the
+cached card list (colors).
+
+**Design.** Players pick cards because their run is going well (or badly), so runs that
+picked X aren't comparable with runs that didn't. Which cards a reward screen offers is
+the game's RNG: the offer is an experiment with non-compliance. Intent-to-treat (ITT) = win
+rate of runs offered X against runs not offered X; the IV estimate = ITT / (how much being
+offered raises picking X). "Offered X anywhere in the run" is not random: runs that survive
+longer see more reward screens, so they are offered more cards and also win more. So only
+the **first K reward screens** of each run count (combat, elite, boss and event-fight
+rewards, in floor order then `set_idx`; default K = 3). Nearly every run reaches them, and
+within them the offers are the RNG's. A run is `offered` when X was on any of its first K
+screens and `picked` when it took X on one of them. **The treatment is "took X on one of
+the first K screens"**, not "has X at some point": later rewards, shops and events don't
+count, so a run not offered X early that gets it later has `picked` = 0. The estimate is
+the effect of getting X early, against what those runs did otherwise (including getting it
+later). The survival still in the design is the share of runs that reach screen K
+(`reach_share`); by default runs that don't are left out. On 2 fetched pages
+(2026-09-28): 97.3% of 1,277 runs reach screen 3 (per build × character 87.5–100%). A
+synthetic test shows the point of the design: with no effect and later screens reached
+mostly by skilled runs, "ever offered" gives a clearly positive ITT and the first 3
+screens don't.
+
+**Runs that don't reach screen K** (`include_short_runs=False`, the default). Every such
+run died before screen K, so it lost, and it had fewer screens on which to be offered X.
+Keeping them with their unreached screens counted as "not offered" puts the early deaths
+mostly in the "not offered" group, for every card: a fake positive ITT. In a synthetic
+null with 16% of runs dying before screen 3 (less skilled runs more often), keeping them
+gave ITT +0.08 (z ≈ 13) and IV +0.19; the default gave ≈ 0. On the 2 pages, 35 of 1,277
+runs don't reach screen 3 and all 35 lost. Dropping them biases the estimate only if an
+early offer changes the chance of reaching screen K; the default is then the effect among
+runs that reach screen K. For the total effect, deaths before screen K included, load the
+data with **K = 1**: every run that was offered anything reached screen 1, so nothing is
+selected after the offer (fewer offered runs: less power). Synthetic check: when an offer
+of X on screen 1 or 2 raises the chance of dying before screen 3 by 15 points (and X does
+nothing else), the default gives ≈ 0 (no fake effect among runs reaching screen 3) and
+K = 1 gives about −0.03, the total effect.
+
+**Population.** Primary runs (`runs.PRIMARY_RUN_FILTER` on the record `runs_dedup` keeps),
+minus abandoned runs (no outcome; abandoned at Neow included) and retried runs
+(`runs_dedup.retried`). Runs whose first K screens include a list that couldn't be split
+into screens (`ambiguous_screens`) are kept in the tables and left out of the fits. On the
+2 pages that is 0 runs: the 13 unsplit lists in non-abandoned primary runs all come at
+screen 8 or later (12 are 4-card lists with none of Lasting Candy, Prayer Wheel, Driftwood
+or White Star; 1 a 7-card list with Driftwood; no relic in common beyond starter
+relics). Runs without ascension, or on a build with no release date in `builds.csv` (no
+week), are left out of the fits.
+
+**Tables.** Built in DuckDB (screens numbered with a window function, one aggregate per
+(run, card)); pandas gets one row per run and one per (run, card offered on the first K
+screens), categorical keys, for one character (or all) and a list of builds. A function,
+not a view: a view would still be materialised whole by the notebook, while the function
+returns only the selection.
+- `early_runs(con, character, builds, K=3)`: one row per run: `run_key`, `build_id`,
+  `branch`, `character`, `ascension`, `group` (tagged / untagged as in `did`), `week` (whole
+  weeks from the run's own build's release date), `start_time`, `win`, `floors_reached`,
+  `n_screens_reached` (≤ K), `ambiguous_screens`, `screen_sources` (e.g.
+  `combat>combat>elite`).
+- `early_offers(con, character, builds, K=3)`: one row per (run, card) offered on the first
+  K screens: `offered_screens`, `offered`, `picked`, `first_screen` (1..K),
+  `upgraded_offer`, plus the run columns.
+- `load_early(...)`: both at once (offers without the run columns repeated), the input to
+  the estimators. `reach_share(runs)`: runs, runs reaching screen K and their share, and
+  ambiguous runs, per build and character.
+
+**Estimators** (linear probability models with pyfixest, errors heteroskedasticity-robust
+(`"hetero"`, HC1), not clustered: every fit has exactly one row per run, since
+`runs_dedup` has one record per `run_key` and it joins `run_players` on player 0; the load
+and `run_frame` refuse a table with a repeated `run_key`):
+- `itt(data, card)`: `win ~ offered | build^group + ascension + week^build`. Returns beta,
+  se, raw win rates offered / not offered, `n_runs` (after pyfixest's singleton drop),
+  `n_offered`, `n_picked`.
+- `first_stage(data, card)`: `picked ~ offered`, same fixed effects. Coefficient, se, F
+  (robust Wald F = (coef/se)², one instrument), `weak` (F < 10), raw pick rate of offered
+  runs. Runs not offered X can't pick it on those screens (one-sided non-compliance).
+- `iv(data, card)`: 2SLS `win ~ 1 | fe | picked ~ offered`. The effect of taking X on one
+  of the first K screens for runs that take it when offered (with one-sided
+  non-compliance, the effect on those who took it). Also returns the first-stage F.
+- `naive(data, card)`: `win ~ picked | fe` on all runs, the confounded comparison, for
+  contrast only (`among_offered=True`: took it vs. passed on it).
+- `run_all_cards(con, character, builds)`: all four for every card of the character's
+  color with at least `min_offered` (500) offered runs among the fit's runs, one row per
+  card, one data load; a failed fit gets `error`.
+
+Fixed effects: build^group (win rates differ by build and uploader group; tagged players
+win about 8 points more), ascension (difficulty), week^build (win rates drift within a build
+over calendar time; see Audit decisions). In the formulas they appear as `build_group`,
+`asc`, `build_week` (precomputed combined columns).
+
+**`screen_mix`** (off by default; Phil decides after the full-table results). The offer is
+random only given the screen type: elites offer rarer cards, and taking an early elite is a
+choice that may track skill. On the 2 pages, runs with an elite among their first 3
+screens saw about 2–3.5 times as many Rare offers there (Regent 0.25 against 0.072 per run,
+Necrobinder 0.154 against 0.076), and the same number of Commons and Uncommons. The early-
+elite share doesn't rise with ascension there (9.8% at A0–4 and at A5–10). Synthetic
+check: when skilled runs take early elites more often and elites offer a rare card ten
+times as often, a rare card with no effect shows ITT +0.057 (z ≈ 9) and IV +0.14 without
+`screen_mix` and ≈ 0 with it; its error bars widen ×1.10 (ITT) and ×1.23 (IV). A common
+card is ≈ 0 both ways (slightly negative without it: elites displace it), error bars
+unchanged. On the pages, the two versions differ by a median 0.04–0.05 SE for Commons and
+Uncommons (no Rare had enough offered runs to fit).
+
+**Options** (every estimator; `run_all_cards` passes them on): `K` (a check: screens are
+counted when the data is loaded, so a different K means `load_early(..., K=...)`),
+`include_short_runs` (keep runs that reached fewer than K screens, unreached screens as
+not offered: biased upward, see above; a check only), `group` (within one uploader
+group), `pooled_groups` (no group terms), `screen_mix` (adds the first K screens' sources
+as a fixed effect: elites offer rarer cards and taking an elite early is a choice; on the 2
+pages 9.6% of runs had an elite among their first 3 screens).
+
+**What the IV estimate means.** Being offered X on a screen also means not being offered
+the card it displaced, and a run not offered X early can still take it later; the estimate
+is the effect of taking X early against what those runs would otherwise have done (take
+another card or skip, or get X later). It also conditions on reaching screen K (see above;
+K = 1 is the check).
+
+Checked on synthetic runs (`tests/test_wins.py`, a hidden skill that raises both picking
+and winning, 20,000 runs): with a planted effect of +0.10 the IV recovers it within 2 SE,
+naive is biased upward by more than 3 SE, and ITT ≈ effect × first-stage coefficient; with
+no effect IV ≈ 0 and naive stays positive; a card almost never taken gives F < 10 and the
+flag. On 2 fetched pages it runs end to end (smoke test); the estimates mean nothing at
+that size.
 
 ## Phase 5 results, first pass (2026-09-26)
 
@@ -565,7 +738,7 @@ points between its blocks (median −0.3), and the moves go together by characte
 character's block term absorbs. The card-specific part is worth about 0.1 point of pick rate
 at most, against effects of 1–15 points: timing composition doesn't bias the estimates.
 A cleaner estimand for later: the DiD on screens where something was picked (choice among
-cards, free of the deck-size effect).
+cards, free of the deck-size effect; tooling: `fit_did(picked_screens_only=True)`).
 
 **Robustness** (shift of each check from the main estimate, in main-estimate SEs):
 
@@ -613,7 +786,8 @@ offers); Untouchable's is about zero.
 
 **Open.** Why the second patch has no dose-response (fit per patch within each uploader
 group; by kind of main field); why Patter, Sculpting Strike and The Scythe are offered more
-often; the DiD restricted to screens where something was picked; the heavy-uploader check
+often (tooling: `load_window(extra_cols=True)`); the DiD restricted to screens where
+something was picked (`picked_screens_only`); the heavy-uploader check
 and the rerun after the rebuild on the full snapshot (parser 1.6.0).
 
 ## Audit decisions (first pass: 949 pages, submissions to ~2026-07-19)

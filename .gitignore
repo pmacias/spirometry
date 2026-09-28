@@ -22,3 +22,6 @@ venv/
 .vscode/
 .idea/
 *.log
+
+# Scratch notebooks (quick checks, not part of the record)
+notebooks/scratch*.ipynb

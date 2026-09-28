@@ -209,9 +209,13 @@ README with results, portfolio card on pmacias.github.io.
    dose-response (slope 0.02 ± 0.31 against 1.44 ± 0.19); (d) robust SEs: clustering adds
    about 3%; (e) dedup key fixed in parser 1.6.0. Next: (g) fit per patch within each
    uploader group (the tooltip hypothesis) and by kind of main field; (h) where the flagged
-   cards' extra offers come from (act, floor type, event fights); (i) after the rebuild,
-   which copy of a duplicated run to keep (copies often differ in floors or win: e.g. keep
-   the one with most floors); (f) the heavy-uploader check after the rebuild.
+   cards' extra offers come from (act, floor type, event fights); (i) duplicated runs:
+   answered (mostly retries from a restored save; not the downloads). Rule: keep one copy
+   for pick rates, drop runs whose copies differ in win, floors or abandonment from win
+   analyses (in the win-tooling brief); (j) a robustness row: the DiD on screens where
+   something was picked (choice among cards, no deck-size effect); (k) optional: card × act
+   fixed effects (timing balance says it can't change a conclusion); (f) the heavy-uploader
+   check after the rebuild.
 8. When official act 4 (or other new content) ships: re-cache the game lists for the new
    builds and switch the mod-entity rule to per-build lists (see SPIROMETRY.md, custom and
    modded runs).
@@ -488,3 +492,9 @@ README with results, portfolio card on pmacias.github.io.
   patches compare at the same horizon; all-weeks estimates are the check.
 - Clustering measured against robust SEs: median 1.03, range 1.00–1.20 on the 43 tweaks.
   (An earlier "about 8%" was an approximation from iid ratios and is superseded.)
+- Retried runs (Phil): solo runs whose copies share seed and start time but differ in win,
+  floors reached or abandonment (a restored save, 54 on the 949-page tables) are dropped from
+  win analyses; pick-rate analyses keep one copy.
+- Deck size / timing: no control added. Offers are random in timing and the act mix moved
+  alike for a character's cards (checked per tweak); deck size is partly caused by earlier
+  picks, so it is described, not controlled for.

@@ -495,11 +495,17 @@ runs that share a seed and start time, which the 1.5.0 dedup would merge (fixed 
 characters and ascension).
 Offers per stable build: v0.99.1 2.46M (62k runs), v0.103.2 2.98M (78k), v0.103.3 1.89M
 (51k), v0.107.1 3.95M (106k). v0.103.3 is not thin.
-Copies of the same solo `run_key` often differ in the game itself: of the 106, the win
-differs in 24, floors reached in 70, abandonment in 33 (the 18 collisions included). So a
-duplicated run is not always one record uploaded twice; possibly a run reloaded from a save,
-or uploaded before it ended. Keeping the first copy by page can keep the less complete one.
-Negligible at 0.02%; recheck on the 1.6.0 tables.
+Duplicated solo runs (`notebooks/scratch_queries.ipynb`, git-ignored): of the 106, 18 are
+collisions and 88 are true duplicates (177 copies). None straddle the pages the two download
+processes fetched twice (873–948 and 950+), and only 3 differ in the SlayTheStats tag. Two
+kinds remain: exact double submissions (e.g. the same record a few lines apart on one page),
+and **retries**: 54 of the 88 differ in floors reached (e.g. one copy ends at floor 17 after
+11 minutes, the other reaches floor 49 after 44; or 43 floors, then 12). Same seed and start
+time, so most likely the player died or quit, restored a save (or used an undo mod) and
+played on; each attempt wrote a run file. For pick rates keeping one copy is fine (the
+shared early screens are the same). For win analyses, keeping the most complete copy would
+keep the retry that went better, so runs whose copies differ in win, floors reached or
+abandonment are dropped from win analyses altogether (54 runs).
 
 **Offer-rate check.** 3 of 43 flagged against all controls: Patter in both patches (offer
 share +17% and +12% against the controls' median) and Sculpting Strike (+11%). All three
@@ -548,6 +554,19 @@ at p < 0.01 on single odd weeks; it ignores correlation between weeks, so the sl
 Old-build offers after the release: 8,315 in week 0 and about 1,500 spread over all later
 weeks, so mostly release-day timing.
 
+**When in the run.** Picking falls off through a run (v0.103.2 + v0.107.1, by floor): the share
+of screens where the player takes nothing rises within each act and resets at each boss:
+act 1 from 5% (floor 2) to 19% (floor 15), act 2 about 26% → 33%, act 3 about 39–43%. The
+pick rate per offered card falls correspondingly (32% → 27%, 24% → 22%, about 20%), and is
+close to (1 − skip rate) / 3. So nearly all of the decline is "take anything at all?", not
+"which card?". Timing balance: each tweak's share of act-3 offers moved by −3.0 to +1.7
+points between its blocks (median −0.3), and the moves go together by character and patch
+(first-patch Silent cards all about −1.6; second-patch cards mostly up), which the
+character's block term absorbs. The card-specific part is worth about 0.1 point of pick rate
+at most, against effects of 1–15 points: timing composition doesn't bias the estimates.
+A cleaner estimand for later: the DiD on screens where something was picked (choice among
+cards, free of the deck-size effect).
+
 **Robustness** (shift of each check from the main estimate, in main-estimate SEs):
 
 | Check | Median shift | Note |
@@ -594,8 +613,8 @@ offers); Untouchable's is about zero.
 
 **Open.** Why the second patch has no dose-response (fit per patch within each uploader
 group; by kind of main field); why Patter, Sculpting Strike and The Scythe are offered more
-often; which copy of a duplicated run to keep; the heavy-uploader check and the rerun after
-the rebuild on the full snapshot (parser 1.6.0).
+often; the DiD restricted to screens where something was picked; the heavy-uploader check
+and the rerun after the rebuild on the full snapshot (parser 1.6.0).
 
 ## Audit decisions (first pass: 949 pages, submissions to ~2026-07-19)
 

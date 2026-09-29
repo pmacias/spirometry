@@ -200,6 +200,17 @@ check, including the heavy-uploader check (top 10 uploaders; no effect). Headlin
 (first patch 23 of 26 clearly nonzero; dose-response slopes 1.47 and 0.03 by patch). New:
 two upgrade-only placebos (Royalties, Untouchable v0.107.1) about 2.6σ below zero; tagged-only
 fits diverge more. Results in SPIROMETRY.md ("Phase 5 results").*
+*Strength-change tooling, step 5 (CC, PR): `spirometry.strength` (block_estimates,
+strength_change, strength_all, save/load, balance_check, balance_all): the win-effect fits
+on each window's before and after builds for the treated card and every control, the
+change with its se, net of the controls' median, z-scores against the controls' spread and
+against the card's own se, plus a robustness version against the controls matched on
+first stage in each block (`_m`); balance checks for the offer. Tested on synthetic runs (planted
+change, null, level drift, shared drift, pick-rate-only change, weak first stage, balance
+with random and skill-dependent offers). On 2 fetched pages the first window runs end to
+end (estimates blank or meaningless at that size); the second has no v0.103.3 runs. Not yet
+run on the full tables. Next: Phil runs `strength_all` (main, `K=1`, `screen_mix=True`) and
+`balance_all` per character and block in a notebook.*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -253,7 +264,10 @@ README with results, portfolio card on pmacias.github.io.
    Royalties and Untouchable (v0.107.1), about 2.6σ below zero on the rerun (drift in the
    thin second-patch before block is the first candidate); (m) recheck "When in the run"
    at fixed floors on the new tables. Win effects (steps 4–5): tooling in
-   `spirometry.wins`, ready to run.
+   `spirometry.wins`, ready to run. Strength change (step 5, IV before vs. after, net of
+   unchanged cards): tooling in `spirometry.strength`, ready to run; about 40 tweaks get a
+   row (43 solo-estimable minus 3 upgrade-only), so the notebook should say how many rows
+   were tested; partial pooling (step 7) is the planned answer to multiple comparisons.
 8. When official act 4 (or other new content) ships: re-cache the game lists for the new
    builds and switch the mod-entity rule to per-build lists (see SPIROMETRY.md, custom and
    modded runs). The cached lists for v0.99.0 and v0.110.1 are empty: re-fetch them or fall
@@ -601,3 +615,73 @@ README with results, portfolio card on pmacias.github.io.
   primary runs, superseded by the v0.110.1 hotfix the next day) is thin; the reference
   tables show no card change on v0.110.1, so by the pooling rule it pools with v0.110.1
   (to confirm against the patch notes; it only matters for the beta designs).
+- Strength-change tooling (CC's choices, open to review):
+  - Its own module, `spirometry.strength` (wins.py stays within one set of builds). It
+    reuses `wins`' run frame, fixed effects, formulas and errors; `block_estimates` builds
+    the run frame once per block and gives the same numbers as `wins.itt`/`first_stage`/
+    `iv` (tested).
+  - Differencing two fits, not one stacked fit. The blocks are different builds, so
+    different runs, and `build^group` and `week^build` are already block-specific: a
+    stacked fit with the ascension term also interacted with the block is the same
+    regression (same ITT change, same se up to HC1's dof factor; tested), and
+    pyfixest's IV refuses more than one endogenous variable, so a stacked IV would need
+    hand-rolled 2SLS for nothing. A stacked fit with a shared ascension term would
+    assume ascension affects winning the same way in both blocks, which the drift within
+    builds doesn't support.
+    "Net of controls" is then the median of the controls' changes (robust to a few odd
+    controls), not a regression term.
+  - "Unusual next to controls": all of `z_spread` (against the controls' MAD), `z_se`
+    (against the card's own se, the median's se added: with 8 controls in the synthetic
+    test, one null seed gave z_se 3.1 without it (raw z 1.8); the median's se is about
+    0.2 MAD with 40 controls) and `z_total` (both: own se and the spread between cards
+    beyond noise, τ).
+    Computed for every card, so the controls' distribution of z's is the reference;
+    `controls_share_abs_z_se_gt2` says whether the se's hold up (about 0.05 expected).
+  - ITT and first-stage changes are reported beside the IV change, with the same net-of-
+    controls columns. The ITT change is not a strength change when the pick rate moves
+    (ITT = first stage × effect); the first-stage change is the pick-rate change on the
+    same runs.
+  - Weak first stage (F < 10) in either block, for the treated card or a control: the IV
+    change is blank with `iv_reason` (block and F), the control is left out of the median
+    and counted (`n_controls_skipped_weak`); ITT and first-stage changes stay. Fewer than
+    `min_offered` (500) offered runs in a block: every change blank, counted
+    (`n_controls_skipped_few`). Fit errors counted as `n_controls_error`.
+  - Thin before blocks (the second patch's v0.103.3): no special handling; `n_runs_*`,
+    `n_offered_*` and `n_picked_*` per block are in the summary, and the se's carry the
+    thinness. No pooling with v0.103.2 (Phase 5 first-pass decision: v0.103.3 alone).
+  - Multiple comparisons: nothing adjusted in the tooling; the summary has one row per
+    tweak (43, 3 of them skipped as upgrade-only), so the notebook can count. Partial
+    pooling (step 7) is the planned answer.
+  - Upgrade-only tweaks (Serpent Form v0.103.2, Royalties and Untouchable v0.107.1) are
+    out for now, listed in the summary with `skipped`.
+  - Controls = color cards offered in either block, minus the treated card and
+    `control_exclusions` (`did.control_cards`); a control seen in one block only gets a
+    blank change with the reason.
+  - `balance_check`'s joint test is conditional on build (the fits have build fixed
+    effects; a pooled block's builds may offer a card at different rates without harming
+    the design), HC1 Wald by hand (numpy) rather than a pyfixest call; levels with fewer
+    than 20 runs are pooled into the reference level (single-run cells fit exactly and
+    made the robust test reject 22 of 47 cards on the 2 pages; 2 after pooling).
+    `screen_sources` is tested separately (`p_screens`): failing it points to
+    `screen_mix`, not to a broken RNG.
+  - Controls matched on first stage (Phil, review round): `_m` columns for iv and itt,
+    the all-controls columns stay the headline. k = 20 nearest controls by first stage,
+    matched in each block separately; the net is then taken on each block's levels
+    (card − matched median) and differenced, since the two blocks' sets need not be the
+    same cards. CC's choices, open to review: the controls' strength differences between
+    the two sets enter `net_m` and are counted in its error (each block's median se from
+    the MAD of the matched controls' estimates, which includes the spread between
+    cards); eligible controls are those with a non-weak fit in that block (a change in
+    both blocks isn't required); every card gets the columns, a control matched against
+    the others; no `fs` matched columns (matching on fs makes them ≈ 0 by construction).
+    Caveat: if strength rises with pick rate, a card taken more after a buff meets
+    stronger controls after than before, which pulls `net_m` toward zero or below.
+    Synthetic Parry-like case (k = 3): all-controls net +0.20 (z 2.4), matched −0.01.
+  - Complier shift (Phil): the IV is the effect for runs that take the card when offered;
+    after a buff the takers change, so an IV change can be a change in who takes it.
+    Documented next to the ITT caveat; `fs_change` measures it.
+  - Runtime: about 0.1 s a fit on 30,000-run synthetic blocks. Full tables: at most
+    9 (character, window) groups × ~88 color cards × 2 blocks × 3 fits ≈ 4,700 fits,
+    fewer after `min_offered`; one per (card, block) is shared by the window's tweaks.
+    Estimated 10–15 minutes per option set (not yet verified); `strength_all` prints
+    each window's elapsed time to check it; `save`/`load` cache the result as parquet.

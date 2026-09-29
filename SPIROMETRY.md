@@ -668,6 +668,126 @@ no effect IV ≈ 0 and naive stays positive; a card almost never taken gives F <
 flag. On 2 fetched pages it runs end to end (smoke test); the estimates mean nothing at
 that size.
 
+### Strength change across a patch (`spirometry.strength`)
+
+Phase 5 step 5, for research question 3: after a patch, is taking card X on one of the
+first K reward screens worth more or less for winning than before, compared with the
+character's unchanged cards? Tables only. Same input as `spirometry.wins`, plus
+`windows.csv` (`level = card_patch`) and `tweak_sizes.csv`.
+
+- `block_estimates(data, cards, ...)`: `wins.itt`, `first_stage` and `iv` for a list of
+  cards on one block's `load_early` data, one row per card (the run frame is built once;
+  the numbers equal the `wins` functions', tested). A card with fewer than `min_offered`
+  (500) offered runs, or whose fit fails, gets blank estimates and a `reason`; `weak`
+  (F < 10) is reported, not acted on.
+- `strength_change(con, card_patch_id, ...)`: loads the treated card's character once for
+  the window's `before_builds` and once for its `after_builds`, fits the treated card and
+  every control (`did.control_cards`, `control_exclusions` applied, color cards offered in
+  either block) in each block, and returns `Strength(blocks, changes, summary)`. `blocks`:
+  one row per (card, block): ITT, first stage (coef, se, F, `weak`), IV, `n_runs`,
+  `n_offered`, `n_picked`, raw rates. `changes`: one row per card: for `iv`, `itt` and `fs`
+  (first stage) the before, after, change (after − before) and its se
+  = sqrt(se_before² + se_after²), valid because the two blocks are different runs (checked:
+  a `run_key` in both blocks is refused; a stacked fit with every fixed effect interacted
+  with the block gives the same ITT change and se, tested). Net of unchanged cards: `net`
+  = change − the controls' median change; `z_raw` (change / se, against zero), `z_spread`
+  (net / the controls' scaled MAD, as `offer_rate_check`), `z_se` (net / sqrt(se² + the
+  median's se²), median se = 1.2533 MAD / √n), `z_total` (net / sqrt(that² + τ²), τ² = MAD²
+  minus the controls' median se², the spread between cards beyond noise). Computed for
+  every row, so the controls' own z's show what "unusual" looks like. `summary`: the
+  treated card's row with the controls' median, its se, MAD, τ, how many controls have a
+  change, how many were skipped (`n_controls_skipped_few`, `n_controls_skipped_weak`,
+  `n_controls_error`), `controls_share_abs_z_se_gt2` (about 0.05 if the se's are right and
+  the controls didn't change), runs, offered and picked runs per block, the treated card's
+  balance p-values per block, and the options (`K`, `min_offered`, `include_short_runs`,
+  `group`, `pooled_groups`, `screen_mix`; also echoed in `blocks` and `changes`). A block
+  with F < 10 blanks the IV change (`iv_reason` says which block and the F); the weak
+  control is counted and left out of the median. ITT and first-stage changes are kept
+  (they don't divide by the first stage).
+- **Controls matched on first stage** (robustness; columns with suffix `_m`, for `iv` and
+  `itt`; the all-controls columns stay the headline). The k controls (`k_match`, default
+  20, all if fewer) whose first stage in a block is closest to the card's, chosen
+  separately in each block because the card's own first stage moves with the patch
+  (Parry: about 13% → 28% against controls near 27%). `net_m` = (card − median of the
+  matched controls, after) − (card − median of the matched controls, before);
+  `matched_change` is the difference of the two medians. Because the two blocks' matched
+  sets can hold different cards, the controls' own strength differences enter `net_m`;
+  its errors count them: `z_se_m` adds each block's median se (1.2533 × MAD of the matched
+  controls' estimates / √k, so it includes the spread between those cards), `z_spread_m`
+  divides by sqrt(MAD_before² + MAD_after²), `z_total_m` adds the spread beyond noise. If
+  card strength rises with pick rate (likely), a card taken more after a buff is compared
+  with stronger controls after than before, which pulls `net_m` down: read it as a check
+  on the headline, not a replacement. The summary gives `k_match`, the controls actually
+  used per block (`iv_n_matched_before`/`_after`) and their median first stage
+  (`iv_fs_matched_before`/`_after`). Every card gets the columns (a control is matched
+  against the other controls, never itself).
+- **Reading the three changes.** The IV change is the strength change. The ITT change is
+  first stage × effect, so it also moves when only the pick rate moves: a card players
+  take three times as eagerly, same effect, shows a clear ITT change and no IV change
+  (synthetic, below). `fs_change` is the pick-rate change on the same runs (the first
+  stage's scale, not the DiD's). **The IV change can also be a change in who takes the
+  card.** The IV estimate is the effect for runs that take the card when it is offered.
+  After a big buff more runs take it, and the added takers may differ from the earlier
+  ones, so a change in the IV can be a change in who takes the card and not only in what
+  the card does; `fs_change` shows how much the taker group moved. A drift that acts per offer on every card alike (e.g. a
+  changed card that shares the screens) is common on the ITT scale and divided by each
+  card's first stage on the IV scale, so the IV net of all controls removes it only for
+  cards taken about as often as the median control; the matched columns handle cards
+  taken much more or less often.
+- `strength_all(con, ...)`: `strength_change` for every solo-estimable numeric tweak in
+  `tweak_sizes.csv`, one data load per (character, before builds, after builds), and one
+  fit per (card, block) shared by that window's tweaks. The 3 upgrade-only tweaks (Serpent
+  Form v0.103.2, Royalties and Untouchable v0.107.1) are not estimated: they get a summary
+  row whose `skipped` says so (the treatment "took the card early" doesn't separate the
+  upgraded card). The summary carries the `tweak_sizes` columns. With `verbose=True` (the
+  default) it prints each window's elapsed time and number of fits. `save(res, dir, name)` /
+  `load(dir, name)` write and read `strength_<name>_{blocks,changes,summary}.parquet`.
+- `balance_check(data, card)`: the independence check from `notebooks/iv_primer.ipynb`: on
+  the runs the fits use, offered vs. not-offered runs on ascension, week, uploader group,
+  build and `screen_sources`. A table of standardized differences (difference over the
+  pooled sd) with a χ² test of independence per covariate, and `p_joint`: an HC1 Wald test,
+  in a regression of `offered` on build dummies plus ascension, week-within-build and
+  group-within-build dummies, that the last three are all zero (conditional on build
+  because the fits have build fixed effects; `p_build` separately). Levels with fewer than
+  20 runs are pooled (a level with a run or two fits exactly, and the robust test then
+  rejects for no reason: on the 2 fetched pages 22 of 47 Silent cards "failed" before
+  pooling, 2 after). `p_screens`: χ² across `screen_sources`; a rare card fails it when
+  elites offer it more, which is what `screen_mix` is for.
+- `balance_all(data, character, ...)`: `balance_check` for every card with at least
+  `min_offered` offered runs; the share whose `p_joint` < 0.05 against the 5% chance gives
+  (one-sided binomial p; the cards share runs and compete for slots, so a guide only), and
+  the same for `p_screens`.
+
+Checked on synthetic runs (`tests/test_strength.py`: two blocks of 30,000 runs, 10 cards,
+three screens each, hidden skill raising both picking and winning, C9 changed in the same
+patch and excluded from the 8 controls). One seed each:
+
+| Case | IV change ± se | Controls' median | z_se (net) | Other |
+|---|---|---|---|---|
+| Planted +0.05 → +0.10 | +0.037 ± 0.019 | +0.007 | 1.1 | within 2 se of +0.05 |
+| No change | +0.008 ± 0.019 | −0.001 | 0.4 | 10 seeds: raw z −2.1 to 1.8; controls' raw z sd 1.06 (80 draws) |
+| Win rates −10 points, every run | +0.024 ± 0.019 | −0.013 | 1.6 | a level drift cancels within each block, raw or net |
+| Every card's effect +0.13 (C9 nerfed) | +0.133 ± 0.041 (z 3.3) | +0.127 | 0.1 | raw moves, net ≈ 0; 10 seeds: raw z 1.6–4.9, net z_se −1.4 to 2.2 |
+| Pick weight ×3, effect unchanged | +0.010 ± 0.017 | −0.006 | 0.9 | first stage +0.126 (z 29), ITT net z 2.2 |
+| Weak first stage after (F = 2.0) | blank, `iv_reason` | +0.031 | – | the raw after-block IV is +66; weak control C8 counted as skipped |
+| Parry-like: pick weight 0.3 → 0.9, same effect, plus the C9 drift | +0.298 ± 0.085 | +0.096 | 2.4 | matched (k = 3): `net_m` −0.007, z_se_m −0.1; 5 seeds: all-controls net +0.13 to +0.26, `net_m` −0.09 to +0.14 |
+
+Balance: with random offers `p_joint` = 0.77 and 0 of 10 cards fail; with iv_primer's
+"offer depends on skill" (X's offer weight exp(0.5 u), ascension rising with skill)
+`p_joint` < 1e-15, ascension's standardized difference 0.56, all 10 cards fail (the other
+cards lose the slots X takes), and the IV shows +0.097 ± 0.013 for a card with no effect.
+Runtime: 54 fits on 30,000-run blocks in about 7 s (≈ 0.1 s a fit). On the full
+tables, 10–15 minutes per option set is an estimate, not yet verified (`strength_all`
+prints each window's time).
+
+On 2 fetched pages (2026-09-29, `start=2026-05-01` and `start=2026-07-01`,
+`min_offered=5`): the first stable window (v0.99.1 → v0.103.2) runs end to end for all 26
+tweaks (25 fitted, Serpent Form skipped as upgrade-only), as do `K=1` and
+`screen_mix=True`; 23–83 runs a block per character, so nearly every change is blank
+(few offered runs, weak first stages, collinear fits). The second window has no runnable
+before block: the pages hold no v0.103.3 runs (`n_runs_before` = 0 for all 15). Nothing
+there means anything at that size.
+
 ## Phase 5 results (rerun 2026-09-29, 1,393-page tables)
 
 From `notebooks/02_pick_rate_did.ipynb` (version 3) on the run tables built 2026-09-28 from

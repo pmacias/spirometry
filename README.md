@@ -28,7 +28,7 @@ See [PLAN.md](PLAN.md) for the research questions and methods.
 | [SPIROMETRY.md](SPIROMETRY.md) | Reference: data sources, record structure, known data issues |
 | [CLAUDE.md](CLAUDE.md) | Standing instructions for Claude Code sessions |
 | `notes/` | Investigation notes: patch history endpoints (`patch_history.md`), run file structure and table proposal (`run_schema.md`), patch notes vs. card tables (`patch_notes_crosscheck.md`), card versions and DiD windows (`treatment_table.md`) |
-| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens) |
+| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens); `strength.py` the strength change across a patch (IV before vs. after, net of unchanged cards) and the offer balance checks |
 | `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
 | `scripts/audit_extract.py` | Interim: compact audit tables from the snapshot (runs, aggregated offer counts) into `data/audit/` |
 | `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power. `02_pick_rate_did.ipynb`: offer-rate check, pick-rate DiD, event studies, robustness, dose-response. `iv_primer.ipynb`: a simulation showing why the naive win effect is biased and how the offer as an instrument fixes it |
@@ -133,7 +133,18 @@ wins.reach_share(wins.early_runs(con, None, ["v0.103.2"]))  # share of runs reac
 results = wins.run_all_cards(con, "ironclad", ["v0.103.2"])  # every card with >= 500 offered runs
 ```
 
-`SPIROMETRY_SMOKE_DB=path/to/runs.duckdb python -m pytest tests/test_did.py tests/test_wins.py`
+Strength change across a patch (`spirometry.strength`: the win-effect fits before vs. after
+each numeric tweak, net of unchanged cards) and the offer balance checks:
+
+```python
+from spirometry import strength
+res = strength.strength_change(con, "PARRY@v0.103.2/patch")  # Strength(blocks, changes, summary)
+res = strength.strength_all(con)                  # every solo-estimable numeric tweak
+strength.save(res, "data/analysis", "main")       # parquet; strength.load(...) reads it back
+strength.balance_all(data, "ironclad")            # is the offer unrelated to pre-offer traits?
+```
+
+`SPIROMETRY_SMOKE_DB=path/to/runs.duckdb python -m pytest tests/test_did.py tests/test_wins.py tests/test_strength.py`
 also runs the smoke tests on a build from fetched pages.
 
 ## Data

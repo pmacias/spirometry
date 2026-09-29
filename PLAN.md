@@ -200,6 +200,14 @@ check, including the heavy-uploader check (top 10 uploaders; no effect). Headlin
 (first patch 23 of 26 clearly nonzero; dose-response slopes 1.47 and 0.03 by patch). New:
 two upgrade-only placebos (Royalties, Untouchable v0.107.1) about 2.6σ below zero; tagged-only
 fits diverge more. Results in SPIROMETRY.md ("Phase 5 results").*
+*Anticipation check (CC, PR): `reference/beta_exposure.csv` (`python -m
+spirometry.exposure`: first beta, lead days, beta steps per tweak) and `did`'s
+`old_version_builds`, `load_anticipation`, `anticipation_check`, `anticipation_weekly`,
+`anticipation_all`: does the treated card's gap move at its first-beta date on builds that
+still have the old card? Tested on synthetic offers (ramp, change at stable only, steady
+drift, uninformative cases); on 2 fetched pages all 43 run and all are uninformative. Not
+yet run on the full tables. Next: Phil runs `anticipation_all` (with `main` = the saved
+`run_all` result) and the weekly tables.*
 *Strength-change tooling, step 5 (CC, PR): `spirometry.strength` (block_estimates,
 strength_change, strength_all, save/load, balance_check, balance_all): the win-effect fits
 on each window's before and after builds for the treated card and every control, the
@@ -685,3 +693,33 @@ README with results, portfolio card on pmacias.github.io.
     fewer after `min_offered`; one per (card, block) is shared by the window's tweaks.
     Estimated 10–15 minutes per option set (not yet verified); `strength_all` prints
     each window's elapsed time to check it; `save`/`load` cache the result as parquet.
+- Anticipation check (CC's choices, open to review):
+  - `beta_exposure.csv` from its own module (`spirometry.exposure`), since it reads the
+    event tables `tweaks` doesn't. First beta = the earliest `first_beta` of the
+    card-patch's member events (for revised changes, the first step; Phil's suggestion).
+    Upgrade-only tweaks list the upgrade field's steps. `other_events_after_first_beta`
+    counts the card's non-member events with a release date from the first-beta date to
+    before the stable date (0 for all 43).
+  - The widened before window is the default of `anticipation_check`
+    (`widen=False` for the window's before builds only), and only for this check. Rule:
+    stable builds with identical card versions for every card of the color, among the
+    builds some card-patch window uses. Confirmed from `card_versions.csv`: v0.103.2 and
+    v0.103.3 differ on 0 cards (every color) in version and in card events (tested); they differ
+    in bug-fix behavior events on Bad Luck, Stardust and Summon Forth, which are dropped
+    from the controls by default. v0.98.x also match v0.99.1 but are left out (launch
+    builds, outside every window).
+  - Thresholds: 2,000 treated offers and 3 days with a treated offer on each side
+    (arguments). 2,000 a side gives a pick-rate se of about 1.4 points at a 25% pick rate.
+    Rough count (not yet verified): 17 of 43 informative at real sizes.
+  - Split by the run's UTC start date (as `before_release`), never by build; runs started
+    on or after the new stable's release dropped (`until_stable`). For the second patch
+    the pre-beta side is v0.103.2 only and the post side is mostly v0.103.3, so a
+    build-level change shows up as anticipation; `treated_offers_by_build` shows it and
+    `builds=["v0.103.2"]` keeps it within one build. No build fixed effect in the main
+    call (it would absorb most of the split).
+  - Beyond the brief: `total_implied` and `share_before_release`. `ratio_to_main` is kept
+    as asked, but under anticipation beta_main is itself too small by
+    main_postbeta_share × beta_postbeta (synthetic ramp: ratio 0.51–0.62 while the true
+    share is 0.5).
+  - A steady drift through the beta date is returned as a nonzero `beta_postbeta`; not
+    corrected. `pre_slope` and the weekly table are the diagnostics.

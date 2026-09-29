@@ -332,6 +332,22 @@ details and counts in `notes/treatment_table.md`):
   upgrade-only (base `vars.ExtraDamage` changes too; noted). Serpent Form and Royalties have
   no upgraded ratio (their base value isn't in the change tables); Untouchable v0.107.1's
   uses base block 6 from its v0.103.2 card-patch.
+- `beta_exposure.csv` — one row per solo-estimable numeric tweak (43; 3 upgrade-only,
+  flagged), built by `python -m spirometry.exposure` from `tweak_sizes.csv`, `windows.csv`
+  (`members`), `change_events.csv`, `change_event_fields.csv` and `builds.csv`:
+  `first_beta_build` / `first_beta_date` (the earliest `first_beta` among the card-patch's
+  member events: for Parry, Untouchable v0.103.2 and Reflect, revised on a later beta, the
+  first step), `stable_build` / `stable_date`, `lead_days` (stable − first beta),
+  `step_field` (the main field; the upgrade field for upgrade-only tweaks), `n_beta_steps`
+  and `beta_steps` (`build:date:old>new; ...`), `member_events`, `revised_or_reverted`
+  (from `change_events.status`), `other_events_after_first_beta` / `other_event_ids` (the
+  card's other events, any kind, from the first-beta date to before the stable date),
+  `beta_timing_note` (member field rows whose beta placement the treatment tables mark as
+  uncertain). Blank where a source doesn't say. Every beta step matches Phil's reading of
+  the same files (2026-09-29); no tweak has other events in its lead time and none has an
+  uncertain beta placement. 21 of the 26 first-patch tweaks first appeared on v0.100.0
+  (2026-03-19), two days after v0.99.1; lead times are 7–28 days (first patch) and 14–56
+  days (second).
 
 Caveats: update-history types every entry "Beta Patch" (including stable v0.103.2) and has
 no entries for stable-only hotfixes (v0.98.1–v0.98.3, v0.99.1, v0.103.1). The wiki fills
@@ -540,6 +556,87 @@ shift toward act 3 shows a fake effect with one act term and none with `card_act
 `picked_screens_only` keeps exactly the screens with a pick. On 2 pages fetched 2026-09-28
 (`start=2026-05-01`, `start=2026-07-01`) the first stable window runs end to end with
 `extra_cols`, `card_act_fe` and `picked_screens_only`, and the smoke test passes.
+
+**Anticipation check** (does the stable "before" period already contain the change?). Every
+change was on a beta build, with public notes, before its stable release; for 21 of the 26
+first-patch tweaks that is two days after v0.99.1 shipped. If stable players started picking
+differently when the beta appeared, part of the effect sits in the main design's before
+block and the DiD understates it. The check stays on builds where stable players still
+have the old card and splits them at the card's first-beta date:
+- `old_version_builds(card_patch_id, widen=True)`: stable builds on which every card of the
+  character has the same card version (`card_versions.csv`) as the window's before builds.
+  With `widen` (default), such builds that are before or after builds of some card-patch
+  window are added: v0.103.2 joins v0.103.3 for the second patch (identical versions on
+  every card of every color, checked in the tests); v0.98.x, identical to v0.99.1 but
+  outside every window per the audit, stay out, so the first patch uses v0.99.1 only.
+  Also returns the cards whose bug-fix behavior events differ between those builds (Bad
+  Luck, Stardust and Summon Forth between v0.103.2 and v0.103.3), which the check drops
+  from the controls by default (`drop_behavior_diff`).
+- `load_anticipation(con, card_patch_id, ...)`: those builds' offers, `block` = before /
+  after the first-beta date by the run's UTC start date (as `before_release`), `week` from
+  that date. `until_stable` (default) drops runs started on or after the new stable's
+  release (stragglers on an old build, when the new card is out). `main_postbeta_share`:
+  the share of the treated card's offers in the main design's before block (all dates)
+  from runs started on or after the beta date.
+- `anticipation_check(con, card_patch_id, ...)`: `fit_did`'s model with the split at the
+  beta date, `picked ~ treat_postbeta | (same fixed effects)`, clustered by run, controls as
+  `control_cards`. Returns `beta_postbeta`, se, ci, treated offers, all offers, runs and
+  days (distinct dates with a treated offer) on each side, first and last day, treated
+  offers per build and side, `status` / `reason`: `uninformative` when a side has fewer
+  than `min_offers` (2,000) treated offers or `min_days` (3) days (the fit still runs when
+  both sides have data; with none on a side there is no fit). Against the main design:
+  `beta_main` / `se_main` (refit, or passed in), `ratio_to_main` = beta_postbeta /
+  beta_main, `total_implied` = beta_main + main_postbeta_share × beta_postbeta (the total
+  move if the pre-release move is real: the main before block already carries that share
+  of it), `share_before_release` = beta_postbeta / total_implied; both ratios blank unless
+  |beta_main| > 2 se. `ratio_to_main` is not the share of the total move: with anticipation
+  the main DiD is itself too small. Diagnostics for drift: `pre_slope` (weekly slope of the
+  gap before the beta date) and `week_gap` (mean week of post-beta minus pre-beta treated
+  offers).
+- `anticipation_weekly(...)`: `fit_event_study` on the same data, weeks from the beta date
+  (week −1 the reference), range −6 to +8 clipped to where the old builds have data;
+  `week_start` and `first_beta_date` for a plot with a line at the beta date.
+- `anticipation_all(con, main=None, ...)`: every row of `beta_exposure.csv`, one data load
+  per (character, old builds), upgrade-only tweaks on upgraded offers (flagged); `main` = a
+  `run_all` result to take `beta_main` from instead of refitting. Options echoed as
+  columns; flat and parquet-ready.
+
+**Limitation: a steady drift looks like anticipation.** The split compares two periods, so
+a trend in the treated card that runs through the beta date gives `beta_postbeta` ≈ slope ×
+`week_gap` with no jump anywhere. Nothing corrects it. Read the weekly table (a straight
+line through the beta date, not a step) and `pre_slope`, which is noisy with the few
+pre-beta weeks the real data have.
+
+**Date vs. build.** For the second patch the two sides are largely different builds:
+before the beta date is v0.103.2 only; after it, the rest of v0.103.2 plus all of v0.103.3,
+which also brought bug fixes and a new player mix. The fixed effects have no build term, so
+a build-level change in how the treated card is picked, relative to the controls, shows up
+as anticipation. `treated_offers_by_build` shows the mix; `builds=["v0.103.2"]` keeps the
+comparison within one build. The first patch's sides are both v0.99.1 (no such issue),
+but its pre-beta side is 2 days for 21 tweaks. Old builds are played for weeks after they
+are replaced; `until_stable` drops runs started after the new stable is out, and the split
+is by start date, never by build.
+
+Checked on synthetic offers (`tests/test_anticipation.py`; old build 03-01 to 04-09, beta
+03-21, new stable 04-10, 4,000 old-build runs, a 12-point move D):
+- Linear ramp from the beta date to the stable date: `beta_postbeta` 0.051 ± 0.007
+  (truth D/2 = 0.06), `beta_main` 0.100 ± 0.005 (truth 0.75 D = 0.09: the before block is
+  half post-beta), `total_implied` 0.125 (truth 0.12), `share_before_release` 0.41 (truth
+  0.5), `ratio_to_main` 0.51 (truth 2/3; 0.51–0.62 over three seeds).
+- Change at the stable date only: `beta_postbeta` 0.000 ± 0.007, `share_before_release`
+  0.00, `beta_main` 0.112 ± 0.005.
+- Steady drift of 0.01 a week, no jump: `beta_postbeta` 0.030 ± 0.007 (= slope × week_gap
+  2.96), `share_before_release` 0.44: indistinguishable from anticipation by these
+  numbers. `pre_slope` 0.003 ± 0.006 (three pre-beta weeks can't see it); the weekly
+  table's coefficients lie on a line of slope ≈ 0.01.
+- A beta two days after the old build: `uninformative`, "2 days pre-beta (< 3)"; no data
+  before the beta date: no fit, reason "no treated offers in the before block".
+Rough count (not yet verified): with each build's offers (above) spread evenly over its
+time as the current stable and an equal share per card of a color, 17 of the 43 would be
+informative (3 first-patch: Glitterstream, Refine Blade, Leading Strike; 14 second-patch);
+rare cards are offered less than that, so probably fewer. On 2 fetched pages (2026-09-29)
+all 43 run end to end and all are uninformative (1–75 treated offers a side); the pages
+have v0.103.2 runs to 2026-05-18 and none on v0.103.3.
 
 ## Win-effect tooling (`spirometry.wins`)
 

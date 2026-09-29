@@ -100,17 +100,28 @@ COLUMNS = ["run_key", "card_id", "block", "picked", "upgraded", "act", "ascensio
 EXTRA_COLUMNS = ["source", "map_point_type", "floor", "event_fight", "list_len", "set_idx"]
 
 
-def load_block_data(con, color, before_builds, after_builds, ref=REF, extra_cols=False):
-    """Offers of one character's cards on the given builds. See load_window."""
-    before, after = before_builds.split(), after_builds.split()
+def _load_offers(con, color, builds, ref=REF, extra_cols=False):
+    """Offers of one character's cards on the given builds, without block and week."""
     cards = sorted(c for c, col in card_colors(ref).items() if col == color)
     extra = "".join(f", o.{c}" for c in EXTRA_COLUMNS) if extra_cols else ""
     df = con.execute(LOAD_SQL.format(extra=extra),
-                     [f"CHARACTER.{color.upper()}", before + after, cards]).df()
-    df["block"] = np.where(df.build_id.isin(after), "after", "before")
+                     [f"CHARACTER.{color.upper()}", list(builds), cards]).df()
     df["group"] = np.where(df.pop("tagged"), "tagged", "untagged")
+    return df
+
+
+def load_block_data(con, color, before_builds, after_builds, ref=REF, extra_cols=False):
+    """Offers of one character's cards on the given builds. See load_window."""
+    before, after = before_builds.split(), after_builds.split()
+    df = _load_offers(con, color, before + after, ref, extra_cols)
+    df["block"] = np.where(df.build_id.isin(after), "after", "before")
     t0 = release_date(after[0], ref)
     df["week"] = np.floor((df.start_time - t0).dt.total_seconds() / WEEK).astype("int16")
+    return _finish(df, extra_cols)
+
+
+def _finish(df, extra_cols=False):
+    """Types and column order shared by the loaders."""
     df["picked"] = df.picked.astype(bool)
     df["upgraded"] = df.upgraded.astype(bool)
     df["act"] = df.act.astype("int8")
@@ -459,3 +470,312 @@ def run_all(con, *, tweaks=None, ref=REF, **fit_kwargs):
     out = pd.DataFrame(rows)
     extra = ["beta_lo", "se_lo"] + [f"placebo_{k}" for k in PLACEBO_KEYS]
     return out.reindex(columns=list(out.columns) + [c for c in extra if c not in out])
+
+
+# -------------------------------------------------------------------------- anticipation
+
+MIN_ANTICIPATION_OFFERS = 2000   # treated offers needed on each side of the beta date
+MIN_ANTICIPATION_DAYS = 3        # days with treated offers needed on each side
+
+
+def exposure(card_patch_id, ref=REF):
+    """The card-patch's row in beta_exposure.csv (spirometry.exposure), as a dict."""
+    e = _csv(pathlib.Path(ref) / "beta_exposure.csv")
+    e = e[e.card_patch_id == card_patch_id]
+    if e.empty:
+        raise KeyError(f"{card_patch_id} is not in beta_exposure.csv")
+    return e.iloc[0].to_dict()
+
+
+def old_version_builds(card_patch_id, *, widen=True, ref=REF):
+    """Stable builds on which every card of the treated card's color has the same card
+    version (card_versions.csv) as on the window's before builds: the builds where stable
+    players still have the old card and the controls are unchanged too. widen=False: the
+    window's before builds only. widen=True (default): also any other stable build with
+    identical versions that is a before or after build of some card_patch window (the
+    builds the project uses; the launch builds v0.98.x, identical to v0.99.1 but outside
+    every window per the audit, stay out). Returns (builds in release order, cards of that
+    color whose behavior_event_ids differ between those builds: bug fixes that no card
+    version shows)."""
+    w = window(card_patch_id, ref)
+    color = card_colors(ref).get(w["card_id"], "")
+    before = w["before_builds"].split()
+    cv = _csv(pathlib.Path(ref) / "card_versions.csv")
+    cards = {c for c, col in card_colors(ref).items() if col == color}
+    cv = cv[cv.card_id.isin(cards)]
+    ver = cv.pivot(index="card_id", columns="build_id", values="version")
+    b = _csv(pathlib.Path(ref) / "builds.csv").set_index("build_id")
+    ref_ver = ver[before[0]]
+    for x in before[1:]:
+        if not (ver[x] == ref_ver).all():
+            raise ValueError(f"{card_patch_id}: before builds carry different versions")
+    builds = list(before)
+    if widen:
+        wins_ = _csv(pathlib.Path(ref) / "windows.csv")
+        used = set(" ".join(wins_[wins_.level == "card_patch"].before_builds + " "
+                            + wins_[wins_.level == "card_patch"].after_builds).split())
+        for x in ver.columns:
+            if (x not in builds and x in used and b.branch.get(x) == "stable"
+                    and (ver[x] == ref_ver).all() and (ref_ver != "").all()):
+                builds.append(x)
+    builds.sort(key=lambda x: b.release_date.get(x, ""))
+    return builds, behavior_differs(card_patch_id, builds, ref)
+
+
+def behavior_differs(card_patch_id, builds, ref=REF):
+    """Cards of the treated card's color whose behavior_event_ids (bug fixes no card
+    version shows) differ between `builds`."""
+    color = card_colors(ref).get(window(card_patch_id, ref)["card_id"], "")
+    cv = _csv(pathlib.Path(ref) / "card_versions.csv")
+    cards = {c for c, col in card_colors(ref).items() if col == color}
+    bh = cv[cv.card_id.isin(cards) & cv.build_id.isin(builds)].pivot(
+        index="card_id", columns="build_id", values="behavior_event_ids")
+    return sorted(bh.index[bh.nunique(axis=1) > 1])
+
+
+def load_anticipation(con, card_patch_id, *, widen=True, builds=None, until_stable=True,
+                      ref=REF):
+    """Offers of the treated card's character on the old-version stable builds
+    (old_version_builds, or `builds`), split at the card's first-beta date
+    (beta_exposure.csv): block = 'before' for runs whose UTC start date is before it,
+    'after' on or after it (as runs.before_release compares dates); week = whole weeks
+    from that date (negative before). until_stable=True drops runs started on or after the
+    first after-build's release (the new stable is out; those runs are stragglers on an
+    old build). Returns (df, info): df with load_window's columns, info with the builds,
+    dates, dropped counts, behavior-differing cards and main_postbeta_share (the share of
+    the treated card's offers in the main design's before block, all dates, from runs
+    started on or after the beta date: how much of the before block is post-beta)."""
+    w = window(card_patch_id, ref)
+    color = card_colors(ref).get(w["card_id"], "")
+    builds = list(builds) if builds is not None else old_version_builds(
+        card_patch_id, widen=widen, ref=ref)[0]
+    return _split(_load_offers(con, color, builds, ref), card_patch_id, builds,
+                  until_stable, widen, ref)
+
+
+def _side_counts(d, treated):
+    """Treated offers, runs and days (distinct UTC start dates with a treated offer) on
+    each side, and treated offers per build and side."""
+    t = d[d.card_id == treated]
+    out = {}
+    for side, blk in (("pre", "before"), ("post", "after")):
+        s = t[t.block == blk]
+        out[f"n_treated_offers_{side}"] = len(s)
+        out[f"n_runs_{side}"] = int(d.run_key[d.block == blk].nunique())
+        out[f"n_offers_{side}"] = int((d.block == blk).sum())
+        out[f"days_{side}"] = int(s.start_time.dt.normalize().nunique())
+        out[f"first_day_{side}"] = str(s.start_time.min().date()) if len(s) else ""
+        out[f"last_day_{side}"] = str(s.start_time.max().date()) if len(s) else ""
+    by = t.groupby(["build_id", "block"], observed=True).size()
+    out["treated_offers_by_build"] = "; ".join(
+        f"{b} {'pre' if k == 'before' else 'post'} {n}" for (b, k), n in by.items())
+    return out
+
+
+def _pre_slope(d, fe):
+    """Weekly slope of the treated card's gap before the beta date: picked ~ treated x
+    week on pre-beta offers, same fixed effects. NaN without two pre-beta weeks."""
+    p = d[~d.after].copy()
+    if p[p.is_treated].week.nunique() < 2:
+        return np.nan, np.nan
+    p["treated_week"] = p.is_treated * p.week.astype(float)
+    fit = _feols("picked ~ treated_week | " + " + ".join(fe), p)
+    return float(fit.coef()["treated_week"]), float(fit.se()["treated_week"])
+
+
+def anticipation_check(con, card_patch_id, *, data=None, min_offers=MIN_ANTICIPATION_OFFERS,
+                       min_days=MIN_ANTICIPATION_DAYS, beta_main=None, se_main=None,
+                       widen=True, builds=None, until_stable=True, drop_behavior_diff=True,
+                       upgraded=None, group=None, pooled_groups=False, ref=REF):
+    """Did stable players start picking the card differently when its change appeared on
+    a beta, while they still had the old card? On the old-version stable builds
+    (load_anticipation), the fit_did model with the split at the first-beta date in place
+    of the stable release: picked ~ treat_postbeta | (fit_did's fixed effects), errors
+    clustered by run_key, controls as control_cards. treat_postbeta = treated card, run
+    started on or after the first-beta date.
+
+    Returns a dict: beta_postbeta, se, ci_lo, ci_hi, treated offers / all offers / runs /
+    days (distinct dates with a treated offer) and first/last day on each side,
+    treated_offers_by_build, status ('informative', 'uninformative' or 'error') and reason.
+    Uninformative: fewer than `min_offers` treated offers or `min_days` days on a side (the
+    fit still runs when both sides have data, so the numbers are there to look at). With no
+    data on a side there is no fit.
+
+    Main design: beta_main / se_main (fit_did on the window; refit unless given),
+    ratio_to_main = beta_postbeta / beta_main (blank unless |beta_main| > 2 se_main), and
+    total_implied = beta_main + main_postbeta_share x beta_postbeta: if the move before
+    the stable release is real, the main DiD's before block already carries that share of
+    it, and the total move is this sum (approximate: it assumes the before block's
+    post-beta offers look like this check's post side). share_before_release =
+    beta_postbeta / total_implied, blank under the same rule.
+
+    Drift: a trend in the treated card that runs through the beta date also shows up as
+    beta_postbeta (about slope x week_gap). pre_slope / pre_slope_se (the weekly slope of
+    the gap before the beta date, when there are two pre-beta weeks) and week_gap (mean
+    week of the treated post-beta offers minus pre-beta) let the reader compare; nothing
+    is corrected. anticipation_weekly shows it by week.
+
+    widen / builds / until_stable: see old_version_builds and load_anticipation.
+    drop_behavior_diff: drop cards whose bug-fix behavior events differ between the
+    builds (e.g. Bad Luck, Stardust, Summon Forth between v0.103.2 and v0.103.3) from the
+    fit (a treated card among them is kept and flagged). upgraded / group /
+    pooled_groups: as in fit_did."""
+    df, info = data if data is not None else load_anticipation(
+        con, card_patch_id, widen=widen, builds=builds, until_stable=until_stable, ref=ref)
+    treated = info["card_id"]
+    out = dict(info, status="", reason="", beta_postbeta=np.nan, se=np.nan, ci_lo=np.nan,
+               ci_hi=np.nan, min_offers=min_offers, min_days=min_days,
+               drop_behavior_diff=drop_behavior_diff, upgraded=upgraded,
+               group=group or "", pooled_groups=pooled_groups)
+    differ = [c for c in info["behavior_differs"].split() if c != treated]
+    if drop_behavior_diff and differ:
+        df = df[~df.card_id.isin(differ)]
+    out["behavior_dropped"] = " ".join(differ) if drop_behavior_diff else ""
+    out["treated_behavior_differs"] = treated in info["behavior_differs"].split()
+    sub = df if upgraded is None else df[df.upgraded == upgraded]
+    if group is not None:
+        sub = sub[sub.group == group]
+    out.update(_side_counts(sub, treated))
+    why = []
+    for side in ("pre", "post"):
+        if out[f"n_treated_offers_{side}"] < min_offers:
+            why.append(f"{out[f'n_treated_offers_{side}']} treated offers {side}-beta "
+                       f"(< {min_offers})")
+        if out[f"days_{side}"] < min_days:
+            why.append(f"{out[f'days_{side}']} days {side}-beta (< {min_days})")
+    out["status"] = "uninformative" if why else "informative"
+    out["reason"] = "; ".join(why)
+    try:
+        d, _ = _subset(df, card_patch_id, upgraded=upgraded, group=group, ref=ref)
+        fe = _fixed_effects(d, group, pooled_groups)
+        fit = _feols("picked ~ treat_post | " + " + ".join(fe), d)
+        ci = fit.confint().loc["treat_post"].to_numpy(dtype=float)
+        out.update(beta_postbeta=float(fit.coef()["treat_post"]),
+                   se=float(fit.se()["treat_post"]), ci_lo=float(ci[0]), ci_hi=float(ci[1]),
+                   n_fit_offers=int(fit._N), **_rates(d),
+                   formula="picked ~ treat_postbeta | " + " + ".join(fe))
+        wk = d[d.is_treated]
+        out["week_gap"] = float(wk.week[wk.after].mean() - wk.week[~wk.after].mean())
+        out["pre_slope"], out["pre_slope_se"] = _pre_slope(d, [f for f in fe
+                                                               if "block" not in f])
+    except Exception as e:                          # e.g. no data on one side
+        out["status"] = "uninformative" if "no " in str(e) else "error"
+        out["reason"] = "; ".join(filter(None, [out["reason"], f"{type(e).__name__}: {e}"]))
+    if beta_main is None and con is not None:
+        try:
+            m = fit_did(load_window(con, card_patch_id, ref), card_patch_id,
+                        upgraded=upgraded, group=group, pooled_groups=pooled_groups,
+                        ref=ref)
+            beta_main, se_main = m["beta"], m["se"]
+        except Exception as e:
+            out["main_error"] = f"{type(e).__name__}: {e}"
+    out["beta_main"] = np.nan if beta_main is None else float(beta_main)
+    out["se_main"] = np.nan if se_main is None else float(se_main)
+    clear = abs(out["beta_main"]) > 2 * out["se_main"]
+    b, s = out["beta_postbeta"], info["main_postbeta_share"]
+    out["ratio_to_main"] = b / out["beta_main"] if clear else np.nan
+    out["total_implied"] = out["beta_main"] + s * b if np.isfinite(b) else np.nan
+    out["share_before_release"] = b / out["total_implied"] if clear else np.nan
+    return out
+
+
+def anticipation_weekly(con, card_patch_id, *, data=None, weeks=(-6, 8), widen=True,
+                        builds=None, until_stable=True, drop_behavior_diff=True,
+                        upgraded=None, group=None, pooled_groups=False, ref=REF):
+    """The treated card's gap to the controls by week from its first-beta date (week 0 =
+    the beta date's week), fit_event_study's model on load_anticipation's data: week -1
+    is the reference, weeks beyond `weeks` are binned into the end weeks, and the range is
+    clipped to the weeks the old-version builds have data for. Returns one row per week:
+    week, block ('before' / 'after' the beta date), coef, se, n_offers (treated), plus
+    week_start (date) and first_beta_date, for a plot with a line at the beta date."""
+    df, info = data if data is not None else load_anticipation(
+        con, card_patch_id, widen=widen, builds=builds, until_stable=until_stable, ref=ref)
+    differ = [c for c in info["behavior_differs"].split() if c != info["card_id"]]
+    if drop_behavior_diff and differ:
+        df = df[~df.card_id.isin(differ)]
+    lo = max(weeks[0], int(df.week.min()))
+    hi = min(weeks[1], int(df.week.max()))
+    es = fit_event_study(df, card_patch_id, weeks=(lo, hi), ref_week=-1, upgraded=upgraded,
+                         group=group, pooled_groups=pooled_groups, ref=ref)
+    tb = pd.Timestamp(info["first_beta_date"])
+    es["week_start"] = [str((tb + pd.Timedelta(weeks=int(w))).date()) for w in es.week]
+    es["first_beta_date"] = info["first_beta_date"]
+    es["card_patch_id"] = card_patch_id
+    return es
+
+
+def anticipation_all(con, *, tweaks=None, main=None, ref=REF, **kwargs):
+    """anticipation_check for every row of beta_exposure.csv (the 43 solo-estimable numeric
+    tweaks; or those listed in `tweaks`), one data load per (character, old-version builds);
+    the split is redone per tweak. Upgrade-only tweaks are fit on upgraded offers (as
+    run_all) and flagged. `main`: a run_all result to take beta_main / se_main from
+    (matched on card_patch_id; the same options should have been used); without it each
+    tweak's main DiD is refit. kwargs go to anticipation_check (min_offers, min_days, widen,
+    until_stable, drop_behavior_diff, group, pooled_groups) and are echoed as columns.
+    Returns one flat row per tweak (parquet-ready)."""
+    ex = _csv(pathlib.Path(ref) / "beta_exposure.csv")
+    if tweaks is not None:
+        ex = ex[ex.card_patch_id.isin(tweaks)]
+    mains = {} if main is None else main.set_index("card_patch_id")[["beta", "se"]].to_dict(
+        "index")
+    widen = kwargs.get("widen", True)
+    until = kwargs.get("until_stable", True)
+    cache, rows = {}, []
+    for e in ex.to_dict("records"):
+        cpid = e["card_patch_id"]
+        up = e["upgrade_only"] == "yes"
+        row = dict(upgrade_only=e["upgrade_only"], lead_days=e["lead_days"])
+        try:
+            builds, _ = old_version_builds(cpid, widen=widen, ref=ref)
+            key = (e["color"], tuple(builds))
+            if key not in cache:
+                cache.clear()                       # one character's data at a time
+                cache[key] = _load_offers(con, e["color"], builds, ref)
+            data = _split(cache[key], cpid, builds, until, widen, ref)
+            m = mains.get(cpid)
+            kw = dict(kwargs, upgraded=True if up else kwargs.get("upgraded"))
+            if m is not None:
+                kw.update(beta_main=m["beta"], se_main=m["se"])
+            row.update(anticipation_check(con if m is None else None, cpid, data=data,
+                                          ref=ref, **kw))
+        except Exception as ex_:                    # report and keep going
+            row.update(card_patch_id=cpid, card_id=e["card_id"], status="error",
+                       reason=f"{type(ex_).__name__}: {ex_}")
+        rows.append(row)
+    out = pd.DataFrame(rows)
+    for c in out.columns:
+        if out[c].dtype == object:
+            out[c] = out[c].map(lambda v: "" if v is None or (isinstance(v, float)
+                                                               and np.isnan(v)) else v)
+            if not out[c].map(lambda v: isinstance(v, (bool, np.bool_))).all():
+                out[c] = out[c].astype(str)
+    return out
+
+
+def _split(raw, card_patch_id, builds, until_stable, widen, ref):
+    """load_anticipation's split of loaded offers at the first-beta date (also used on
+    anticipation_all's cached offers)."""
+    w = window(card_patch_id, ref)
+    e = exposure(card_patch_id, ref)
+    if not e["first_beta_date"]:
+        raise ValueError(f"{card_patch_id}: no first-beta date in beta_exposure.csv")
+    tb = pd.Timestamp(e["first_beta_date"])
+    stable = release_date(w["after_builds"].split()[0], ref)
+    df = raw.copy()
+    post = df.start_time.dt.normalize() >= tb
+    df["block"] = np.where(post, "after", "before")
+    df["week"] = np.floor((df.start_time - tb).dt.total_seconds() / WEEK).astype("int16")
+    tr = (df.card_id == w["card_id"]) & df.build_id.isin(w["before_builds"].split())
+    share = float(post[tr].mean()) if tr.any() else np.nan
+    n0 = len(df)
+    if until_stable:
+        df = df[df.start_time.dt.normalize() < stable]
+    info = dict(card_patch_id=card_patch_id, card_id=w["card_id"],
+                color=card_colors(ref).get(w["card_id"], ""), builds=" ".join(builds),
+                first_beta_build=e["first_beta_build"],
+                first_beta_date=e["first_beta_date"], stable_date=str(stable.date()),
+                until_stable=until_stable, widen=widen,
+                n_offers_dropped_after_stable=n0 - len(df),
+                behavior_differs=" ".join(behavior_differs(card_patch_id, builds, ref)),
+                main_postbeta_share=share)
+    return _finish(df.copy()), info

@@ -28,11 +28,11 @@ See [PLAN.md](PLAN.md) for the research questions and methods.
 | [SPIROMETRY.md](SPIROMETRY.md) | Reference: data sources, record structure, known data issues |
 | [CLAUDE.md](CLAUDE.md) | Standing instructions for Claude Code sessions |
 | `notes/` | Investigation notes: patch history endpoints (`patch_history.md`), run file structure and table proposal (`run_schema.md`), patch notes vs. card tables (`patch_notes_crosscheck.md`), card versions and DiD windows (`treatment_table.md`) |
-| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens); `strength.py` the strength change across a patch (IV before vs. after, net of unchanged cards) and the offer balance checks |
+| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `exposure.py` builds the beta exposure table (first beta date and lead time per tweak); `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study, anticipation check) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens); `strength.py` the strength change across a patch (IV before vs. after, net of unchanged cards) and the offer balance checks |
 | `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
 | `scripts/audit_extract.py` | Interim: compact audit tables from the snapshot (runs, aggregated offer counts) into `data/audit/` |
 | `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power. `02_pick_rate_did.ipynb`: offer-rate check, pick-rate DiD, event studies, robustness, dose-response. `iv_primer.ipynb`: a simulation showing why the naive win effect is biased and how the offer as an instrument fixes it |
-| `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes, change events, card-patch net fields, per-build card versions, DiD windows, numeric tweak sizes (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages) |
+| `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes, change events, card-patch net fields, per-build card versions, DiD windows, numeric tweak sizes, beta exposure (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages) |
 | `data/runs/` | Run tables built locally by `spirometry.runs` (git-ignored, never committed) |
 | `data/audit/` | Audit tables built locally by `scripts/audit_extract.py` (git-ignored) |
 | `data/analysis/` | Saved fits from `02_pick_rate_did.ipynb` (git-ignored) |
@@ -111,6 +111,13 @@ Build the tweak size table (`reference/tweak_sizes.csv`) from the treatment tabl
 python -m spirometry.tweaks
 ```
 
+Build the beta exposure table (`reference/beta_exposure.csv`: first beta build and date,
+lead time and beta steps per numeric tweak) from the reference tables:
+
+```bash
+python -m spirometry.exposure
+```
+
 The Phase 5 functions in `spirometry.did` run on the run tables from a notebook:
 
 ```python
@@ -121,6 +128,9 @@ df = did.load_window(con, "PARRY@v0.103.2/patch")
 did.offer_rate_check(df, "PARRY@v0.103.2/patch")
 did.fit_did(df, "PARRY@v0.103.2/patch")
 results = did.run_all(con)            # every solo-estimable tweak
+did.anticipation_check(con, "PARRY@v0.103.2/patch")   # does the gap move at the beta date?
+did.anticipation_weekly(con, "BULWARK@v0.107.1/patch")
+did.anticipation_all(con, main=results)              # every tweak, beta_main from run_all
 ```
 
 The win-effect functions in `spirometry.wins` (run tables from parser 1.7.0 or later):
@@ -144,7 +154,7 @@ strength.save(res, "data/analysis", "main")       # parquet; strength.load(...) 
 strength.balance_all(data, "ironclad")            # is the offer unrelated to pre-offer traits?
 ```
 
-`SPIROMETRY_SMOKE_DB=path/to/runs.duckdb python -m pytest tests/test_did.py tests/test_wins.py tests/test_strength.py`
+`SPIROMETRY_SMOKE_DB=path/to/runs.duckdb python -m pytest tests/test_did.py tests/test_wins.py tests/test_strength.py tests/test_anticipation.py`
 also runs the smoke tests on a build from fetched pages.
 
 ## Data

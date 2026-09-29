@@ -52,8 +52,10 @@ set up, patch history endpoints checked (`notes/patch_history.md`).
 ### 1. Data acquisition — in progress
 - [ ] Full run snapshot (local, running). Done when the export reports its end and
       `--count-only` has been run. Record the start date as "snapshot as of."
-      *Status: 949 pages (submissions to ~2026-07-19). Daily request cap found; resumes
-      after each reset. Pages 873–948 are fetched again once (see SPIROMETRY.md).*
+      *Status: 1,393 pages (submissions to ~2026-08-23, 2026-09-28). Daily request cap
+      found; resumes after each reset. Pages 873–948 were fetched again once, as files
+      949–1024 (identical apart from `player_token`; dropped by the parsers; see
+      SPIROMETRY.md). Download log checked 2026-09-28: no other overlap.*
 - [ ] Card patch dataset (CC): `reference/builds.csv`, `reference/card_changes.csv`,
       excluded fields, text-only changes. Done when merged and Phil has reviewed the
       whitelist, the text-only list, and the build mapping.
@@ -76,17 +78,19 @@ Look at the data before building anything on it. Notebook `01_data_audit`.
 - Character and ascension mix per build; uploader mix over time (self-selection check).
 - Decide the unit of analysis: run or player-run (co-op).
 Done when the filters and the unit are written into `SPIROMETRY.md`.
-*Status: first pass done on 949 pages, with interim tooling: `scripts/audit_extract.py`
-writes aggregate tables to `data/audit/` (git-ignored), read by
+*Status: first pass done on 949 pages, rerun 2026-09-28 on 1,393 pages, with interim
+tooling: `scripts/audit_extract.py` writes aggregate tables to `data/audit/` (git-ignored), read by
 `notebooks/01_data_audit.ipynb`. Findings so far are in SPIROMETRY.md (Known data issues):
 non-release builds, runs dated before release, `_sts` = SlayTheStats upload stamp and the
 ranking difference between uploader groups, mod-marker counts, cheat candidates. Unit:
 card offer, solo runs (already in the decision log). Decisions written into SPIROMETRY.md
 ("Audit decisions"): primary population, thin-build pooling rule, staggered rollout feasible
 within branch, snapshot reach and backfill, uploader groups, within-build win-rate drift.
-Open: backfill numbers and the thin-build check after the snapshot finishes; whether rising
-ascension explains the within-build drift. The notebook moves to the Phase 3 tables once
-they're built on the full snapshot.*
+Rerun: decisions unchanged; backfill numbers recorded (provisional); thin builds now
+v0.99.0, v0.103.1 and v0.110.0 (v0.105.0 and v0.109.1 no longer thin); rising ascension
+does not explain the within-build drift (mean ascension fell). Open: the thin-build check
+and backfill numbers on the finished snapshot; v0.110.0's patch notes for the pooling
+rule. The notebook moves to the Phase 3 tables once they're built on the full snapshot.*
 
 ### 3. Run tables — CC builds, Phil runs locally
 Parse raw runs into DuckDB/Parquet. Player IDs hashed.
@@ -117,13 +121,16 @@ ascension, so different runs sharing seed and start time stay apart; `build_info
 the old keys it splits (`old_run_keys_split`, `run_keys_split_from_old_key`,
 `solo_old_run_keys_split`). On 2 fetched pages the co-op multi-record keys stay at 137 and
 nothing splits. Every `run_key` value changes: regenerate anything keyed on the old one.
-Next: Phil reruns the full build and reads both counts.
 Parser 1.7.0 (PR, CC): `runs_dedup.retried` (copies differ in win, floors reached or
 abandonment; also on `primary_offers`), `card_offers.deck_size_before` and
 `run_players.deck_size_start`; `build_info` counts retried keys (`solo_run_keys_retried`,
 `primary_run_keys_retried`) and checks the starting deck (`deck_start_nonstandard`: 0 of
-1,405 on 2 fetched pages). Fixture-tested; 0 retried on 2 fetched pages (the 54 are on the
-949-page tables). `deck_final`, `deaths` and relic/event choices not started.*
+1,405 on 2 fetched pages). Fixture-tested; 0 retried on 2 fetched pages.
+Full build 2026-09-28 (parser 1.7.0, 1,393 pages, 5 min): 0 pages failed, 0 unparseable
+lines; 75,996 exact repeats dropped (the re-downloaded pages); solo multi-record keys 119;
+`primary_run_keys_retried` 72; `runs_mod_entity_only` 425, all mod content;
+`primary_offers_dedup_removed` 4,061. `deck_final`, `deaths` and relic/event choices not
+started.*
 
 ### 4. Treatment table — CC
 *Status: reference tables built (PR), `python -m spirometry.treatment`:
@@ -140,7 +147,8 @@ unknown beta timing (Tear Asunder, Seven Stars, both wording), 9 events on 4 car
 update-history can't say which beta changed a field (none a numeric tweak). Optional
 `offers_with_version` view added to `runs.duckdb` (parser 1.4.0; fixture-tested). Next:
 Phil reviews the rule-labeled kinds (116 events) and the choices in the decision log,
-then builds the run tables with parser 1.4.0 to get the view.*
+then builds the run tables with parser 1.4.0 to get the view (built; the review is
+open).*
 Join `card_offers` to the card version live in each run's build: for each (card, build), which
 version was live and whether it's pre- or post-change. Also list, for each change, the other
 cards of the same character changed in the same patch (candidates to exclude from its control
@@ -167,7 +175,7 @@ offers and smoke-tested on 2 fetched pages (first window only: the pages have no
 runs). Next: Phil runs it on the full build (parser 1.5.0) in the analysis notebook.*
 *First pass (2026-09-26, 949-page tables, parser 1.4.0): `notebooks/02_pick_rate_did.ipynb`
 ran steps 1–3 on all 43 solo-estimable tweaks; results and caveats in SPIROMETRY.md
-("Phase 5 results, first pass"). Provisional until the rebuild on the full snapshot.*
+(now "Phase 5 results", superseded by the v3 rerun below).*
 *Follow-up tooling (CC, PR): `fit_did` returns `se_hc` (heteroskedasticity-robust, same
 fit) and takes `max_week_after` (fixed horizon; `run_all` passes it to the placebo too);
 `offer_rate_check` adds `rarity` and same-rarity z-scores/flag (`flag_rarity`); dedup key
@@ -183,9 +191,15 @@ first K = 3 reward screens of each run, retried and abandoned runs out; `spirome
 gets `load_window(extra_cols=True)`, `fit_did(card_act_fe=..., picked_screens_only=...)`
 (through `run_all`) and `set_picked_any` in `load_window`'s default columns. Tested on
 synthetic runs (planted effect, null, survival bias of "ever offered", weak instrument,
-retried runs) and smoke-tested on 2 fetched pages (97.3% of runs reach screen 3). Next:
-Phil rebuilds with parser 1.7.0, reads `primary_run_keys_retried`, and runs
-`run_all_cards` per character within the stable builds; then step 5 (IV pre vs. post).*
+retried runs) and smoke-tested on 2 fetched pages (97.3% of runs reach screen 3). Merged
+(PR #12). Next: `run_all_cards` per character within the stable builds (background:
+`notebooks/iv_primer.ipynb`, a simulation of naive vs. ITT vs. IV); then step 5 (IV pre vs.
+post).*
+*Notebook v3 (2026-09-29, 1,393-page tables, parser 1.7.0): steps 1–3 rerun with every
+check, including the heavy-uploader check (top 10 uploaders; no effect). Headline holds
+(first patch 23 of 26 clearly nonzero; dose-response slopes 1.47 and 0.03 by patch). New:
+two upgrade-only placebos (Royalties, Untouchable v0.107.1) about 2.6σ below zero; tagged-only
+fits diverge more. Results in SPIROMETRY.md ("Phase 5 results").*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -206,22 +220,27 @@ Selection-corrected card strength metric; dashboard (Streamlit or Observable, un
 README with results, portfolio card on pmacias.github.io.
 
 ## Next up
-1. Review and merge the card-decisions + mod-entity PR; rerun the full build (parser
-   1.3.0) and read `runs_mod_entity_only` in `build_info`.
-2. Audit follow-up: does rising ascension explain the within-build win-rate drift.
+1. ~~Review and merge the card-decisions + mod-entity PR; rerun the full build and read
+   `runs_mod_entity_only`.~~ Done: 425 on the 1,393-page build, all mod content.
+2. ~~Audit follow-up: does rising ascension explain the within-build win-rate drift.~~ No:
+   mean ascension fell while win rates fell (v0.103.2). Candidate: stronger players moving
+   to the betas.
 3. Let the snapshot finish; run `--count-only`. Decide whether to re-download pages 0–948
    for `player_token`.
 4. Send the maintainer message (budget per IP or per client, the daily cap, short pages,
    bulk dump, stable-only hotfixes, when `player_token` was added).
 5. Build the run tables on the full snapshot (`python -m spirometry.runs build`) and move
-   the audit notebook onto them.
-6. Phase 4: review the treatment tables (`notes/treatment_table.md`), then rebuild the
-   run tables (parser 1.5.0) for `offers_with_version` and the deduplicated `primary_offers`.
-7. Phase 5 follow-ups. Done on the 949-page tables: (a) same-rarity offer-rate check:
-   Patter, Sculpting Strike and The Scythe are card-specific, not pool changes; (b) fixed
-   horizon: not the cause of the gap between patches; (c) patch term: the second patch has no
-   dose-response (slope 0.02 ± 0.31 against 1.44 ± 0.19); (d) robust SEs: clustering adds
-   about 3%; (e) dedup key fixed in parser 1.6.0. Next: (g) fit per patch within each
+   the audit notebook onto them. (Built on 1,393 pages; rebuild when the snapshot is done.)
+6. Phase 4: review the treatment tables (`notes/treatment_table.md`). (The rebuild with
+   `offers_with_version` and the deduplicated `primary_offers` is done.)
+7. Phase 5 follow-ups. Done (numbers from the 1,393-page rerun): (a) same-rarity offer-rate
+   check: Patter and Sculpting Strike are card-specific, not pool changes (The Scythe,
+   flagged on the first pass, now sits at the threshold); (b) fixed horizon: not the cause
+   of the gap between patches; (c) patch term: the second patch has no dose-response (slope
+   0.03 ± 0.31 against 1.47 ± 0.19); (d) robust SEs: clustering adds about 3%; (e) dedup key
+   fixed in parser 1.6.0; (f) heavy-uploader check: dropping the top 10 uploaders moves
+   estimates by a median 0.06 SE (only records from page 1025 on carry `uploader_hash`).
+   Next: (g) fit per patch within each
    uploader group (the tooltip hypothesis) and by kind of main field; (h) where the flagged
    cards' extra offers come from (act, floor type, event fights; tooling:
    `load_window(extra_cols=True)`); (i) duplicated runs:
@@ -230,12 +249,15 @@ README with results, portfolio card on pmacias.github.io.
    analyses (done in parser 1.7.0: `runs_dedup.retried`); (j) a robustness row: the DiD on
    screens where something was picked (choice among cards, no deck-size effect; tooling:
    `picked_screens_only`); (k) optional: card × act fixed effects (timing balance says it
-   can't change a conclusion; tooling: `card_act_fe`); (f) the heavy-uploader check after
-   the rebuild. Win effects (steps 4–5): tooling in `spirometry.wins`; run after the
-   rebuild.
+   can't change a conclusion; tooling: `card_act_fe`); (l) the upgrade-only placebos on
+   Royalties and Untouchable (v0.107.1), about 2.6σ below zero on the rerun (drift in the
+   thin second-patch before block is the first candidate); (m) recheck "When in the run"
+   at fixed floors on the new tables. Win effects (steps 4–5): tooling in
+   `spirometry.wins`, ready to run.
 8. When official act 4 (or other new content) ships: re-cache the game lists for the new
    builds and switch the mod-entity rule to per-build lists (see SPIROMETRY.md, custom and
-   modded runs).
+   modded runs). The cached lists for v0.99.0 and v0.110.1 are empty: re-fetch them or fall
+   back to a neighbouring build first, or every v0.110.1 run would look modded.
 
 ## Decision log
 - Spire Codex export is the primary source; sts2runs.com only for cross-checks.
@@ -479,6 +501,7 @@ README with results, portfolio card on pmacias.github.io.
 - Clustering is judged against heteroskedasticity-robust SEs, not iid ones: the iid ratio
   mostly measures differences in p(1−p) between cards.
 - The heavy-uploader check is deferred: the 949-page tables have no `uploader_hash`.
+  (Superseded 2026-09-29: run on the 1,393-page tables, top 10 uploaders by solo runs.)
 - Phase 5 follow-up tooling (CC's choices, open to review):
   - `se_hc` is pyfixest's `"hetero"` (HC1) on the same fit; `se` (clustered by `run_key`)
     stays the main error and the only one `ci95` and `run_all`'s `se_lo` use.
@@ -510,8 +533,8 @@ README with results, portfolio card on pmacias.github.io.
 - Clustering measured against robust SEs: median 1.03, range 1.00–1.20 on the 43 tweaks.
   (An earlier "about 8%" was an approximation from iid ratios and is superseded.)
 - Retried runs (Phil): solo runs whose copies share seed and start time but differ in win,
-  floors reached or abandonment (a restored save, 54 on the 949-page tables) are dropped from
-  win analyses; pick-rate analyses keep one copy.
+  floors reached or abandonment (a restored save; 54 on the 949-page tables, 72 primary on
+  the 1,393-page tables) are dropped from win analyses; pick-rate analyses keep one copy.
 - Deck size / timing: no control added. Offers are random in timing and the act mix moved
   alike for a character's cards (checked per tweak); deck size is partly caused by earlier
   picks, so it is described, not controlled for.
@@ -560,8 +583,8 @@ README with results, portfolio card on pmacias.github.io.
 - Win-effect review round (PR #12):
   - Treatment = took X on one of the first K screens (not later rewards, shops or
     events); stated in the docstrings and SPIROMETRY.md.
-  - Short runs (Phil asked for keeping them as the default; CC kept dropping them, open
-    to review): every run that doesn't reach screen K lost and had fewer screens on which
+  - Short runs (Phil asked for keeping them as the default; CC kept dropping them; merged
+    as is after review, K = 1 is the planned check): every run that doesn't reach screen K lost and had fewer screens on which
     to be offered, so counting unreached screens as "not offered" gives every card a fake
     positive ITT (synthetic null: +0.08, z ≈ 13). Dropping them is biased only if an early
     offer changes survival to screen K; the check for that is K = 1 (every offered run
@@ -574,3 +597,7 @@ README with results, portfolio card on pmacias.github.io.
   - `screen_mix` stays off by default until the full-table results (Phil).
   - `did.run_all` output: the pre-PR columns plus `card_act_fe` and `picked_screens_only`
     (settings echoes, like `max_week_after`); notebook 02 loads files saved before them.
+- Rerun on the 1,393-page tables (2026-09-28/29): no decision changed. v0.110.0 (331
+  primary runs, superseded by the v0.110.1 hotfix the next day) is thin; the reference
+  tables show no card change on v0.110.1, so by the pooling rule it pools with v0.110.1
+  (to confirm against the patch notes; it only matters for the beta designs).

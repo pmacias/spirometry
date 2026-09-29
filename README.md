@@ -2,7 +2,9 @@
 
 Measuring what Slay the Spire 2's early-access balance patches actually did.
 
-**Status:** work in progress — data acquisition. No results yet.
+**Status:** work in progress. Pick-rate results for the numeric tweaks (first analysis
+phase) are in [SPIROMETRY.md](SPIROMETRY.md), provisional until the run snapshot is
+complete; win-effect tooling is built.
 
 ## The question
 
@@ -29,10 +31,11 @@ See [PLAN.md](PLAN.md) for the research questions and methods.
 | `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens) |
 | `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
 | `scripts/audit_extract.py` | Interim: compact audit tables from the snapshot (runs, aggregated offer counts) into `data/audit/` |
-| `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power |
+| `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power. `02_pick_rate_did.ipynb`: offer-rate check, pick-rate DiD, event studies, robustness, dose-response. `iv_primer.ipynb`: a simulation showing why the naive win effect is biased and how the offer as an instrument fixes it |
 | `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes, change events, card-patch net fields, per-build card versions, DiD windows, numeric tweak sizes (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages) |
 | `data/runs/` | Run tables built locally by `spirometry.runs` (git-ignored, never committed) |
 | `data/audit/` | Audit tables built locally by `scripts/audit_extract.py` (git-ignored) |
+| `data/analysis/` | Saved fits from `02_pick_rate_did.ipynb` (git-ignored) |
 | `tests/` | pytest tests; `tests/fixtures/sample_runs.jsonl` holds 7 sample records (6 runs, one solo run uploaded twice; the only run data in git; co-op player IDs replaced) |
 
 ## Setup

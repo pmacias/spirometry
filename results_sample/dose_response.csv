@@ -1,0 +1,27 @@
+horizon,model,term,term_label,coef,se,z,tau2,Q,df,n_tweaks
+weeks 0-3,one slope,intercept,intercept a,0.0195528,0.0545422,0.35849,0.0566757,803.079,18,20
+weeks 0-3,one slope,slope,slope b,0.61123,0.104223,5.86464,0.0566757,803.079,18,20
+weeks 0-3,+ patch shift,intercept,intercept a,0.108002,0.0705468,1.53093,0.0576175,748.547,17,20
+weeks 0-3,+ patch shift,slope,slope b,0.587244,0.105733,5.554,0.0576175,748.547,17,20
+weeks 0-3,+ patch shift,second,second-patch shift c,-0.225118,0.112488,-2.00127,0.0576175,748.547,17,20
+weeks 0-3,slope per patch,intercept,intercept a,0.108136,0.0477041,2.26682,0.025265,308.306,16,20
+weeks 0-3,slope per patch,second,second-patch shift c,-0.27423,0.0771461,-3.55468,0.025265,308.306,16,20
+weeks 0-3,slope per patch,slope_first,"slope, first patch",0.913363,0.0956882,9.5452,0.025265,308.306,16,20
+weeks 0-3,slope per patch,slope_second,"slope, second patch",0.190657,0.107424,1.77481,0.025265,308.306,16,20
+weeks 0-3,buff/nerf + patch,intercept,intercept a,0.152618,0.127148,1.20032,0.0603118,736.193,16,20
+weeks 0-3,buff/nerf + patch,second,second-patch shift c,-0.223141,0.115111,-1.93849,0.0603118,736.193,16,20
+weeks 0-3,buff/nerf + patch,slope_buff,buff slope b+,0.451162,0.337161,1.33812,0.0603118,736.193,16,20
+weeks 0-3,buff/nerf + patch,slope_nerf,nerf slope b-,0.661689,0.206175,3.20936,0.0603118,736.193,16,20
+all weeks,one slope,intercept,intercept a,0.0305526,0.0607385,0.503018,0.071825,1699.43,18,20
+all weeks,one slope,slope,slope b,0.68883,0.116309,5.9224,0.071825,1699.43,18,20
+all weeks,+ patch shift,intercept,intercept a,0.12545,0.07865,1.59504,0.0729668,1582.67,17,20
+all weeks,+ patch shift,slope,slope b,0.66429,0.117906,5.63406,0.0729668,1582.67,17,20
+all weeks,+ patch shift,second,second-patch shift c,-0.240633,0.125215,-1.92176,0.0729668,1582.67,17,20
+all weeks,slope per patch,intercept,intercept a,0.125547,0.0521648,2.40673,0.0314108,630.162,16,20
+all weeks,slope per patch,second,second-patch shift c,-0.291407,0.0839057,-3.47304,0.0314108,630.162,16,20
+all weeks,slope per patch,slope_first,"slope, first patch",1.02649,0.105548,9.72536,0.0314108,630.162,16,20
+all weeks,slope per patch,slope_second,"slope, second patch",0.231481,0.116367,1.98924,0.0314108,630.162,16,20
+all weeks,buff/nerf + patch,intercept,intercept a,0.150857,0.140453,1.07408,0.0755539,1540.72,16,20
+all weeks,buff/nerf + patch,second,second-patch shift c,-0.239156,0.127579,-1.87457,0.0755539,1540.72,16,20
+all weeks,buff/nerf + patch,slope_buff,buff slope b+,0.586696,0.37237,1.57557,0.0755539,1540.72,16,20
+all weeks,buff/nerf + patch,slope_nerf,nerf slope b-,0.707118,0.229108,3.08639,0.0755539,1540.72,16,20

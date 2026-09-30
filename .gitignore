@@ -5,6 +5,9 @@ data/
 *.json.gz
 *.duckdb
 *.duckdb.wal
+# Real results export (spirometry.export): aggregates, but not committed until the release
+# checklist (PLAN.md, Next up 12) is done. results_sample/ (synthetic) is committed.
+results/
 # HMAC key for player-ID hashes (spirometry.runs); never commit
 .spirometry_salt
 

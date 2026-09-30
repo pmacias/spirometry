@@ -85,14 +85,19 @@ cards, not proof of why players changed their picks.
 | [SPIROMETRY.md](SPIROMETRY.md) | Reference: data sources, record structure, known data issues |
 | [CLAUDE.md](CLAUDE.md) | Standing instructions for Claude Code sessions |
 | `notes/` | Investigation notes: patch history endpoints (`patch_history.md`), run file structure and table proposal (`run_schema.md`), patch notes vs. card tables (`patch_notes_crosscheck.md`), card versions and DiD windows (`treatment_table.md`) |
-| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `exposure.py` builds the beta exposure table (first beta date and lead time per tweak); `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study, anticipation check) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens); `strength.py` the strength change across a patch (IV before vs. after, net of unchanged cards) and the offer balance checks |
+| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `exposure.py` builds the beta exposure table (first beta date and lead time per tweak); `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study, anticipation check) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens); `strength.py` the strength change across a patch (IV before vs. after, net of unchanged cards) and the offer balance checks; `meta.py` the dose-response meta-regression (moved from notebook 02); `export.py` the results export (aggregate tables from the saved fits, for the dashboard); `sample_results.py` synthetic saved fits for the export's tests and the sample data |
 | `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
+| `scripts/make_sample_results.py` | Writes `results_sample/` by running the export on synthetic saved fits |
 | `scripts/audit_extract.py` | Interim: compact audit tables from the snapshot (runs, aggregated offer counts) into `data/audit/` |
 | `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power. `02_pick_rate_did.ipynb`: offer-rate check, pick-rate DiD, event studies, robustness, dose-response. `03_anticipation.ipynb`: does the gap between a changed card and its controls already move at the first-beta date, on builds where players still have the old card? `iv_primer.ipynb`: a simulation showing why the naive win effect is biased and how the offer as an instrument fixes it |
 | `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes, change events, card-patch net fields, per-build card versions, DiD windows, numeric tweak sizes, beta exposure (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages) |
 | `data/runs/` | Run tables built locally by `spirometry.runs` (git-ignored, never committed) |
 | `data/audit/` | Audit tables built locally by `scripts/audit_extract.py` (git-ignored) |
-| `data/analysis/` | Saved fits from `02_pick_rate_did.ipynb` (git-ignored) |
+| `data/analysis/` | Saved fits from `02_pick_rate_did.ipynb` and `03_anticipation.ipynb` (git-ignored) |
+| `dashboard/` | Streamlit dashboard (`app.py` pages, `charts.py` plots, `data.py` loading) on the exported tables; local only, not deployed |
+| `results/` | Aggregate tables written by `spirometry.export` (git-ignored until the release checklist is done) |
+| `results_sample/` | Synthetic tables in the same layout, so the dashboard runs without real results (every page says SAMPLE DATA) |
+| `.streamlit/config.toml` | Dashboard theme (light: the chart colors are checked against it) |
 | `tests/` | pytest tests; `tests/fixtures/sample_runs.jsonl` holds 7 sample records (6 runs, one solo run uploaded twice; the only run data in git; co-op player IDs replaced) |
 
 ## Setup
@@ -102,6 +107,7 @@ mamba create -n spirometry python=3.11
 mamba activate spirometry
 pip install -e .                  # core
 pip install -e ".[analysis]"      # notebooks and analysis
+pip install -e ".[dashboard]"     # results dashboard (streamlit, altair)
 pip install -e ".[dev]"           # tests
 python -m pytest
 ```
@@ -209,6 +215,24 @@ res = strength.strength_change(con, "PARRY@v0.103.2/patch")  # Strength(blocks, 
 res = strength.strength_all(con)                  # every solo-estimable numeric tweak
 strength.save(res, "data/analysis", "main")       # parquet; strength.load(...) reads it back
 strength.balance_all(data, "ironclad")            # is the offer unrelated to pre-offer traits?
+```
+
+Export the pick-rate results for the dashboard: aggregate tables per tweak / week from the
+fits notebooks 02 and 03 saved in `data/analysis/` (no run-level rows, no uploader IDs; the
+export stops if a fit has an `error` row unless `--skip-errors`). `--db` reads `build_info`
+(read-only) for the provenance in `meta.json`; without it those fields stay blank:
+
+```bash
+python -m spirometry.export --analysis data/analysis --out results --db data/runs/runs.duckdb
+# options: --horizon h3 (fixed-horizon fit file) --skip-errors --snapshot-end YYYY-MM-DD
+```
+
+Run the dashboard locally (reads `results/`, or the synthetic `results_sample/` when
+`results/` is empty; nothing is deployed until the release checklist in PLAN.md is done):
+
+```bash
+streamlit run dashboard/app.py               # from the repo root
+python scripts/make_sample_results.py        # regenerate results_sample/
 ```
 
 `SPIROMETRY_SMOKE_DB=path/to/runs.duckdb python -m pytest tests/test_did.py tests/test_wins.py tests/test_strength.py tests/test_anticipation.py`

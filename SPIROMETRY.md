@@ -643,6 +643,25 @@ rare cards are offered less than that, so probably fewer. On 2 fetched pages (20
 all 43 run end to end and all are uninformative (1–75 treated offers a side); the pages
 have v0.103.2 runs to 2026-05-18 and none on v0.103.3.
 
+## Results export (`spirometry.export`) and dashboard
+
+`python -m spirometry.export --analysis data/analysis --out results [--db runs.duckdb]` reads
+the files notebooks 02 and 03 save and writes aggregate tables for `dashboard/app.py`:
+`pick_rate_did.csv` (one row per tweak: main fit, weeks 0–3 fit, tweak size, log-odds
+versions, clearly nonzero, toward the change), `flags.csv` (offer-rate flags, pre-trend
+slope, upgrade-only placebo, second-patch before-block variants), `weekly.csv` (event study
+per week and block), `dose_response.csv` (the four meta-regression models of notebook 02
+section 8, both horizons; `spirometry.meta`), `robustness.csv`, `anticipation.csv` and
+`meta.json`. Column definitions are in the module docstring. No run-level rows or uploader
+identifiers; the export checks every table before writing.
+- Notebook 02 does not save its offer-rate table (section 3's `orc`), so `flags.csv`'s
+  offer-rate columns are blank until `data/analysis/offer_rate.parquet` exists.
+- `build_info` records pages parsed, not a submission end date: `meta.json`'s snapshot
+  end date is blank unless given with `--snapshot-end`.
+- Tested on synthetic saved fits with the notebooks' column layout
+  (`spirometry.sample_results`, `tests/test_export.py`); not yet run on Phil's saved fits.
+  `results_sample/` holds the synthetic export the dashboard falls back to.
+
 ## Win-effect tooling (`spirometry.wins`)
 
 Phase 5 steps 4–5: within a build, does picking card X make a run more likely to win?

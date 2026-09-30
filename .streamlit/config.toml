@@ -1,0 +1,6 @@
+# Dashboard (dashboard/app.py): the chart colors are checked against a light background.
+[theme]
+base = "light"
+
+[browser]
+gatherUsageStats = false

@@ -1,0 +1,24 @@
+card_patch_id,card_id,patch,window,status,reason,beta_main,se_main,beta_postbeta,se,ratio_to_main,share_before_release,lead_days,first_beta_build,first_beta_date,stable_date
+SAMPLE_01@v0.103.2/patch,SAMPLE_01,first,v0.99.1 -> v0.103.2,uninformative,1463 treated offers pre-beta (< 2000); 1 days pre-beta (< 3),0.0578935,0.0302826,-0.0201143,0.0393674,,,14,beta,2026-03-19,2026-04-16
+SAMPLE_02@v0.103.2/patch,SAMPLE_02,first,v0.99.1 -> v0.103.2,uninformative,1522 treated offers pre-beta (< 2000); 2 days pre-beta (< 3),-0.0539232,0.00481891,-0.0143484,0.00626458,0.26609,0.246419,14,beta,2026-03-19,2026-04-16
+SAMPLE_03@v0.103.2/patch,SAMPLE_03,first,v0.99.1 -> v0.103.2,informative,,-0.123212,0.00519372,0.00340988,0.00675184,-0.0276749,-0.0279066,42,beta,2026-03-19,2026-04-16
+SAMPLE_04@v0.103.2/patch,SAMPLE_04,first,v0.99.1 -> v0.103.2,uninformative,1159 treated offers pre-beta (< 2000); 2 days pre-beta (< 3),-0.241633,0.00471859,-0.0106716,0.00613416,0.0441644,0.0435869,14,beta,2026-03-19,2026-04-16
+SAMPLE_05@v0.103.2/patch,SAMPLE_05,first,v0.99.1 -> v0.103.2,uninformative,1107 treated offers pre-beta (< 2000); 2 days pre-beta (< 3),0.16924,0.00492528,-0.00840888,0.00640287,-0.0496862,-0.050438,14,beta,2026-03-19,2026-04-16
+SAMPLE_06@v0.103.2/patch,SAMPLE_06,first,v0.99.1 -> v0.103.2,uninformative,1136 treated offers pre-beta (< 2000); 2 days pre-beta (< 3),0.0222528,0.00225682,-0.00338547,0.00293386,-0.152137,-0.159413,14,beta,2026-03-19,2026-04-16
+SAMPLE_07@v0.103.2/patch,SAMPLE_07,first,v0.99.1 -> v0.103.2,uninformative,789 treated offers pre-beta (< 2000); 1 days pre-beta (< 3),0.0603871,0.00757057,-0.00111565,0.00984175,-0.018475,-0.018578,14,beta,2026-03-19,2026-04-16
+SAMPLE_08@v0.103.2/patch,SAMPLE_08,first,v0.99.1 -> v0.103.2,uninformative,1435 treated offers pre-beta (< 2000); 1 days pre-beta (< 3),0.154013,0.00790451,0.0138196,0.0102759,0.0897305,0.0873784,42,beta,2026-03-19,2026-04-16
+SAMPLE_09@v0.103.2/patch,SAMPLE_09,first,v0.99.1 -> v0.103.2,uninformative,993 treated offers pre-beta (< 2000); 1 days pre-beta (< 3),-0.0157996,0.0104875,-0.0287195,0.0136338,,,28,beta,2026-03-19,2026-04-16
+SAMPLE_10@v0.103.2/patch,SAMPLE_10,first,v0.99.1 -> v0.103.2,informative,,0.0727933,0.00460502,-0.00084825,0.00598652,-0.0116529,-0.0116937,42,beta,2026-03-19,2026-04-16
+SAMPLE_11@v0.103.2/patch,SAMPLE_11,first,v0.99.1 -> v0.103.2,uninformative,1190 treated offers pre-beta (< 2000); 1 days pre-beta (< 3),0.0655393,0.00490858,-0.0111211,0.00638115,-0.169687,-0.178788,14,beta,2026-03-19,2026-04-16
+SAMPLE_12@v0.103.2/patch,SAMPLE_12,first,v0.99.1 -> v0.103.2,uninformative,579 treated offers pre-beta (< 2000); 2 days pre-beta (< 3),-0.109394,0.00646167,0.00507374,0.00840017,-0.0463806,-0.0470351,14,beta,2026-03-19,2026-04-16
+SAMPLE_13@v0.103.2/patch,SAMPLE_13,first,v0.99.1 -> v0.103.2,uninformative,447 treated offers pre-beta (< 2000); 2 days pre-beta (< 3),0.129742,0.00384745,0.00298197,0.00500168,0.0229838,0.0228264,42,beta,2026-03-19,2026-04-16
+SAMPLE_14@v0.103.2/patch,SAMPLE_14,first,v0.99.1 -> v0.103.2,uninformative,233 treated offers pre-beta (< 2000); 1 days pre-beta (< 3),-0.0123127,0.00305516,-0.000885271,0.00397171,0.0718991,0.070381,42,beta,2026-03-19,2026-04-16
+SAMPLE_15@v0.107.1/patch,SAMPLE_15,second,v0.103.3 -> v0.107.1,informative,,-0.0664871,0.0265669,0.0975153,0.0345369,-1.46668,-2.61909,14,beta,2026-05-21,2026-06-18
+SAMPLE_16@v0.107.1/patch,SAMPLE_16,second,v0.103.3 -> v0.107.1,uninformative,945 treated offers pre-beta (< 2000); 2 days pre-beta (< 3),-0.0027315,0.00627756,0.017015,0.00816082,,,14,beta,2026-05-21,2026-06-18
+SAMPLE_17@v0.107.1/patch,SAMPLE_17,second,v0.103.3 -> v0.107.1,informative,,-0.034545,0.010719,-0.00480687,0.0139347,0.139148,0.133572,42,beta,2026-05-21,2026-06-18
+SAMPLE_18@v0.107.1/patch,SAMPLE_18,second,v0.103.3 -> v0.107.1,informative,,0.0068255,0.00421062,0.00249463,0.00547381,,,28,beta,2026-05-21,2026-06-18
+SAMPLE_19@v0.107.1/patch,SAMPLE_19,second,v0.103.3 -> v0.107.1,uninformative,806 treated offers pre-beta (< 2000); 2 days pre-beta (< 3),-0.0518199,0.00381196,-0.0101551,0.00495555,0.195969,0.185088,14,beta,2026-05-21,2026-06-18
+SAMPLE_20@v0.107.1/patch,SAMPLE_20,second,v0.103.3 -> v0.107.1,informative,,-0.0966917,0.00562179,-0.010485,0.00730832,0.108438,0.105021,28,beta,2026-05-21,2026-06-18
+SAMPLE_21@v0.107.1/patch,SAMPLE_21,second,v0.103.3 -> v0.107.1,informative,,-0.0440141,0.00621283,-0.00659054,0.00807667,0.149737,0.1433,28,beta,2026-05-21,2026-06-18
+SAMPLE_22@v0.107.1/patch,SAMPLE_22,second,v0.103.3 -> v0.107.1,uninformative,1015 treated offers pre-beta (< 2000); 2 days pre-beta (< 3),-0.0954033,0.00653616,-0.000985134,0.00849701,0.010326,0.0102941,28,beta,2026-05-21,2026-06-18
+SAMPLE_23@v0.107.1/patch,SAMPLE_23,second,v0.103.3 -> v0.107.1,informative,,0.0152096,0.00715262,-0.000484639,0.00929841,-0.0318641,-0.0321716,14,beta,2026-05-21,2026-06-18

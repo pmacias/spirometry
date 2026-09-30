@@ -229,6 +229,14 @@ with random and skill-dependent offers). On 2 fetched pages the first window run
 end (estimates blank or meaningless at that size); the second has no v0.103.3 runs. Not yet
 run on the full tables. Next: Phil runs `strength_all` (main, `K=1`, `screen_mix=True`) and
 `balance_all` per character and block in a notebook.*
+*Results export (CC, PR): `spirometry.export` (`python -m spirometry.export`) turns the saved
+fits in `data/analysis/` into aggregate tables in `results/` (per tweak, per event-study
+week, dose-response coefficients, robustness fits, anticipation) plus `meta.json`;
+`meta_regression` moved from notebook 02 into `spirometry.meta` (the notebook still has its
+copy; a test checks they agree). Tested on synthetic saved fits with the notebooks' column
+layout (`spirometry.sample_results`); not run on Phil's fits. The offer-rate flags stay
+blank until notebook 02 saves its section 3 table (`offer_rate.parquet`). Next: Phil runs
+the export on `data/analysis/`.*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -244,8 +252,11 @@ run on the full tables. Next: Phil runs `strength_all` (main, `K=1`, `screen_mix
 
 ### 6. Metric and dashboard
 Selection-corrected card strength metric; dashboard (Streamlit or Observable, undecided).
-*Status: CC brief written for a results export (`spirometry.export`, aggregate tables from
-the saved fits) and a Streamlit skeleton on synthetic sample data; not started.*
+*Status: results export and Streamlit skeleton built (CC, PR): `dashboard/app.py` (Overview
+forest plot, Dose-response, Card, Anticipation, About) reads `results/`, else the synthetic
+`results_sample/` with a SAMPLE DATA banner. Local only; no deployment until the release
+checklist (Next up 12) is done. Not yet run on the real export. The strength metric is not
+started.*
 
 ### 7. Write-up
 README with results, portfolio card on pmacias.github.io.
@@ -296,9 +307,11 @@ figures still to be saved from the notebooks.*
    back to a neighbouring build first, or every v0.110.1 run would look modded.
 9. Anticipation (done, 2026-09-29): 14 of 43 informative, no sign of inflation; the first
    patch can't be tested beyond 3 tweaks. Remaining: nothing until the snapshot is complete.
-10. Results export and dashboard (CC brief: `ccc_prompt_dashboard_v2.md`): aggregate tables
-   from the saved fits, then a Streamlit skeleton on synthetic sample data. Not started.
-   No deployment until the release checklist below is done.
+10. Results export and dashboard (CC brief: `ccc_prompt_dashboard_v2.md`): built (PR) on
+   synthetic saved fits. Next: Phil adds `orc.to_parquet(OUT / "offer_rate.parquet")` to
+   notebook 02 section 3 (or decides the flags come from elsewhere), runs
+   `python -m spirometry.export --db data/runs/runs.duckdb`, and reviews the dashboard on
+   the real tables. No deployment until the release checklist below is done.
 11. README results section: drafted on the 1,513-page numbers with figure slots; Phil
    saves the figures from the notebooks (`docs/figures/`).
 12. Release checklist (before anything is public): send the maintainer message (item 4);
@@ -758,6 +771,46 @@ figures still to be saved from the notebooks.*
 - Dashboard and results export (open to review; nothing built yet): aggregates only, from the
   saved fits, with no run-level rows or uploader identifiers; Streamlit as the default; no
   deployment until the release checklist (Next up 12) is done.
+- Results export and dashboard (CC's choices, open to review):
+  - Inputs are only the files the notebooks save; nothing is refitted. The export reads
+    `did_main`, `did_h3` (`--horizon`), every other `did_*.parquet` as a robustness check
+    (`robustness.csv`, beyond the brief), `event_studies`, `did_second_patch_checks`
+    (their variants go into `flags.csv`), `anticipation_main` (optional) and
+    `offer_rate.parquet` (optional: notebook 02 doesn't save its offer-rate table, so the
+    flag columns stay blank until it does; a note in `meta.json` says so).
+  - `patch` = first / second by the stable build's release date in `builds.csv`;
+    `window` = "before -> after builds". The notebook's window labels aren't saved.
+  - `beta_lo` / `se_lo` are recomputed from each fit (delta method with that fit's
+    treated pick rate before) for both horizons (`_h` for weeks 0–3); the dose-response
+    table has both horizons, four models each, so the dashboard switches without
+    refitting. Extra columns beyond the brief: `character`, `change` (buff / nerf, as the
+    notebook's forest plot colors them), `dose_x`, `dose_x_upgraded`, `ci_lo_h`/`ci_hi_h`,
+    `clearly_nonzero_h`, the upgrade fields; `se_main`, first-beta build/date and stable date
+    in `anticipation.csv` (from `beta_exposure.csv`).
+  - `toward_change` is computed for every tweak with a single direction, not only the
+    clearly nonzero ones; the dashboard counts "clearly nonzero and toward the change".
+  - Pre-trend slope = the notebook's `pretrend_summary` slope (weighted, before-block
+    weeks < 0), without the χ² screen; blank with fewer than two such weeks besides the
+    reference week (as in the notebook).
+  - Privacy checks on every output: identifier column names (`uploader_hash`, `run_key`,
+    `run_hash`, `seed`, `player_*`), string cells that look like a hashed id (16 or 64
+    hex characters) and repeated keys stop the export. Event-study cells with fewer than 10
+    treated offers are dropped (`--min-cell-offers`); the dashboard hides cells under 100
+    by default, as the notebook's plots do.
+  - Error rows (`error`, anticipation `status = error`) stop the export; `--skip-errors`
+    leaves them out and lists them in `meta.json`. A failed placebo only blanks the placebo.
+  - `meta.json`: `build_info` only with `--db` (read-only). `build_info` has no
+    snapshot end date, so it stays blank unless given with `--snapshot-end`.
+  - `results/` is git-ignored until the release checklist is done; `results_sample/`
+    (synthetic, cards named SAMPLE_01…, generated by running the real export on
+    `spirometry.sample_results`) is committed so the dashboard runs out of the box.
+  - Dashboard: Streamlit + Altair (Altair ships with Streamlit and its declarative charts
+    read close to the notebooks' matplotlib). Observable Framework would give a static site
+    that is easier to host later, but it isn't clearly better for a local, Python-only
+    project. Colors: Okabe-Ito blue / vermillion for buff / nerf, goldenrod / purple plus
+    circle / square for the patches, checked for colorblind separation on the light theme
+    (`.streamlit/config.toml` pins it). No result numbers or interpretation in the code;
+    the About page points to SPIROMETRY.md.
 - Workflow: Phil pushes and merges everything himself. CC sessions open pull requests and
   stop; documentation edits are prepared as `_new` files against a synced copy and moved
   into place by Phil.

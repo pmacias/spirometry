@@ -23,6 +23,12 @@ analysis = [
     "scipy",        # audit notebook: KS / chi-square tests
     "pyfixest",     # Phase 5: fixed-effects regressions (DiD, IV)
 ]
+dashboard = [
+    "pandas",
+    "numpy",
+    "streamlit",    # dashboard/app.py (local only; nothing is deployed)
+    "altair",       # its charts (also a streamlit dependency; imported directly)
+]
 dev = [
     "pytest",
 ]

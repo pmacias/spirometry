@@ -1,0 +1,23 @@
+{
+  "sample": true,
+  "exported_at_utc": "2026-09-30",
+  "parser_version": "",
+  "snapshot_pages": "",
+  "snapshot_last_page": "",
+  "tables_built_at_utc": "",
+  "snapshot_end_date": "",
+  "snapshot_end_date_source": "",
+  "horizon": "weeks 0-3",
+  "blank_reasons": {
+    "parser_version": "synthetic sample data",
+    "snapshot_pages": "synthetic sample data",
+    "snapshot_last_page": "synthetic sample data",
+    "tables_built_at_utc": "synthetic sample data",
+    "snapshot_end_date": "synthetic sample data"
+  },
+  "inputs": {},
+  "skipped": [],
+  "notes": [],
+  "min_cell_offers": 10,
+  "generator": "scripts/make_sample_results.py --seed 0"
+}

@@ -81,7 +81,7 @@ def overview():
                   f"{int(((g[nz] == 'yes') & (g.toward_change == 'yes')).sum())} of them in "
                   f"the direction of the change")
         st.altair_chart(charts.forest(g, f"{patch_title(patch)}: {counts}", domain),
-                        use_container_width=True)
+                        width="stretch")
     st.caption("\\* mixed direction: one number went up and another down; colored by the "
                "main number's change. (upg) upgrade only: fitted on upgraded offers and "
                "colored by the upgrade's change. \"In the direction of the change\" leaves "
@@ -90,7 +90,7 @@ def overview():
         st.dataframe(df[["label", "patch", "character", "main_field", "old", "new",
                          "beta_pp", "lo_pp", "hi_pp", nz, "toward_change",
                          "n_treated_offers"]].rename(columns={nz: "clearly_nonzero"}),
-                     hide_index=True, use_container_width=True)
+                     hide_index=True, width="stretch")
 
 
 def dose_response():
@@ -131,14 +131,14 @@ def dose_response():
                            for patch, second in [("first", 0), ("second", 1)]],
                           ignore_index=True)
     st.altair_chart(charts.dose_response(pts, lines, f"Dose-response ({horizon})"),
-                    use_container_width=True)
+                    width="stretch")
     st.caption("Lines: the chosen model's fit for each patch (\"one slope\": one line for "
                "both). Filled points are on the fitted line. Open points are left off it: "
                "mixed-direction tweaks (no single size) at their main number's x, "
                "upgrade-only tweaks at the upgraded card's change.")
     t = dr[dr.horizon == horizon].drop(columns=["horizon", "term"])
     st.subheader("Fitted coefficients")
-    st.dataframe(t, hide_index=True, use_container_width=True)
+    st.dataframe(t, hide_index=True, width="stretch")
 
 
 def card():
@@ -170,7 +170,7 @@ def card():
             rate_pp=pp(np.array([r.treated_rate_before, r.treated_rate_after,
                                  r.control_rate_before, r.control_rate_after]))))
         st.altair_chart(charts.before_after(ba, "Pick rate before and after"),
-                        use_container_width=True)
+                        width="stretch")
     with c2:
         wk = D["weekly"][D["weekly"].card_patch_id == cpid]
         min_offers = st.slider("Hide weeks with fewer offers of the card than", 0, 500, 100,
@@ -182,11 +182,11 @@ def card():
             wk = wk.assign(coef_pp=pp(wk.coef), lo_pp=pp(wk.coef - 1.96 * wk.se),
                            hi_pp=pp(wk.coef + 1.96 * wk.se))
             st.altair_chart(charts.weekly(wk, "Gap to unchanged cards, week by week"),
-                            use_container_width=True)
+                            width="stretch")
             st.caption("Old build at weeks ≥ 0: people still playing the old build after "
                        "the release.")
     st.subheader("Checks")
-    st.dataframe(flag_rows(cpid), hide_index=True, use_container_width=True)
+    st.dataframe(flag_rows(cpid), hide_index=True, width="stretch")
     rb = D.get("robustness")
     if rb is not None and (rb.card_patch_id == cpid).any():
         st.subheader("Robustness fits")
@@ -194,7 +194,7 @@ def card():
         st.dataframe(pd.DataFrame({"check": rr.check, "change (pp)": pp(rr.beta).round(2),
                                    "se (pp)": pp(rr.se).round(2),
                                    "shift in main se": ((rr.beta - r.beta) / r.se).round(2)}),
-                     hide_index=True, use_container_width=True)
+                     hide_index=True, width="stretch")
 
 
 def flag_rows(cpid):
@@ -250,11 +250,11 @@ def anticipation():
         with st.expander("Informative tweaks"):
             st.dataframe(inf[["label", "patch", "lead_days", "main_pp", "post_pp",
                               "ratio_to_main", "share_before_release", "first_beta_date"]],
-                         hide_index=True, use_container_width=True)
+                         hide_index=True, width="stretch")
     st.subheader("Not informative")
     st.dataframe(a[a.status != "informative"][["label", "patch", "lead_days", "status",
                                                "reason"]],
-                 hide_index=True, use_container_width=True)
+                 hide_index=True, width="stretch")
 
 
 def about():

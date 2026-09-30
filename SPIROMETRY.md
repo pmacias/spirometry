@@ -2,11 +2,12 @@
 
 Measuring what Slay the Spire 2's balance patches actually did.
 
-Status: Phase 5, pick-rate results rerun on the larger tables; win-effect tooling built.
+Status: Phase 5, pick-rate results and the anticipation check rerun on the 1,513-page
+tables; win-effect tooling built, not yet run on the full tables.
 The pipeline is complete through Phase 4 (reference tables, run tables, treatment tables).
-The full snapshot is still downloading; the run tables are built from the first 1,393 pages
-(submissions to about 2026-08-23, parser 1.7.0). Pick-rate results for the numeric tweaks
-are under "Phase 5 results"; the design and the reasoning behind it are in
+The full snapshot is still downloading; the run tables are built from the first 1,513 pages
+(submissions to about 2026-08-30, parser 1.7.0, built 2026-09-29). Pick-rate results for the
+numeric tweaks are under "Phase 5 results"; the design and the reasoning behind it are in
 `notes/phase5_deck_v3.pdf` (made for the first pass; its numbers are from the 949-page
 tables).
 
@@ -72,10 +73,13 @@ affiliated with Mega Crit.
     the export records don't have (`notes/run_schema.md`).
   - `start` / `end` bound submission time, not play time: a page from `start=2026-09-01`
     still had 16% of its runs on v0.98.x–v0.99.1.
-  - Snapshot so far (2026-09-28): 1,393 pages, 1,391,858 records (1,315,862 after dropping
-    the repeats below; 1,008,926 distinct runs), 4.6 GB, ~3.3 MB per page, covering
-    submissions up to about 2026-08-23 (the date in the saved cursor). The total is still
-    unknown; the site's ~1.8M figure would mean several hundred more pages.
+  - Snapshot so far (2026-09-29): 1,513 pages, 1,511,837 records (1,435,841 after dropping
+    the repeats below; 1,100,090 distinct runs), covering submissions up to about 2026-08-30
+    (the date in the saved cursor, 2026-08-30 14:58 UTC; the newest play date in the
+    tables is 2026-08-30 14:57 UTC). 119,979 records were added since the 1,393-page state.
+    Size on disk not rechecked (1,393 pages: 4.6 GB, ~3.3 MB per page). The total is still
+    unknown; the site's ~1.8M figure would mean a few hundred more pages. The download is
+    paused on the rate limit until it resets.
   - Pages 873–948 were downloaded twice: two download processes ran at once (the older
     one woke from a rate-limit sleep and refetched the same cursor chain into the same file
     numbers, so the overwritten files got identical content), and the 2026-09-26 restart
@@ -164,7 +168,8 @@ matter later, fetch them into a separate folder and keep only a `run_hash → pl
 table to merge in. Uses: clustering standard errors by uploader, a drop-the-top-uploaders
 robustness check, and within-player before/after comparisons for a few heavy uploaders.
 On the 1,393-page snapshot the key is on every record of pages 1025 on (about 28% of
-records) and on none before; the top uploader made 1,284 solo runs.
+records) and on none before; the top uploader made 1,284 solo runs. (Not recomputed on the
+1,513 pages; the top 10 uploaders by solo runs there have 686 to 1,666 runs each.)
 
 `map_point_history` is a list of acts, each a list of floors. Each floor has:
 
@@ -453,12 +458,12 @@ all co-op, the same as with the old key (in one of them the copies list the play
 different order; characters and ascension never differ within one); 0 keys split; 67,513
 `primary_offers` rows from 1,580 runs, unchanged. The pages have no solo duplicates, so the
 split is tested on the fixture only.
-On the 1,393-page tables: 119 of 798,425 solo `run_key`s have more than one record (0.01%);
-4 differ in the SlayTheStats tag; the copies differ in win (25), floors reached (78) or
-abandonment (36). See "Phase 5 results".
+On the 1,513-page tables: 124 of 869,813 solo `run_key`s have more than one record (0.01%);
+4 differ in the SlayTheStats tag; the copies differ in win (25), floors reached (81) or
+abandonment (37). See "Phase 5 results".
 Parser 1.7.0 on 2 pages fetched 2026-09-28 (`start=2026-05-01` and `start=2026-07-01`,
 2,000 records): 0 retried `run_key`s (0 solo multi-record keys at all). On the 1,393-page
-tables `primary_run_keys_retried` = 72. Deck size: the implied
+tables `primary_run_keys_retried` = 72 (74 on the 1,513 pages). Deck size: the implied
 starting deck is the game's (10, Silent 12, +1 Ascender's Bane from A5) on all 1,405 solo
 records without modifiers or mods; every A5+ run whose start was one card larger had
 Ascender's Bane in its final deck. Custom runs (e.g. Sealed Deck) start smaller. 53 co-op
@@ -885,22 +890,23 @@ tweaks (25 fitted, Serpent Form skipped as upgrade-only), as do `K=1` and
 before block: the pages hold no v0.103.3 runs (`n_runs_before` = 0 for all 15). Nothing
 there means anything at that size.
 
-## Phase 5 results (rerun 2026-09-29, 1,393-page tables)
+## Phase 5 results (rerun 2026-09-29, 1,513-page tables)
 
-From `notebooks/02_pick_rate_did.ipynb` (version 3) on the run tables built 2026-09-28 from
-the first 1,393 export pages (submissions to about 2026-08-23, parser 1.7.0, deduplicated by
-`run_key`). Results are saved in `data/analysis/` (git-ignored); the first pass (949 pages,
-parser 1.4.0, 2026-09-26) is kept in `data/analysis_p949/`. Still provisional: the snapshot
-isn't finished, and late uploads keep adding runs to the stable windows. What changed from
-the first pass is listed at the end of this section.
+From `notebooks/02_pick_rate_did.ipynb` (version 3) and `notebooks/03_anticipation.ipynb` on
+the run tables built 2026-09-29 from the first 1,513 export pages (submissions to about
+2026-08-30, parser 1.7.0, deduplicated by `run_key`). Results are saved in `data/analysis/`
+(git-ignored); the first pass (949 pages, parser 1.4.0, 2026-09-26) is kept in
+`data/analysis_p949/`. Still provisional: the snapshot isn't finished, and late uploads keep
+adding runs to the stable windows. What changed from the 1,393-page rerun is listed at the
+end of this section.
 
-**Data checks.** 119 of 798,425 solo `run_key`s (0.01%) have more than one record; 4 of them
-differ in the SlayTheStats tag, none in character or ascension (parser 1.6.0 separates the
-old key's collisions: `solo_old_run_keys_split` = 28). The copies differ in win (25 keys),
-floors reached (78) or abandonment (36); `build_info.primary_run_keys_retried` = 72, the
-runs win analyses drop. `primary_offers_dedup_removed` = 4,061 rows.
-Offers per stable build: v0.99.1 3.13M (79k runs), v0.103.2 3.60M (94k), v0.103.3 2.06M
-(56k), v0.107.1 6.45M (174k).
+**Data checks.** 124 of 869,813 solo `run_key`s (0.01%) have more than one record; 4 of them
+differ in the SlayTheStats tag, none look like key collisions (parser 1.6.0 separates the old
+key's collisions: `solo_old_run_keys_split` = 32). The copies differ in win (25 keys), floors
+reached (81) or abandonment (37); `build_info.primary_run_keys_retried` = 74, the runs win
+analyses drop. `primary_offers_dedup_removed` = 4,130 rows.
+Offers per stable build: v0.99.1 3.36M (85k runs), v0.103.2 3.80M (98k), v0.103.3 2.12M
+(57k), v0.107.1 7.18M (193k).
 Duplicated solo runs (first pass, `notebooks/scratch_queries.ipynb`, git-ignored): two
 kinds, exact double submissions (e.g. the same record a few lines apart on one page) and
 **retries**, whose copies differ in floors reached (e.g. one copy ends at floor 17 after
@@ -913,71 +919,76 @@ win analyses altogether (`retried`, parser 1.7.0).
 
 **Offer-rate check.** 3 of 43 flagged, against all controls and against controls of their
 own rarity (Common): Patter in both patches and Sculpting Strike. Log share ratio minus the
-controls' median: Patter +0.19 (first patch) and +0.10 (second), Sculpting Strike +0.13
-(about +21%, +10% and +14%). Flagging against the card's own rarity too means it isn't a
+controls' median: Patter +0.20 (first patch) and +0.10 (second), Sculpting Strike +0.13
+(about +23%, +11% and +13%). Flagging against the card's own rarity too means it isn't a
 rarity pool change: something specific to these cards changed how often they're offered.
-Their pick-rate estimates carry a caveat until this is explained. The Scythe (Rare, second
-patch; +0.05 against the Rares' −0.03) sits exactly at the threshold against its own
-rarity (z 3.00 and 3.02) and no longer flags. Regent's Commons have only 8 controls in the
-first window.
+Their pick-rate estimates carry a caveat until this is explained. The Scythe, flagged on the
+first pass, does not flag. Regent's Commons have only 8 controls in the first window.
 
 **Pick-rate DiD, 43 tweaks** (β in percentage points, relative to unchanged cards of the
 same character; "clearly nonzero" = |β| > 2 SE):
 
 | | First patch (26) | Second patch (17) |
 |---|---|---|
-| Clearly nonzero | 23 | 6 |
-| …in the direction of the change | 18 | 6 |
-| Median \|β\| | 4.5 | 1.6 |
+| Clearly nonzero | 23 | 7 |
+| …in the direction of the change | 18 (of 22 counted) | 7 |
+| Median \|β\|, all tweaks | 4.7 | 1.5 |
 
-- Largest: Corrosive Wave −16.5 (pick rate 43% → 29%), Parry +15.1 (13% → 28%), Leading
-  Strike +10.2 (mixed: damage 7 → 3, Shivs 1 → 2), Untouchable (v0.103.2) −9.9, Fight Me
-  +9.3, Pinpoint −9.2, Danse Macabre +8.0 (7% → 16%).
-- Against the direction of the change (first patch): Grand Finale −4.0, Memento Mori −4.1,
-  Solar Strike −1.7 (buffs with lower picks), Sculpting Strike −0.9 ± 0.4 (buff, just past
-  2 SE), and Leading Strike (mixed, counted by its main field). Second patch: all 6 clearly
-  nonzero estimates go the expected way (Patter, Death March, Sic 'Em, Uproar, Unrelenting,
-  Pounce). Debilitate's nerf shows +1.7 ± 0.8 (its first-patch buff was still rising).
-- Parry by hand: controls 27.5% → 27.4%, Parry 12.8% → 27.8%; raw DiD +15.1, regression
-  +15.05 ± 0.75; every robustness option between +15.0 and +15.3.
+"In the direction of the change" leaves out mixed-direction and upgrade-only tweaks (the
+first patch's Leading Strike is clearly nonzero but mixed).
+
+- Largest: Corrosive Wave −16.4 (pick rate 43% → 29%), Parry +14.7 (13% → 28%), Leading
+  Strike +10.3 (mixed: damage 7 → 3, Shivs 1 → 2), Untouchable (v0.103.2) −9.5, Pinpoint
+  −9.1, Fight Me +9.0, Danse Macabre +7.8 (7% → 16%). Royalties (+9.6 ± 6.4) and Serpent
+  Form (+6.9 ± 6.9) are upgrade-only tweaks fitted on a few hundred upgraded offers:
+  uninformative.
+- Against the direction of the change (first patch): Grand Finale −3.9, Memento Mori −4.1,
+  Solar Strike −1.9 (buffs with lower picks), Sculpting Strike −0.8 ± 0.4 (buff, just past
+  2 SE), and Leading Strike (mixed, counted by its main field). Second patch: all 7 clearly
+  nonzero estimates go the expected way (Patter, Death March, Sic 'Em, Synthesis, Uproar,
+  Unrelenting, Pounce). Debilitate's nerf shows +1.5 ± 0.8 (its first-patch buff was still
+  rising).
+- Parry by hand: controls 27.6% → 27.4%, Parry 13.0% → 27.7%; raw DiD +14.8, regression
+  +14.75 ± 0.73 (95% interval +13.3 to +16.2); every robustness option between +14.7 and
+  +14.8 (weeks 0–3 only: +14.2 ± 0.8).
 - The second patch's effects are smaller at similar change sizes, and it isn't the
-  horizon. The first patch's after period runs 15–17 weeks against 9, but over after-build
-  weeks 0–3 alone the median |β| is 4.5 against 1.6 points (22 and 6 clearly nonzero).
-  Most of each effect arrives in the first month: Leading Strike +9.3 at weeks 0–3 against
-  +10.2 overall, Pinpoint −8.3 against −9.2.
+  horizon. The first patch's after period runs 15–17 weeks against 10 for the second, but
+  over after-build weeks 0–3 alone the median |β| is 4.4 against 1.5 points (21 and 7
+  clearly nonzero). Most of each effect arrives in the first month: Leading Strike +9.5 at
+  weeks 0–3 against +10.3 overall, Pinpoint −8.2 against −9.1.
 
 **Error bars.** Clustered SE ÷ plain (iid) SE ranged 0.60–1.25, median 0.99. That ratio
 mostly measures unequal noise between cards: a 0/1 outcome's variance is p(1−p), plain OLS
 assumes one variance for all offers, and the ratio tracks √(p(1−p)) with correlation 0.95.
 Against heteroskedasticity-robust errors, which allow that, clustering by run widens the bars
-by about 3% (clustered ÷ robust: median 1.03, range 1.00–1.19), most for common cards
+by about 3% (clustered ÷ robust: median 1.03, range 0.99–1.19), most for common cards
 offered many times per run (Crescent Spear 1.19, Uproar 1.19, Collision Course 1.13). Parry:
 1.08. Compare clustered errors with robust ones, not plain ones.
 
-**Pre-trends.** Mostly flat. Weekly drift before the release of about 2 SE or more: Fight
-Me (falling, about 1.8 points a week), Patter v0.103.2 (rising, 1.6) and Anticipate (rising,
-1.0). Weaker (1.5–2 SE): Pinpoint and I Am Invincible (falling), Untouchable v0.103.2
-(rising), and Untouchable v0.107.1 (falling, but from only 2 before-weeks). Gather Light,
-flagged on the first pass, is now 1.3 SE. Over a month or more after release a drift of
-that size is comparable to the effects, so these are reported with a caveat or a trend
-adjustment (Anticipate's nerf is probably understated). The second patch has only 2
-before-weeks per card, the first 4. The notebook's χ² screen flags six more cards at
-p < 0.01 on single odd weeks; it ignores correlation between weeks, so the slopes decide.
-Old-build offers after the release: 10,115 in week 0 and about 1,600 spread over all later
-weeks, so mostly release-day timing.
+**Pre-trends.** Mostly flat. Weekly drift before the release of about 2 SE or more: Patter
+v0.103.2 (rising, about 1.8 points a week, 2.8 SE), Fight Me (falling, 1.8, 2.4 SE) and
+Anticipate (rising, 1.0, 2.2 SE). Weaker (1.5–2 SE): Kingly Kick, Untouchable v0.103.2
+(rising), Untouchable v0.107.1 (falling, but from only 2 before-weeks), Memento Mori
+(falling), Gather Light (rising) and I Am Invincible (falling). Over a month or more after
+release a drift of that size is comparable to the effects, so these are reported with a
+caveat or a trend adjustment (Anticipate's nerf is probably understated). The second patch
+has only 2 before-weeks per card, the first 4. The notebook's χ² screen flags eight cards at
+p < 0.01 on single odd weeks (Collision Course, Corrosive Wave, Uproar, Fight Me, Anticipate,
+Hyperbeam, Untouchable v0.107.1, Bulwark); it ignores correlation between weeks, so the
+slopes decide.
 
 **When in the run.** *(First-pass numbers, 949-page tables; not yet rechecked on the
-1,393-page tables: the notebook's summary now gives first and last floor per act, which
+1,513-page tables: the notebook's summary now gives first and last floor per act, which
 land on boss floors.)* Picking falls off through a run (v0.103.2 + v0.107.1, by floor): the
 share of screens where the player takes nothing rises within each act and resets at each
 boss: act 1 from 5% (floor 2) to 19% (floor 15), act 2 about 26% → 33%, act 3 about 39–43%.
 The pick rate per offered card falls correspondingly (32% → 27%, 24% → 22%, about 20%), and
 is close to (1 − skip rate) / 3. So nearly all of the decline is "take anything at all?",
 not "which card?". Timing balance (rechecked): each tweak's share of act-3 offers moved by
-−3.1 to +1.5 points between its blocks (median −0.1), and the moves go together by character
+−2.9 to +1.2 points between its blocks (median −0.1), and the moves go together by character
 and patch (first-patch Silent cards mostly −1 to −2; second-patch cards mostly up), which the
-character's block term absorbs. The card-specific part is at most 1.9 points of act-3 share,
-worth about 0.2 point of pick rate, against effects of 1–15 points: timing composition
+character's block term absorbs. The card-specific part is at most 1.6 points of act-3 share,
+worth about 0.2 point of pick rate (first-pass estimate), against effects of 1–15 points: timing composition
 doesn't bias the estimates. A cleaner estimand for later: the DiD on screens where
 something was picked (choice among cards, free of the deck-size effect; tooling:
 `fit_did(picked_screens_only=True)`).
@@ -986,60 +997,123 @@ something was picked (choice among cards, free of the deck-size effect; tooling:
 
 | Check | Median shift | Note |
 |---|---|---|
-| No uploader-group terms | 0.08 | The tagged share moved little (first patch ≈26% → 23%; second ≈10% → 12%) |
-| Tagged uploaders only | 2.26 | ~¼ of the data, SE about 2× larger; 58% move by more than 2 main SEs; no sign flips |
-| Untagged uploaders only | 0.34 | |
-| Drop shared screens | 0.05 | Competition on the screen doesn't matter |
+| No uploader-group terms | 0.10 | Largest single shift 0.37 SE |
+| Tagged uploaders only | 1.92 | ~¼ of the data, SE about 2× larger; 49% move by more than 2 main SEs; 1 sign flip (as the notebook counts them) |
+| Untagged uploaders only | 0.47 | |
+| Drop shared screens | 0.04 | Competition on the screen doesn't matter |
 | Drop bug-fix-flagged controls | 0.02 | |
-| Drop top 10 uploaders | 0.06 | By `uploader_hash`, which only records from page 1025 on carry (about 28% of records) |
+| Drop top 10 uploaders | 0.04 | By `uploader_hash`, which only records from page 1025 on carry |
 
-Tagged and untagged estimates correlate at 0.72 (χ² of their differences 70 on 43):
-mostly the same answer, with a few cards where tagged players respond more (Danse Macabre,
-Refine Blade) or less (Patter v0.107.1, Untouchable v0.103.2, Fight Me). The tagged-only
-fits' SE is about 2× the main one, which alone would put the median shift near 1.2 SE; the
-observed 2.3 means the groups genuinely respond differently to some changes (input for the
-tooltip question, PLAN item 7 (g)).
+Tagged and untagged estimates correlate at 0.68 (χ² of their differences 79 on 43): mostly
+the same answer, with a few cards where tagged players respond more (Danse Macabre, 3.7σ
+apart; Refine Blade, Glitterstream, Leading Strike about 2σ) or less (Patter v0.107.1,
+Untouchable v0.103.2, Solar Strike). The tagged-only fits' SE is about 2× the main one,
+which alone would put the median shift near 1 SE; the observed 1.9 means the groups
+genuinely respond differently to some changes (input for the tooltip question, PLAN item 7
+(g)).
 
-Second patch's before block: dropping first-patch cards from the controls changes nothing;
-pooling v0.103.2 into the before block moves several estimates (Furnace +0.6 → +4.2,
-Crescent Spear +0.4 → +1.9, Reflect +1.7 → 0.0). The controls aren't the cause, so it is the
-treated cards drifting over time: v0.103.3 alone stays the main design.
+Second patch's before block: dropping first-patch cards from the controls changes nothing
+(every estimate within 0.3 points); pooling v0.103.2 into the before block moves several
+(Furnace 0.0 → +4.1, Crescent Spear +0.9 → +2.4, Reflect +1.6 → −0.2). The controls aren't
+the cause, so it is the treated cards drifting over time: v0.103.3 alone stays the main
+design.
 
-**Dose-response** (38 tweaks; mixed-direction and upgrade-only kept off the line). x =
-direction × ln(new/old) of the main field; y = β in log-odds (delta method), from after-build
-weeks 0–3 so both patches share a horizon; random-effects meta-regression. The all-weeks
-estimates give the same picture.
-- One slope: 1.06 ± 0.18 log-odds per unit of ln(new/old) (all weeks: 1.16 ± 0.18);
+**Anticipation** (`notebooks/03_anticipation.ipynb`, `did.anticipation_all`). Players can react
+to a change when the beta patch notes appear, before the stable release, which would put part
+of the effect into the "before" block and shrink the main estimate. The check runs on stable
+builds where players still have the old card (v0.99.1 for the first patch; v0.103.2 and
+v0.103.3 for the second) and asks whether the gap between the treated card and its controls
+moves at the first-beta date. Lead time from the first beta to the stable release: 7–28 days
+(median 28) for the first patch's 26 tweaks, 14–56 (median 28) for the second's 17.
+- **14 of 43 tweaks are informative** (3 of the first patch, 11 of the second); 29 are not
+  (23 first-patch, 6 second-patch). The rule: at least 2,000 treated offers on each side of
+  the first-beta date and at least 3 days before it. 21 of the 29 fail both tests; for the
+  first patch that is typically about 2 days of old-card play before the first beta date.
+  The earlier rough count of 17 was never verified; it does not match.
+- Of the 14, 10 have a clearly nonzero main effect. Post-beta gap divided by main effect:
+  median −0.11 (3 first-patch tweaks) and −0.25 (7 second-patch tweaks). The post-beta gaps
+  are small or on the opposite side of zero from the main effect, which is not what
+  anticipation would inflate. Examples: Uproar main +2.3, post-beta −2.5 ± 0.5; Patter main
+  −2.5, post-beta +3.5 ± 0.7 (Patter also fails the offer-rate check); Furnace main 0.0,
+  post-beta +5.9 ± 1.0. Opposite-sign gaps look like drift or a build-level change, not a
+  reaction to the notes.
+- **Date versus build** (second patch, `builds=["v0.103.2"]` against both old builds): the
+  informative tweaks agree between the two (Uproar −2.5 → −2.6, Patter +3.5 → +3.9,
+  Crescent Spear +2.5 → +1.7, Bulwark −2.1 → −3.2 pp); the uninformative ones swing more
+  (Sic 'Em −0.7 → −21.2 on a thin sample). So the post-beta gap is not just the move from
+  v0.103.2 to v0.103.3.
+- This does not settle the second patch's flat dose-response. It gives no support to
+  anticipation as the explanation for the tweaks it can test, and it can't test most of the
+  first patch.
+
+Informative tweaks (pp; post-beta = change in the treated–control gap after the first beta
+date, on old-card builds):
+
+| Tweak | Patch | Lead (days) | Main β | Post-beta gap ± SE |
+|---|---|---|---|---|
+| Refine Blade | 1 | 21 | +5.1 | −0.9 ± 0.7 |
+| Glitterstream | 1 | 21 | +3.3 | −0.4 ± 0.6 |
+| Leading Strike | 1 | 14 | +10.3 | +0.4 ± 0.6 |
+| Uproar | 2 | 42 | +2.3 | −2.5 ± 0.5 |
+| Bulwark | 2 | 42 | −0.3 | −2.1 ± 1.1 |
+| Debilitate | 2 | 28 | +1.5 | −0.8 ± 0.9 |
+| Death March | 2 | 28 | +1.8 | −0.7 ± 0.7 |
+| Sic 'Em | 2 | 14 | +2.9 | −0.7 ± 1.0 |
+| Synthesis | 2 | 28 | +1.2 | −0.1 ± 0.7 |
+| Pounce | 2 | 28 | +2.6 | +0.4 ± 0.6 |
+| Unrelenting | 2 | 28 | +5.7 | +0.6 ± 0.8 |
+| Crescent Spear | 2 | 42 | +0.9 | +2.5 ± 0.5 |
+| Patter | 2 | 42 | −2.5 | +3.5 ± 0.7 |
+| Furnace | 2 | 28 | 0.0 | +5.9 ± 1.0 |
+
+**Dose-response** (38 tweaks; mixed-direction and upgrade-only kept off the line: Leading
+Strike, Reflect, Royalties, Serpent Form). x = direction × ln(new/old) of the main field; y =
+β in log-odds (delta method), from after-build weeks 0–3 so both patches share a horizon;
+random-effects meta-regression. A refit on the all-weeks estimates (same model) gives the
+same picture.
+- One slope: 1.04 ± 0.18 log-odds per unit of ln(new/old) (all weeks: 1.14 ± 0.18);
   intercept −0.02 ± 0.05, so no sign that appearing in the patch notes moves picks by
   itself. +1 damage on a 7-damage card (ln(8/7) = 0.13) ≈ +0.14 log-odds ≈ +2.3 points at
   a 20% pick rate.
-- **By patch: first 1.47 ± 0.19, second 0.03 ± 0.31** (all weeks: 1.55 ± 0.20 and
-  0.15 ± 0.32). The second patch shows no dose-response: in June, a bigger tweak didn't move
-  picks more than a small one. A level shift alone (−0.11 ± 0.09) doesn't capture the
-  difference; the slope does. Cause open. Candidates: the SlayTheStats mod's community-stats
-  tooltips (from 2026-06-19, the day after v0.107.1), more experienced players and a settled
-  meta, the kind of number changed (several second-patch mains are power amounts or Forge).
-- Between-card scatter: τ ≈ 0.25 log-odds (Q = 1,055 on 36 df). Same-sized changes had very
+- **By patch: first 1.44 ± 0.19, second 0.04 ± 0.31** (all weeks: 1.52 ± 0.20 and
+  0.19 ± 0.32). The second patch shows no dose-response: in June, a bigger tweak didn't move
+  picks more than a small one. A level shift alone (−0.10 ± 0.09) doesn't capture the
+  difference; the slope does. Cause open.
+- **Same size, same precision, different effect.** The two patches' tweaks on the line match
+  in size and in how well each is measured, and differ in how much picks moved:
+
+  | | Tweaks | Median \|x\| (ln ratio) | Median \|β\| (points) | Median SE (log-odds) |
+  |---|---|---|---|---|
+  | First patch | 24 | 0.172 | 4.2 | 0.052 |
+  | Second patch | 14 | 0.182 | 1.5 | 0.051 |
+
+  So the flat second-patch slope isn't a power problem or a smaller-changes problem: second
+  patch tweaks moved picks about a third as much for the same size of change. Candidates:
+  the SlayTheStats mod's community-stats tooltips (from 2026-06-19, the day after
+  v0.107.1), drift in the thin two-week before block (the upgrade-only placebos below point
+  that way), more experienced players and a settled meta, the kind of number changed
+  (several second-patch mains are power amounts or Forge). Anticipation (above) is not
+  supported for the tweaks it can test.
+- Between-card scatter: τ ≈ 0.24 log-odds (Q = 1,102 on 36 df). Same-sized changes had very
   different effects on different cards.
-- Buffs vs. nerfs, with the patch term: buff slope 1.67 ± 0.38, nerf slope 0.43 ± 0.40.
-  About 2σ apart on 8 nerfs: suggestive only.
+- Buffs vs. nerfs, with the patch term: buff slope 1.60 ± 0.37, nerf slope 0.46 ± 0.40.
+  Not distinguishable on 8 nerfs.
 
 **Upgrade-only placebos.** Un-upgraded offers should show no effect. Serpent Form's moved
-+0.4 ± 1.2 points, but Royalties' moved −3.0 ± 1.2 and Untouchable (v0.107.1)'s −1.3 ± 0.5,
-both about 2.6σ below zero. On the first pass all three were within about 1.6 SE of zero. Both
-are second-patch cards, whose before block is thin and whose treated cards drift (see the
-before-block check above), so drift is the first candidate; a patch-notes attention effect
-would more likely push picks up after a buff, not down. Open. The upgraded-offer estimates
-are uninformative for Serpent Form and Royalties (190 and 162 treated offers); Untouchable's
-is about zero.
++0.05 ± 1.1 points, but Royalties' moved −3.0 ± 1.2 (2.6σ below zero) and Untouchable
+(v0.107.1)'s −1.5 ± 0.5 (3.2σ). Both are second-patch cards, whose before block is thin and
+whose treated cards drift (see the before-block check above), so drift is the first
+candidate; a patch-notes attention effect would more likely push picks up after a buff, not
+down. Open. The upgraded-offer estimates are uninformative for Serpent Form and Royalties
+(204 and 177 treated offers); Untouchable's is about zero (−0.4 ± 1.2).
 
-**Changes from the first pass** (949-page tables, parser 1.4.0): the headline holds (first
-patch 23 of 26 clearly nonzero, was 22; second 6 of 17; dose-response slopes 1.47 and 0.03,
-were 1.44 and 0.02). What moved: the second patch's median |β| (1.3 → 1.6 points) and its
-clearly nonzero estimates, now all in the direction of the change (was 4 of 6); The Scythe
-no longer flags in the offer-rate check; Gather Light's pre-trend dropped below 2 SE and
-Fight Me's rose above it; the tagged-only fits diverge more (median shift 1.5 → 2.3 SE); two
-upgrade-only placebos are no longer clean; the heavy-uploader check ran (no effect).
+**Changes from the 1,393-page rerun:** the headline holds. First patch 23 of 26 clearly
+nonzero (same); second patch 7 of 17 (was 6), all in the direction of the change. Dose-response
+slopes 1.44 and 0.04 (were 1.47 and 0.03). Median |β| 4.7 and 1.5 points (were 4.5 and 1.6).
+Parry +14.7 (was +15.1). The Untouchable (v0.107.1) placebo is −1.5 ± 0.5 (was −1.3 ± 0.5),
+now 3.2σ. Tagged-only fits still diverge (median shift 1.9 SE, was 2.3; correlation 0.68,
+was 0.72). Patter v0.103.2's pre-trend rose to 2.8 SE and Pinpoint's fell below 1.5 SE.
+The offer-rate flags are the same three cards. New: the anticipation check on full tables.
 
 **Open.** Why the second patch has no dose-response (fit per patch within each uploader
 group; by kind of main field); why Patter and Sculpting Strike are offered more often
@@ -1048,7 +1122,7 @@ group; by kind of main field); why Patter and Sculpting Strike are offered more 
 (`picked_screens_only`); the "When in the run" numbers on the new tables; a final rerun
 once the snapshot is complete.
 
-## Audit decisions (rerun 2026-09-28: 1,393 pages, submissions to ~2026-08-23)
+## Audit decisions (rerun 2026-09-29: 1,513 pages, submissions to ~2026-08-30)
 
 From `notebooks/01_data_audit.ipynb` (interim tables from `scripts/audit_extract.py`). These
 define the populations every analysis starts from; the parser flags that implement them are
@@ -1060,12 +1134,13 @@ listed in PLAN.md. The first pass (949 pages, submissions to ~2026-07-19) is kep
 real ones); a released build (in `builds.csv`); start date (UTC) on or after the build's
 release date; first floor is Neow. Offers come from combat, elite and boss rewards,
 including `?` fights and event-then-fight floors (flagged). Abandoned runs stay in for pick
-rates and leave win analyses. On the 1,393 pages, primary is 749,544 runs, 74.3% of
-distinct runs (first pass ~75%).
+rates and leave win analyses. On the 1,513 pages, primary is 815,997 runs, 74.2% of
+distinct runs (1,100,090; first pass ~75%). Not abandoned (win analyses): 656,486 (59.7%).
 
-- **Cheats:** no filter. No cheat flag exists; 95 of ~132k primary wins took under 15
-  minutes (first pass 70 of ~98k) and two look impossible. Flagged for a robustness check
-  only.
+- **Cheats:** no filter. No cheat flag exists; 103 of ~143k primary wins took under 15
+  minutes (1,393 pages: 95 of ~132k; first pass 70 of ~98k), none before act 3 or with zero
+  combat turns; the earlier "two look impossible" count wasn't rechecked. Flagged for a
+  robustness check only.
 - **Runs that don't start at Neow:** dropped. About 15% of v0.98.0 runs and 5% of v0.98.1,
   close to zero from v0.98.2 on. They start without the Neow bonus (a different setup) and
   sit in launch builds outside the patch windows.
@@ -1073,9 +1148,9 @@ distinct runs (first pass ~75%).
 **Thin builds.** Pick-rate comparisons use windows of builds (before vs. after a change), so
 a build only needs to stand alone if it can't be pooled. Rule: a build is pooled with its
 neighbour on the same branch when no card change falls between them; otherwise it is left
-out of any window it can't fill. Under 2,000 primary runs on the 1,393 pages: v0.99.0 (beta,
-3 days, 358), v0.103.1 (beta hotfix, 1 day, 1,410) and v0.110.0 (beta, superseded by the
-v0.110.1 hotfix the next day, 331). v0.105.0 (2,349) and v0.109.1 (9,024), thin on the first
+out of any window it can't fill. Under 2,000 primary runs on the 1,513 pages: v0.99.0 (beta,
+3 days, 360), v0.103.1 (beta hotfix, 1 day, 1,531) and v0.110.0 (beta, superseded by the
+v0.110.1 hotfix the next day, 356). v0.105.0 (2,491) and v0.109.1 (9,861), thin on the first
 pass, no longer are. Checked (2026-09-25) against
 `card_changes`, `beta_card_changes`, `behavior_changes`, update-history and the patch notes:
 no card change between v0.99.0 and v0.99.1, v0.103.0 and v0.103.1, or v0.105.0 and
@@ -1098,39 +1173,39 @@ time (v0.103.3, v0.103.2). Beta and stable players differ (win and skip rates di
 branch), so comparisons are within branch or allow branch-specific trends, never a pooled
 before/after.
 
-**Snapshot reach and backfill.** As of 2026-09-28: 1,393 pages, submissions to about
-2026-08-23 (the saved cursor), play dates to 2026-08-23; the download continues. Backfill
+**Snapshot reach and backfill.** As of 2026-09-29: 1,513 pages, submissions to about
+2026-08-30 (the saved cursor), play dates to 2026-08-30; the download continues. Backfill
 is heavy: from about page 20 on, every page holds runs played as far back as March, because
 players upload their history in bulk (the SlayTheStats mod uploads a whole local history,
 oldest first). Upload lag (section 2 of the notebook; primary runs; a page's 99th-percentile
-play date stands in for its submission date): median 16 days; 55% of runs arrive more than
-7 days after being played, 44% more than 30 and 17% more than 90. Tagged runs lag far more
-(median 62 days, untagged 5). Provisional until the snapshot is finished. Recent builds, and
+play date stands in for its submission date): median 18 days; 56% of runs arrive more than
+7 days after being played, 44% more than 30 and 18% more than 90. Tagged runs lag far more
+(median 65 days, untagged 5.5). Provisional until the snapshot is finished. Recent builds, and
 tagged runs most of all, are under-counted until then.
 
 **Uploader groups.** `_sts`-tagged uploads (SlayTheStats mod users) differ from the rest:
 
 | Build | Cards | sd of per-card z | Spearman | typical gap (pick rate) |
 |---|---|---|---|---|
-| v0.103.2 (before community tooltips) | 400 | 3.91 | 0.94 | 0.043 |
-| v0.107.1 (after) | 400 | 5.88 | 0.87 | 0.068 |
+| v0.103.2 (before community tooltips) | 400 | 3.77 | 0.94 | 0.039 |
+| v0.107.1 (after) | 400 | 5.94 | 0.88 | 0.062 |
 
-(First pass: 3.76, 0.93, 0.046 and 4.95, 0.86, 0.074. The sd of z grows with the sample for
+(First pass: 3.76, 0.93, 0.046 and 4.95, 0.86, 0.074; 1,393 pages: 3.91, 0.94, 0.043 and 5.88, 0.87, 0.068. The sd of z grows with the sample for
 the same gap, since z scales with √n; the typical gap beyond noise is the number to compare
 across snapshots.) The groups already differed before the mod showed community stats, and
 the same cards lead both builds (tagged players pick Setup Strike, Perfected Strike and
 Flick Flack less, Footwork and Well-Laid Plans more), so this is mainly selection, possibly
 larger after June (different builds and upload timing, so not a clean comparison). A
-typical gap of 4–7 points is as large as many patch effects: pick-rate estimates are made
+typical gap of 4–6 points is as large as many patch effects: pick-rate estimates are made
 within uploader group or with it as a covariate, pooled as a robustness check. Tagged
 players also win about 8 points more (v0.103.2, finished runs: 0.27 against 0.20).
 
 **Win rates drift within a build.** In v0.103.2 alone (same card versions throughout), the
 win rate of finished primary runs fell from April to May in both groups (untagged 0.23 →
-0.17, tagged 0.32 → 0.23), and the tagged share fell from ~30% to ~13%. So calendar time
+0.17, tagged 0.30 → 0.23), and the tagged share fell from ~32% to ~14%. So calendar time
 matters beyond build: win analyses need week (or ascension) controls, not only build.
 **Rising ascension doesn't explain it:** mean ascension fell over the same weeks (untagged
-5.0 → 4.0, tagged 6.7 → 5.6), which should have raised win rates. A candidate to check:
+5.0 → 4.0, tagged 6.5 → 5.4), which should have raised win rates. A candidate to check:
 stronger players moving to the betas that ran alongside v0.103.2 (v0.104.0–v0.106.1),
 leaving a weaker population on stable. The wins tooling's week × build fixed effects absorb
 the drift either way.
@@ -1146,16 +1221,16 @@ the drift either way.
   per game launch. So tagged runs cover every build but were all submitted after June 19,
   and the tagged share by play date depends on upload timing and on where the snapshot ends.
   It isn't a population measure (the mid-May drop in tagged share in the audit is most likely
-  this). Tagged uploaders rank cards differently from untagged ones (v0.107.1, 1,393 pages:
-  400 cards, Spearman 0.87, per-card z sd 5.88, mean z −0.92). Whether that is selection or the mod's
+  this). Tagged uploaders rank cards differently from untagged ones (v0.107.1, 1,513 pages:
+  400 cards, Spearman 0.88, per-card z sd 5.94, mean z −1.00). Whether that is selection or the mod's
   tooltips is being checked against v0.103.2, which was played before community tooltips
   existed. Solo runs can't be grouped by player, so part of the gap may be a few heavy
   uploaders. Analyses stratify by uploader group or include it as a covariate.
 - **Co-op duplicates.** A multiplayer run gets uploaded once per player (seen in a sample:
   two records with the same run time, same death, timestamps 40 ms apart). The first 5
   pages had 4,641 records and 4,279 distinct (seed, start_time): about 8% co-op
-  duplicates. On the first 1,393 pages: 1,315,862 records (after the repeated pages),
-  1,008,926 distinct runs; solo runs are 79% of distinct runs. `scripts/snapshot_export.py` reports a `dedup` column on this key; raw `runs` counts
+  duplicates. On the first 1,513 pages: 1,435,841 records (after the repeated pages),
+  1,100,090 distinct runs; solo runs are 79% of distinct runs (869,780). `scripts/snapshot_export.py` reports a `dedup` column on this key; raw `runs` counts
   are upper bounds. Whether the unit of analysis is the run or the player-run gets decided
   at parsing (a co-op run has one outcome but several players' choices).
 - **Player IDs.** Solo runs use `player_id: 1`. Multiplayer runs carry real 64-bit Steam
@@ -1211,29 +1286,29 @@ the drift either way.
   (or other new content) ships, re-cache the lists for the new builds and check each run
   against its own build's lists, with a backstop (act 4 content on a build before its
   release = modded), so a mod id that collides with a new official id doesn't un-flag
-  earlier modded runs. Audit counts (records, 1,393 pages): `save_dict_*` 23,738, mod modifier
-  8,438, mod card 4,894, mod character 1,266, mod acts 1,414. The parser's entity rule flags
-  425 more runs on those pages (`runs_mod_entity_only`); the ids are mod content
+  earlier modded runs. Audit counts (records, 1,513 pages): `save_dict_*` 26,556, mod modifier
+  9,274, mod card 5,690, mod character 1,362, mod acts 1,500. The parser's entity rule flags
+  453 more runs on those pages (`runs_mod_entity_only`); the ids are mod content
   (`ANCIENTSAWAKENED-…`, `HADESANCIENTS-…`, `REBALANCED_SPIRE_…`, STS1's Corrupt Heart, an
   act-4 architect boss on v0.99.1, player-vs-player encounters), not new official content.
 - **Treatment timing.** Assign builds from each run's own `build_id` and `start_time`, not
   `submitted_at` — players often upload their whole history folder at once (the
   SlayTheStats mod does exactly that). This also means early builds can keep gaining runs
   late in the export.
-- **Runs dated before their build's release.** 7,631 runs (~0.6%, 1,393 pages) start before
+- **Runs dated before their build's release.** 8,046 runs (~0.7% of distinct runs, 1,513 pages) start before
   their build's `release_date`, by 1 day up to ~4.5 months (median a few days). Most likely saved on the old
   build and finished after an update, so their early floors may be on the old card
   versions. Filter: start date (UTC) ≥ release date (`runs.before_release`). Runs that
   cross an update on the release day itself can't be detected.
 - **Non-release builds.** Pre-early-access playtest builds (v0.84.0–v0.97.0, 25 runs),
-  release candidates (`-rc.N`, 13 runs) and `NON-RELEASE-VERSION` (314 runs) are in the
+  release candidates (`-rc.N`, 13 runs) and `NON-RELEASE-VERSION` (321 runs) are in the
   export but not in `builds.csv`. Dropped (`runs.released = false`).
 - **Old builds keep being played.** Every stable build has runs dated months after it was
   replaced (v0.98.x into August). The build still sets the card versions, so this doesn't
   affect treatment assignment.
-- **Cheated / modded runs.** No cheat flag in the export. Audit (primary runs, 1,393 pages):
-  95 of 132,168 wins took under 15 minutes, and two look impossible (7,355 gold with 39 relics; an
-  empty deck). No win before act 3. Too few to matter for pick rates: flagged, not
+- **Cheated / modded runs.** No cheat flag in the export. Audit (primary runs, 1,513 pages):
+  103 of about 143,000 wins took under 15 minutes; the two that looked impossible on 1,393 pages
+  (7,355 gold with 39 relics; an empty deck) are still there. No win before act 3. Too few to matter for pick rates: flagged, not
   filtered. Modded runs are filtered via the mod markers above.
 
 ## Analysis ideas
@@ -1300,11 +1375,11 @@ close to randomized. That supports:
 
 ## Open questions / next steps
 
-1. Run the full snapshot (in progress locally; 1,393 pages so far, see Data sources).
+1. Run the full snapshot (in progress locally; 1,513 pages so far, see Data sources).
    Audit on those pages: every build from v0.98.1 on except v0.99.0, v0.103.1 and v0.110.0
-   has ≥2,000 primary runs; 40 of the 47 numeric-tweak cards have 4.6k or more primary
-   offers on each side of their stable change (4 are never offered as rewards, 3 have under
-   ~140).
+   has ≥2,000 primary runs; on the 1,393 pages, 40 of the 47 numeric-tweak cards had 4.6k or
+   more primary offers on each side of their stable change (4 are never offered as rewards,
+   3 have under ~140; not recounted on the 1,513 pages).
 2. ~~Verify the patch history endpoints.~~ Done — `notes/patch_history.md`.
    ~~Build the card change table and the version → branch → date table.~~ Done —
    `reference/`. ~~Label the text-only changes.~~ Done — `text_only_labels.csv`.

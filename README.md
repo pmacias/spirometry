@@ -3,8 +3,8 @@
 Measuring what Slay the Spire 2's early-access balance patches actually did.
 
 **Status:** work in progress. Pick-rate results for the numeric tweaks (first analysis
-phase) are in [SPIROMETRY.md](SPIROMETRY.md), provisional until the run snapshot is
-complete; win-effect tooling is built.
+phase) and an anticipation check are below and in [SPIROMETRY.md](SPIROMETRY.md), provisional
+until the run snapshot is complete; win-effect tooling is built, not yet run on the full data.
 
 ## The question
 
@@ -20,6 +20,63 @@ than weak ones. The designs here lean on the fact that the game's RNG decides wh
 offered, and on unchanged cards as a control for everything else that shifts between patches.
 See [PLAN.md](PLAN.md) for the research questions and methods.
 
+## Results so far
+
+> **Provisional.** Computed on the first 1,513 pages of the run export (about 1.1 million
+> distinct runs, submissions to about 2026-08-30); the download is still running, and recent
+> builds are under-counted until it finishes. Numbers will move.
+
+**What was tested.** 43 card changes where a single number changed: 26 in patch v0.103.2 and
+17 in v0.107.1. The data are about 816,000 solo, unmodded runs. For each changed card, the
+question is how much its pick rate (picked / offered) changed, compared with unchanged cards
+of the same character over the same builds (a difference-in-differences). Before that, an
+offer-rate check confirms the patch didn't change how often the card is offered, since the
+game's RNG decides the offers.
+
+**Findings**
+
+1. **Players responded to the changes, more in the first patch than the second.** In the first
+   patch, 23 of 26 tweaks moved the pick rate by more than two standard errors, and 18 of
+   those moved the way the change pointed (median size across all 26: 4.7 percentage points).
+   In the second patch, 7 of 17 did, all 7 in the direction of the change (median size 1.5
+   points).
+2. **One worked example.** Parry (a Regent card, main number 6 → 10) went from a 13.0% to a
+   27.7% pick rate, while the unchanged Regent cards stayed at 27.6% → 27.4%. The estimated
+   change is +14.7 points (95% interval +13.3 to +16.2). The largest drop is Corrosive Wave
+   (a nerf): 42.8% → 28.8%, −16.4 points.
+3. **In the first patch, bigger changes moved picks more.** On the log-odds scale the slope is
+   1.44 ± 0.19 per unit of ln(new/old). In the second patch it is 0.04 ± 0.31: tweaks of the
+   same size, measured equally well, moved picks about a third as much (median 1.5 against
+   4.2 points), with no visible relationship to size. Why is open; see below.
+4. **Reacting to the beta notes doesn't explain it, as far as it can be tested.** Players can
+   see changes in the public beta before the stable release. Where the data allow the check
+   (14 of 43 tweaks), the pick-rate gap before the stable release is small or points the
+   other way from the main effect, which is not what a reaction to the notes would look like.
+
+<!-- FIGURE 1: forest plot, every tweak's estimated change with its 95% interval (docs/figures/forest.png) -->
+<!-- FIGURE 2: dose-response, one point per tweak, first and second patch drawn separately (docs/figures/dose_response.png) -->
+
+**Checks.** The main estimates barely move when the fit drops the most active uploaders,
+drops offers that shared a screen with the changed card, or drops controls affected by bug
+fixes. Uploaders who use a community stats mod pick cards differently from other uploaders,
+so the fits adjust for uploader group; fits on the mod users alone are noisier and shift more.
+Three cards (Patter, twice, and Sculpting Strike) were also offered more often after their
+patch, so their estimates carry a caveat.
+
+**Open questions.**
+- Why the second patch shows no size relationship. Candidates: drift in a short "before"
+  period (two upgrade-only placebo checks in the second patch moved by 2.6 and 3.2 standard
+  errors when they shouldn't have, which points at drift rather than a real reaction),
+  community-stats tooltips that arrived the day after v0.107.1, and the kind of number
+  changed.
+- The analysis so far measures what players *did*. Whether the changes altered how often
+  picking the card *wins* is the next phase (built, not yet run on the full data).
+
+**Limits.** Uploaders are self-selected and probably more dedicated than average players.
+Other changes in the same patch, player learning and meta drift are handled only through the
+unchanged-card comparison. These are estimates of pick-rate change relative to unchanged
+cards, not proof of why players changed their picks.
+
 ## Repository
 
 | File | What it is |
@@ -31,7 +88,7 @@ See [PLAN.md](PLAN.md) for the research questions and methods.
 | `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `exposure.py` builds the beta exposure table (first beta date and lead time per tweak); `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study, anticipation check) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens); `strength.py` the strength change across a patch (IV before vs. after, net of unchanged cards) and the offer balance checks |
 | `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
 | `scripts/audit_extract.py` | Interim: compact audit tables from the snapshot (runs, aggregated offer counts) into `data/audit/` |
-| `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power. `02_pick_rate_did.ipynb`: offer-rate check, pick-rate DiD, event studies, robustness, dose-response. `iv_primer.ipynb`: a simulation showing why the naive win effect is biased and how the offer as an instrument fixes it |
+| `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power. `02_pick_rate_did.ipynb`: offer-rate check, pick-rate DiD, event studies, robustness, dose-response. `03_anticipation.ipynb`: does the gap between a changed card and its controls already move at the first-beta date, on builds where players still have the old card? `iv_primer.ipynb`: a simulation showing why the naive win effect is biased and how the offer as an instrument fixes it |
 | `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes, change events, card-patch net fields, per-build card versions, DiD windows, numeric tweak sizes, beta exposure (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages) |
 | `data/runs/` | Run tables built locally by `spirometry.runs` (git-ignored, never committed) |
 | `data/audit/` | Audit tables built locally by `scripts/audit_extract.py` (git-ignored) |

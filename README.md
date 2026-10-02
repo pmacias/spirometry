@@ -191,6 +191,8 @@ df = did.load_window(con, "PARRY@v0.103.2/patch")
 did.offer_rate_check(df, "PARRY@v0.103.2/patch")
 did.fit_did(df, "PARRY@v0.103.2/patch")
 results = did.run_all(con)            # every solo-estimable tweak
+wide = did.run_all(con, control_scope="all")         # controls from every character ("other": other characters only)
+did.control_pool_sizes(con)           # control cards and offers per tweak and scope
 did.anticipation_check(con, "PARRY@v0.103.2/patch")   # does the gap move at the beta date?
 did.anticipation_weekly(con, "BULWARK@v0.107.1/patch")
 did.anticipation_all(con, main=results)              # every tweak, beta_main from run_all

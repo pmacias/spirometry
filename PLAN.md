@@ -237,6 +237,19 @@ copy; a test checks they agree). Tested on synthetic saved fits with the noteboo
 layout (`spirometry.sample_results`); not run on Phil's fits. The offer-rate flags stay
 blank until notebook 02 saves its section 3 table (`offer_rate.parquet`). Next: Phil runs
 the export on `data/analysis/`.*
+*Control-scope tooling (CC, PR): `control_scope` on `control_cards`, `load_window` /
+`load_block_data`, `fit_did`, `fit_event_study` and `run_all`: `"color"` (default, the
+same-color controls, unchanged), `"all"` (every character's unchanged cards), `"other"`
+(the other characters' only). `did.window_changes` derives the cards changed or
+bug-fix-flagged between two blocks for every color from `card_versions.csv` (it reproduces
+`windows.csv`'s same-color columns on all 137 card-patch windows); no reference table
+changed. `run_all` rows carry `control_scope` and `n_control_cards`;
+`did.control_pool_sizes` tabulates control cards and offers per tweak and scope. Tested on
+synthetic offers (`"color"` reproduces the earlier numbers; with a 2-point shock to every
+card of the treated color and no effect, `"color"` ≈ 0, `"all"` ≈ 0.02 × (1 − the treated
+color's share of the controls), `"other"` ≈ 0.02). Not run on real data. Next: Phil runs
+`fit_all("ctrl_all", control_scope="all")`, `fit_all("ctrl_other", control_scope="other")`
+and `did.control_pool_sizes(con)` in notebook 02.*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -301,6 +314,8 @@ figures still to be saved from the notebooks.*
    unchanged cards): tooling in `spirometry.strength`, ready to run; about 40 tweaks get a
    row (43 solo-estimable minus 3 upgrade-only), so the notebook should say how many rows
    were tested; partial pooling (step 7) is the planned answer to multiple comparisons.
+   (n) Control-group scope: how much the per-card effects move with same-color, all, or
+   other-character controls (tooling: `control_scope`, `control_pool_sizes`; Phil runs it).
 8. When official act 4 (or other new content) ships: re-cache the game lists for the new
    builds and switch the mod-entity rule to per-build lists (see SPIROMETRY.md, custom and
    modded runs). The cached lists for v0.99.0 and v0.110.1 are empty: re-fetch them or fall
@@ -838,3 +853,16 @@ figures still to be saved from the notebooks.*
   same-rarity offer-rate flags, patch term in the dose-response, section 0's check of what
   differs between copies of a duplicated run); v3 = after PR #12, 1,513-page tables, parser
   1.7.0, with the heavy-uploader check.
+- Control scope (`did`'s `control_scope`, 2026-10-02): `"color"` stays the default and
+  exactly the old definition. Colorless (and token, status, curse, event, quest) cards are
+  controls under no scope: under `"color"` they never were; they are offered to every
+  character, so under `"other"` they would bring the treated character's own runs and
+  screens back into a group meant to have none; and they are rare in the reward offers the
+  fit uses (shop, events and ancients are their sources). Each card's offers come only
+  from its own character's runs (a card offered from another color's pool is not loaded),
+  so `"all"` is `"color"` plus `"other"`. Other colors' changed and bug-fix-flagged cards
+  are derived at run time from `card_versions.csv` with `windows.csv`'s rule (no new
+  reference columns); the flags use its `behavior_event_ids`, which come from
+  `behavior_changes.csv`, rather than reparsing that file, so the rule is the same one.
+  The model (fixed effects, covariates, clustering) is identical across scopes, with no
+  color or character terms, so differences come from the choice of controls alone.

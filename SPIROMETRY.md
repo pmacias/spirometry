@@ -489,10 +489,32 @@ cached card list for colors).
   `picked_screens_only`). Categorical columns to keep memory down. `extra_cols=True` adds
   where the offers come from: `source`, `map_point_type`, `floor`, `event_fight`,
   `list_len`, `set_idx` (for breaking down the extra offers of Patter, Sculpting Strike and
-  The Scythe by act, floor type and event fights).
-- `control_cards(card_patch_id, drop_behavior_flags=False, df=...)`: same-color cards seen
-  in the window minus the treated card and `control_exclusions` (and
-  `control_behavior_flags` if asked).
+  The Scythe by act, floor type and event fights). `control_scope="all"` / `"other"` (also
+  on `load_block_data`) adds the other four characters' cards that are unchanged between
+  the blocks, each from its own character's runs (`"other"` keeps only the changed cards of
+  the treated color, the possible treated cards); the filter is in the DuckDB query.
+- **Control group.** `control_cards(card_patch_id, drop_behavior_flags=False, df=...,
+  control_scope="color")`: the cards seen in the window in the scope's colors, minus the
+  treated card, minus cards changed between the before and after blocks (and bug-fix-flagged
+  cards if asked). Scopes:
+  - `"color"` (default, the definition used for every result so far): the treated card's
+    color, minus `windows.csv`'s `control_exclusions` (and `control_behavior_flags`).
+    Same-color controls share offers, screens and players with the treated card, which
+    absorbs character-level shocks, but they compete with it for picks.
+  - `"all"`: the five character colors, the treated color included.
+  - `"other"`: the other four characters' colors only (no shared runs or screens).
+
+  For `"all"` and `"other"`, `window_changes(before_builds, after_builds)` gives the
+  changed and flagged cards of every color from `card_versions.csv`, by the rule
+  `windows.csv` uses for its same-color columns (it reproduces them on all 137 card-patch
+  windows). Colorless, token, status, curse, event and quest cards are controls under no
+  scope, and a card offered outside its own character's runs is not loaded, so `"all"` is
+  `"color"` plus `"other"` (decision log). The fit is the same under every scope (no color
+  or character terms), so under the wider scopes `block^group` pools the characters: a
+  shock to the treated character alone is not absorbed. That difference is what comparing
+  the scopes measures. `control_pool_sizes(con, scopes=...)`: control cards, control
+  offers (before, after, and the treated color's share) and treated offers per tweak and
+  scope, as loaded (before `fit_did`'s filters), from one aggregate query per window.
 - `offer_rate_check(df, card_patch_id)` (step 1): per card, offers and share of the
   character's offers before/after, log share ratio, `z_spread` (against the controls'
   median and scaled MAD), `z_binom` (log ratio minus the controls' median over its binomial
@@ -514,7 +536,8 @@ cached card list for colors).
   treated card: competition on the screen), `drop_behavior_flags` (bug-fixed controls),
   `drop_uploaders` (heavy-uploader check), `max_week_after` (fixed horizon: keep only
   after-block offers with `week` <= the cap, 0 = release week; the before block is
-  unchanged). Returns beta (probability units), se (clustered by `run_key`, the main
+  unchanged), `control_scope` (above; `drop_shared_screens` can only drop same-color
+  controls, `drop_behavior_flags` drops flagged controls of every color in the scope). Returns beta (probability units), se (clustered by `run_key`, the main
   error; ci95 uses it), se_hc (heteroskedasticity-robust, pyfixest `"hetero"`, same fit:
   the comparison for clustering), se_iid, ci95, `max_week_after` (the setting, None when
   unset) and `after_week_max` (latest after-block week in the fit data), counts and the
@@ -537,7 +560,10 @@ cached card list for colors).
   columns and log-odds versions, one data load per window × character. Upgrade-only tweaks
   are fit on upgraded offers, with the un-upgraded fit as `placebo_*`. Fit options (e.g.
   `max_week_after=3`) go to both the main and the placebo fit. A fit that can't run
-  (e.g. an empty block) gets the reason in `error`.
+  (e.g. an empty block) gets the reason in `error`. `control_scope` loads and fits with
+  that scope; every row carries `control_scope` and `n_control_cards` (controls with an
+  offer in the fit data). Saved fits made before this have neither column (they are
+  `"color"`).
 
 Checked on synthetic offers (`tests/test_did.py`): a planted effect is recovered and a
 planted null gives ~0; with the tagged share moving 10% → 70% and a 20-point group gap on
@@ -561,6 +587,14 @@ shift toward act 3 shows a fake effect with one act term and none with `card_act
 `picked_screens_only` keeps exactly the screens with a pick. On 2 pages fetched 2026-09-28
 (`start=2026-05-01`, `start=2026-07-01`) the first stable window runs end to end with
 `extra_cols`, `card_act_fe` and `picked_screens_only`, and the smoke test passes.
+Control scope (synthetic, three characters of 8 cards, 2,000 runs per character and
+block): `"color"` gives the pre-change numbers to 1e-9 and the same fit on data loaded for
+`"all"`. Every card of the treated color picked 2 points more after the change, true effect
+0: `"color"` −0.002 ± 0.006, `"all"` 0.014 ± 0.006 (expected 0.02 × (1 − 6/21) = 0.014, 6 of
+21 controls of the treated color), `"other"` 0.021 ± 0.006 (expected 0.02); over six seeds
+`"all"` − `"color"` is 0.012 to 0.017. A card changed in another color is neither a control
+nor loaded; colorless cards and a card offered in another character's runs never enter.
+Not run on real data.
 
 **Anticipation check** (does the stable "before" period already contain the change?). Every
 change was on a beta build, with public notes, before its stable release; for 21 of the 26

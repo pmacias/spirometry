@@ -318,6 +318,15 @@ figures still to be saved from the notebooks.*
    clear notebook 02's output cells that show hashed uploader IDs and top-uploader counts;
    review the licenses and attribution of `reference/raw/` (wiki pages CC BY-SA, Spire Codex
    caches); aggregates only.
+13. Set `MIN_RUNS` (notebook 01, "Runs per build") from a power calculation. It is a working
+   threshold now: 2,000 primary runs, chosen by hand.
+14. Open questions moved out of the notebooks' "What to write down" checklists (the rest of
+   those checklists is already in SPIROMETRY.md, "Phase 5 results" and "Anticipation"):
+   (a) ascension as one fixed-effect level each, or banded (notebook 02: check
+   `n_singletons_dropped` in the main table); (b) how many heavy uploaders the robustness
+   check should drop (10 now); (c) notebook 03 section 6: which informative tweaks' weekly
+   panels show a step, a ramp, or a straight-line drift at the first-beta date, by card (not
+   yet recorded).
 
 ## Decision log
 - Spire Codex export is the primary source; sts2runs.com only for cross-checks.
@@ -814,3 +823,18 @@ figures still to be saved from the notebooks.*
 - Workflow: Phil pushes and merges everything himself. CC sessions open pull requests and
   stop; documentation edits are prepared as `_new` files against a synced copy and moved
   into place by Phil.
+- Notebook prose pass (one-time, 2026-10-02, CC at Phil's request; an exception to "analysis
+  notebooks are Phil's"): markdown cells only in notebooks 01–05 and `iv_primer`. Questions
+  used as headings, transitions or prompts rewritten as statements (fill-in cells kept, their
+  headings made plain labels); terms defined at first use; stale "Draft, not yet run" notes
+  and wrong cross-references fixed. Code cells, outputs, execution counts and metadata
+  unchanged (hash-checked); no notebook was run. Follow-up on the same PR (Phil's decisions):
+  notes cells, the decision-rule cell and the review checklists removed (notebooks hold no
+  notes or checklists; what the notebook can't test stays as prose); prose numbers corrected
+  where an output or `builds.csv` gives the value; notebook 02's version history moved out of
+  its opening (see the next entry).
+- Notebook 02 versions: v1 = first pass (949-page tables, parser 1.4.0, 2026-09-26; saved fits
+  in `data/analysis_p949/`); v2 = after PR #11 (robust SEs, fixed horizon in section 6b,
+  same-rarity offer-rate flags, patch term in the dose-response, section 0's check of what
+  differs between copies of a duplicated run); v3 = after PR #12, 1,513-page tables, parser
+  1.7.0, with the heavy-uploader check.

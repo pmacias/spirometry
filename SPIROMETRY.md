@@ -1109,8 +1109,8 @@ same picture.
   So the flat second-patch slope isn't a power problem or a smaller-changes problem: second
   patch tweaks moved picks about a third as much for the same size of change. Candidates:
   the SlayTheStats mod's community-stats tooltips (from 2026-06-19, the day after
-  v0.107.1), drift in the thin two-week before block (the upgrade-only placebos below point
-  that way), more experienced players and a settled meta, the kind of number changed
+  v0.107.1), drift in the thin before block (v0.103.3, stable for about three weeks; the
+  upgrade-only placebos below point that way), more experienced players and a settled meta, the kind of number changed
   (several second-patch mains are power amounts or Forge). Anticipation (above) is not
   supported for the tweaks it can test.
 - Between-card scatter: τ ≈ 0.24 log-odds (Q = 1,102 on 36 df). Same-sized changes had very

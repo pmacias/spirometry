@@ -989,6 +989,9 @@ same character; "clearly nonzero" = |β| > 2 SE):
 
 "In the direction of the change" leaves out mixed-direction and upgrade-only tweaks (the
 first patch's Leading Strike is clearly nonzero but mixed).
+Caveat: "clearly nonzero" uses the clustered SE, and the placebo check (see "Placebo
+calibration of the DiD errors") found |z| > 2 in 71% of first-patch and 37% of second-patch
+placebo fits, so these counts are not calibrated.
 
 - Largest: Corrosive Wave −16.4 (pick rate 43% → 29%), Parry +14.7 (13% → 28%), Leading
   Strike +10.3 (mixed: damage 7 → 3, Shivs 1 → 2), Untouchable (v0.103.2) −9.5, Pinpoint
@@ -1140,6 +1143,9 @@ same picture.
   | First patch | 24 | 0.172 | 4.2 | 0.052 |
   | Second patch | 14 | 0.182 | 1.5 | 0.051 |
 
+  Caveat: "how well each is measured" is the clustered SE, which the placebo check (see
+  "Placebo calibration of the DiD errors") did not find calibrated, and by different amounts
+  in the two patches, so equal precision is not established.
   So the flat second-patch slope isn't a power problem or a smaller-changes problem: second
   patch tweaks moved picks about a third as much for the same size of change. Candidates:
   the SlayTheStats mod's community-stats tooltips (from 2026-06-19, the day after
@@ -1174,6 +1180,59 @@ group; by kind of main field); why Patter and Sculpting Strike are offered more 
 (v0.107.1); the DiD restricted to screens where something was picked
 (`picked_screens_only`); the "When in the run" numbers on the new tables; a final rerun
 once the snapshot is complete.
+
+## Placebo calibration of the DiD errors (2026-10-02, 1,513-page tables)
+
+Prompted by the 43 tweaks fit on early- vs late-uploaded runs giving z-differences with sd
+1.48. Design (`did.placebo_fit` / `placebo_all`): the same DiD (fit_did's model, fixed
+effects and clustering by run_key; default options, all weeks, same-color controls) with an
+**unchanged card of the window's color as the pseudo-treated card**: one that passes the
+control rules, with the window's real treated card dropped from the data and the pseudo card
+removed from the controls. Its true effect is zero, so with honest errors z = β / SE is
+about N(0, 1). Upgrade-only tweaks are fit on upgraded offers, as their main fit. Up to 20
+pseudo cards per tweak, seed 0. **min_offers rule:** a pseudo card needs at least as many
+offers in each block as the least-offered real tweak has (smallest min(before, after)
+treated count over the 43; counted as loaded, ascension known, upgraded only where the fit
+is). It came out at 50, set by an upgrade-only tweak, so it barely binds for all-offers fits
+(smallest all-offers pseudo card: 1,225 offers before, 2,837 after).
+
+Run once (`data/analysis/placebo_main.parquet`, 2,392 s): 860 fits on 43 tweaks, no errors.
+
+| | Fits | Mean z | SD z | \|z\| > 2 | \|z\| > 3 |
+|---|---|---|---|---|---|
+| Honest errors | | 0 | 1 | 0.046 | 0.003 |
+| All | 860 | −0.007 | 4.10 | 0.574 | 0.383 |
+| First patch (26 tweaks) | 520 | −0.168 | 4.89 | 0.708 | 0.504 |
+| Second patch (17 tweaks) | 340 | +0.239 | 2.45 | 0.371 | 0.197 |
+| Pseudo cards below median offers | 425 | | 3.42 | | |
+| Pseudo cards at or above median | 435 | | 4.65 | | |
+
+Tweaks sharing a window draw the same pseudo cards, and those fits differ only in which real
+treated card is left out: the 860 rows are 463 distinct (window, pseudo card) pairs. One row
+per pair (`placebo_summary(dedupe=True)`): sd z 3.68, |z| > 2 in 52%; median |z| 2.06
+(honest: 0.674), robust sd (1.4826 × MAD) 3.05; by patch, robust sd 4.34 (first) and 2.09
+(second). Median clustered SE / heteroskedasticity-robust SE 1.02, / iid SE 1.08.
+
+Follow-up tables (`data/analysis/placebo_diagnostics_*.csv`, from the saved fits; no refit):
+- Real tweaks against their own window's placebos (`did.placebo_vs_real`, real betas from
+  `did_main.parquet`, same options): empirical p (share of the window's placebo |β| ≥ the
+  real |β|) < 0.05 for 10 of 26 first-patch and 1 of 17 second-patch tweaks. Median |β|:
+  first patch real 4.3 points, placebo 2.3; second real 1.5, placebo 1.4.
+- Direction (export's `toward_change` rule): first patch 18 of 24 tweaks with a direction
+  toward the change, 18 of 21 among |z| > 2; second 11 of 14, 8 of 8.
+- Placebo spread falls with the pseudo card's pick rate before (robust sd 3.47, 3.06, 2.28
+  by tercile) and is highest in the middle n_runs tercile (4.10; 2.78 and 2.28 at the ends);
+  every cell has 150+ pairs.
+- Dose-response "slope per patch", all weeks, with each patch's SE inflated by its placebo
+  sd (`did.dose_response_sensitivity`; `meta.dose_response_fits(se_inflation=...)`): factor
+  1 gives 1.50 ± 0.20 (first) and 0.24 ± 0.32 (second), as the export's all-weeks fit; robust
+  sd factors (4.34, 2.09) give 1.31 ± 0.18 and 0.25 ± 0.24; plain sd (4.69, 2.46) give
+  1.29 ± 0.19 and 0.25 ± 0.25. The random-effects τ² falls as the SEs grow (0.055 → 0.026
+  and 0.024), so the slopes' SEs barely move.
+
+**Status: "the clustered standard errors are calibrated" is NOT met.** Why the placebo spread
+is so large is not yet verified (open question below). Nothing in the results above is
+recomputed with calibrated errors.
 
 ## Audit decisions (rerun 2026-09-29: 1,513 pages, submissions to ~2026-08-30)
 
@@ -1450,3 +1509,7 @@ close to randomized. That supports:
    spire-codex.com.~~ Done — passed.
 6. ~~Claim the cloud credit (`/claim-credit` in CC) before October 7, 2026.~~ Done.
 7. Keep Clickworthy moving in parallel (currently on Stage 1).
+8. Why the placebo spread of the DiD z is large (sd 4.10, 3.68 one row per window and card;
+   see "Placebo calibration of the DiD errors"). Not yet verified.
+9. Whether the second patch's flat dose-response survives calibrated errors (a first
+   sensitivity table is in `placebo_diagnostics_dose_sensitivity.csv`; not interpreted).

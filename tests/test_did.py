@@ -51,7 +51,7 @@ def ref(tmp_path_factory):
 def synth(n_runs=1500, screens=20, effect=0.0, run_sd=0.1, run_card_sd=0.1,
           share=(0.3, 0.3), treated_gap=0.0, pretrend=0.0, offer_boost=1.0, seed=0,
           base=(0.20, 0.50), effect_slope=0.0, cards=CARDS, after_weights=None,
-          after_shift=None):
+          after_shift=None, group_card_sd=0.0, n_groups=10):
     """Synthetic offers in load_window's columns. Per block, n_runs runs; each run has an
     uploader group (tagged with probability share[block]), an ascension, a run effect
     ~ N(0, run_sd) shared by all its offers, a run x card effect ~ N(0, run_card_sd) shared
@@ -62,8 +62,10 @@ def synth(n_runs=1500, screens=20, effect=0.0, run_sd=0.1, run_card_sd=0.1,
     `base`) + group gap (C0 gets treated_gap more in the tagged group; the others
     alternate +-0.05) + 0.03 after + act and ascension effects + 0.10 upgraded + run and
     run x card effects + (effect + effect_slope * week) on C0 after + pretrend * (week + 1)
-    on C0 before release (+ after_shift[card] after, when given). After-block runs are
-    spread evenly over weeks 0-9."""
+    on C0 before release (+ after_shift[card] after, when given) + a group x card effect
+    ~ N(0, group_card_sd) (runs in n_groups groups per block, different groups in each
+    block: players who share a taste for a card, drawn from a separate stream so the other
+    draws don't change). After-block runs are spread evenly over weeks 0-9."""
     rng = np.random.default_rng(seed)
     k = len(cards)
     base = np.linspace(*base, k)
@@ -99,6 +101,11 @@ def synth(n_runs=1500, screens=20, effect=0.0, run_sd=0.1, run_card_sd=0.1,
          + pretrend * (rr.week.to_numpy() + 1) * pre)
     if after_shift is not None:
         p = p + np.asarray(after_shift, dtype=float)[card] * rr.after.to_numpy()
+    if group_card_sd:
+        grp = np.where(runs.after, n_groups, 0) + np.arange(nr) % n_groups
+        g_eff = np.random.default_rng(seed + 10_000).normal(0, group_card_sd,
+                                                            (2 * n_groups, k))
+        p = p + g_eff[grp[r_idx], card]
     picked = rng.random(len(card)) < np.clip(p, 0.02, 0.98)
     run_key = pd.Series([f"r{i}" for i in r_idx])
     df = pd.DataFrame({
@@ -700,6 +707,306 @@ def test_window_changes_match_windows_csv():
         assert same(changed) == sorted(r.control_exclusions.split()), r.event_id
         assert same(flagged) == sorted(r.control_behavior_flags.split()), r.event_id
         assert r.card_id in changed
+
+
+# ------------------------------------------------------------------------------ placebo
+
+P_CARDS = [f"P{i}" for i in range(16)]
+P_CPID = "P0@v2/patch"
+P_EXCLUDED, P_FLAGGED, P_RARE = "P15", "P14", "P13"
+
+
+@pytest.fixture(scope="module")
+def placebo_ref(tmp_path_factory, ref):
+    """16 ironclad cards: P0 treated, P15 changed (control_exclusions), P14 bug-fix
+    flagged; one solo-estimable tweak."""
+    pref = tmp_path_factory.mktemp("pref")
+    for f in ("builds.csv", "card_changes.csv"):
+        (pref / f).write_bytes((ref / f).read_bytes())
+    pd.DataFrame([dict(level="card_patch", event_id=P_CPID, card_id="P0", change_kind="tweak",
+                       branch="stable", before_builds="v1", after_builds="v2", clean="yes",
+                       control_exclusions=P_EXCLUDED, control_behavior_flags=P_FLAGGED)],
+                 columns=WINDOW_COLS).fillna("").to_csv(pref / "windows.csv", index=False)
+    pd.read_csv(ref / "tweak_sizes.csv", dtype=str).assign(
+        card_patch_id=P_CPID, card_id="P0").to_csv(pref / "tweak_sizes.csv", index=False)
+    (pref / "raw").mkdir()
+    (pref / "raw" / "cards.json").write_text(json.dumps(
+        [{"id": c, "color": "ironclad"} for c in P_CARDS]))
+    return pref
+
+
+def placebo_fits(seeds, placebo_ref, **kw):
+    """placebo_all on every eligible pseudo card, on synthetic data per seed with no
+    effect anywhere (the real treated card P0 included); the seeds' rows concatenated."""
+    out = []
+    for s in seeds:
+        con = fake_db(synth(n_runs=300, cards=P_CARDS, seed=s, **kw))
+        # every unchanged card: the default threshold (P0's own count) drops about half
+        res = did.placebo_all(con, ref=placebo_ref, max_cards_per_window=20, min_offers=1)
+        assert (res.error == "").all()
+        out.append(res)
+    return pd.concat(out, ignore_index=True)
+
+
+def placebo_z(seeds, placebo_ref, **kw):
+    return placebo_fits(seeds, placebo_ref, **kw).z.to_numpy()
+
+
+@pytest.fixture(scope="module")
+def null_placebos(placebo_ref):
+    return placebo_fits(range(40, 45), placebo_ref)
+
+
+def test_placebo_z_calibrated_without_effects(null_placebos):
+    # (a) No effect for any card; offers of one card in a run share a run x card effect,
+    # which clustering by run absorbs. 14 eligible cards x 5 datasets: sd(z) about 1.
+    z = null_placebos.z.to_numpy()
+    assert len(z) == 70
+    assert abs(z.mean()) < 0.4 and 0.7 < z.std(ddof=1) < 1.3
+
+
+def test_placebo_summary_robust_columns(null_placebos, placebo_ref):
+    # No effects: the robust spread is about 1 too, and the quantiles are ordered. (Each
+    # seed reuses the window and cards, so dedupe would merge seeds: not used here.)
+    s = did.placebo_summary(null_placebos, ref=placebo_ref).iloc[0]
+    assert s.n_fits == 70 and not s.dedupe
+    assert 0.65 < s.robust_sd_z < 1.4 and 0.4 < s.median_abs_z < 0.95
+    q = s[["z_q05", "z_q25", "z_q50", "z_q75", "z_q95"]].to_numpy(dtype=float)
+    assert (np.diff(q) > 0).all() and s.z_q50 == pytest.approx(null_placebos.z.median())
+    z = null_placebos.z
+    assert s.robust_sd_z == pytest.approx(1.4826 * (z - z.median()).abs().median())
+
+
+def test_placebo_z_too_wide_when_groups_share_preferences(placebo_ref):
+    # (b) Runs in a group share a taste for each card (group x card sd 0.12, 10 groups per
+    # block, new groups after the patch). Clustered by run only, a card's before-after
+    # move from the group mix looks like signal: sd(z) well above 1.
+    z = placebo_z(range(50, 53), placebo_ref, group_card_sd=0.12)
+    assert z.std(ddof=1) > 1.5
+
+
+def test_placebo_never_uses_the_real_treated_card(placebo_ref):
+    # (c) The real treated card is neither a pseudo nor a control card, and excluded or
+    # (when asked) flagged cards are never pseudo cards.
+    df = synth(n_runs=300, cards=P_CARDS, effect=0.3, seed=60)
+    d, treated = did._subset(df, P_CPID, pseudo="P3", ref=placebo_ref)
+    assert treated == "P3" and set(d.card_id[d.is_treated]) == {"P3"}
+    assert "P0" not in set(d.card_id) and P_EXCLUDED not in set(d.card_id)
+    res = did.placebo_fit(df, P_CPID, "P3", ref=placebo_ref)
+    assert (res["card_id"], res["pseudo_card"]) == ("P0", "P3")
+    assert res["n_control_cards"] == 13                     # P1-P14 minus P3
+    assert res["n_offers"] + res["n_singletons_dropped"] == df.card_id.isin(
+        [c for c in P_CARDS if c not in ("P0", P_EXCLUDED)]).sum()
+    # P0's planted effect of 0.3 is out of the fit: the placebo stays near zero
+    assert abs(res["beta"]) < 3 * res["se"]
+    for bad in ("P0", P_EXCLUDED):
+        with pytest.raises(ValueError, match="not an unchanged card"):
+            did.placebo_fit(df, P_CPID, bad, ref=placebo_ref)
+    with pytest.raises(ValueError, match="not an unchanged card"):
+        did.placebo_fit(df, P_CPID, P_FLAGGED, drop_behavior_flags=True, ref=placebo_ref)
+    con = fake_db(df)
+    out = did.placebo_all(con, ref=placebo_ref)
+    assert set(out.pseudo_card) == {f"P{i}" for i in range(1, 15)}
+    flagged = did.placebo_all(con, ref=placebo_ref, drop_behavior_flags=True)
+    assert P_FLAGGED not in set(flagged.pseudo_card) and len(flagged) == 13
+
+
+def test_placebo_all_sampling_threshold_and_options(placebo_ref):
+    df = synth(n_runs=300, cards=P_CARDS, seed=61)
+    # P13 keeps a tenth of its after-block offers: fewer than the real P0 has
+    rng = np.random.default_rng(0)
+    df = df[~((df.card_id == P_RARE) & (df.block == "after") & (rng.random(len(df)) < 0.9))]
+    con = fake_db(df)
+    t = df[df.dropna(subset=["ascension"]).card_id == "P0"].groupby("block",
+                                                                     observed=True).size()
+    # default threshold: the real treated card's smaller block
+    assert did.placebo_all(con, ref=placebo_ref).min_offers.eq(t.min()).all()
+    # half of it: every card but P13 passes (P1-P14 minus P13)
+    kw = dict(ref=placebo_ref, min_offers=t.min() // 2)
+    out = did.placebo_all(con, max_cards_per_window=5, seed=3, **kw)
+    assert len(out) == 5 and out.pseudo_card.is_unique and (out.n_eligible == 13).all()
+    assert P_RARE not in set(out.pseudo_card) and (out.error == "").all()
+    assert list(out.columns[:8]) == ["card_patch_id", "pseudo_card", "beta", "se", "z",
+                                     "n_runs", "treated_rate_before", "error"]
+    assert (out.z == out.beta / out.se).all() and out.patch.eq("first").all()
+    p = did.placebo_fit(df, P_CPID, out.pseudo_card[0], ref=placebo_ref)
+    assert out.beta[0] == pytest.approx(p["beta"], rel=1e-12)
+    # seeded: same draw again, another seed draws other cards
+    again = did.placebo_all(con, max_cards_per_window=5, seed=3, **kw)
+    pd.testing.assert_frame_equal(out, again)
+    other = did.placebo_all(con, max_cards_per_window=5, seed=4, **kw)
+    assert set(other.pseudo_card) != set(out.pseudo_card)
+    # options pass through; an explicit threshold above every card leaves an error row
+    # (the default threshold is recounted on the capped after block)
+    cap = did.placebo_all(con, ref=placebo_ref, max_cards_per_window=2, max_week_after=3)
+    assert (cap.max_week_after == 3).all() and (cap.error == "").all()
+    after3 = ((df.card_id == "P0") & (df.block == "after") & (df.week <= 3)).sum()
+    assert cap.min_offers[0] == min(t["before"], after3) < t.min()
+    none = did.placebo_all(con, ref=placebo_ref, min_offers=10**6)
+    assert len(none) == 1 and none.error[0].startswith("no eligible pseudo card")
+    s = did.placebo_summary(pd.concat([out, none], ignore_index=True))
+    assert s.split.tolist() == ["all", "patch", "offers", "offers"]
+    assert s.n_fits.tolist()[:2] == [5, 5] and s.n_fits[2] + s.n_fits[3] == 5
+    assert s.n_failed[0] == 1 and s.n_failed[1:].isna().all()
+    assert s.sd_z[0] == pytest.approx(out.z.std(ddof=1))
+    assert s.share_abs_z_gt2[0] == (out.z.abs() > 2).mean()
+
+
+D_TWEAKS = [  # (card_patch_id, card_id, color, before, after, stable, upgrade_only, dir, lr)
+    ("A@v2/patch", "A", "ironclad", "v1", "v2", "v2", "no", "1", "0.2"),
+    ("B@v2/patch", "B", "ironclad", "v1", "v2", "v2", "no", "1", "-0.3"),
+    ("C@v3/patch", "C", "ironclad", "v2", "v3", "v3", "no", "-1", "0.4"),
+    ("D@v3/patch", "D", "silent", "v2", "v3", "v3", "yes", "1", "0.1")]
+
+
+@pytest.fixture(scope="module")
+def diag_ref(tmp_path_factory):
+    """tweak_sizes.csv and builds.csv only: A and B share a window (first patch), C is
+    alone in the second; D is upgrade-only (silent)."""
+    d = tmp_path_factory.mktemp("dref")
+    pd.DataFrame([dict(card_patch_id=c, card_id=k, color=col, before_builds=b,
+                       after_builds=a, stable_build=st, upgrade_only=u, direction=dr,
+                       log_ratio=lr, mixed_direction="no", solo_estimable="yes")
+                  for c, k, col, b, a, st, u, dr, lr in D_TWEAKS]).to_csv(
+        d / "tweak_sizes.csv", index=False)
+    pd.DataFrame(dict(build_id=["v1", "v2", "v3"], branch="stable",
+                      release_date=["2026-03-01", "2026-04-16", "2026-06-01"])).to_csv(
+        d / "builds.csv", index=False)
+    return d
+
+
+def diag_placebos():
+    """Hand-made placebo_all rows: A and B (one window) both fit pseudo cards P1-P6, with
+    slightly different numbers; C fits P1-P3 only; D one card; one failed fit."""
+    rows = []
+    for cpid, cards, patch, shift in (("A@v2/patch", 6, "first", 0.0),
+                                      ("B@v2/patch", 6, "first", 0.002),
+                                      ("C@v3/patch", 3, "second", 0.0)):
+        for i in range(1, cards + 1):
+            beta = 0.01 * (i - 3.5) + shift
+            rows.append(dict(card_patch_id=cpid, pseudo_card=f"P{i}", beta=beta, se=0.01,
+                             z=beta / 0.01, n_runs=1000 * i, treated_rate_before=0.1 * i,
+                             error="", patch=patch, fit_on="all offers",
+                             color="ironclad", n_treated_offers=100 * i, n_offers=5000,
+                             se_hc=0.01, se_iid=0.01, card_id=cpid[0]))
+    rows.append(dict(rows[0], card_patch_id="D@v3/patch", color="silent", patch="second",
+                     fit_on="upgraded offers", card_id="D"))
+    rows.append(dict(rows[0], pseudo_card="P9", beta=np.nan, se=np.nan, z=np.nan,
+                     error="ValueError: no offers"))
+    return pd.DataFrame(rows)
+
+
+def diag_real():
+    return pd.DataFrame(dict(beta=[0.05, -0.001, -0.03, 0.02], se=[0.01, 0.01, 0.01, 0.005],
+                             card_id=["A", "B", "C", "D"],
+                             fit_on=["all offers"] * 3 + ["upgraded offers"]),
+                        index=pd.Index([t[0] for t in D_TWEAKS], name="card_patch_id"))
+
+
+def test_placebo_pairs_dedupe(diag_ref):
+    pl = diag_placebos()
+    pairs = did.placebo_pairs(pl, ref=diag_ref)
+    # 6 pairs in A/B's window + 3 in C's + 1 for D (upgraded offers: its own fit)
+    assert len(pairs) == 10 and not pairs.duplicated(did.PAIR_KEY).any()
+    ab = pairs[pairs.window == "v1 -> v2"].set_index("pseudo_card")
+    assert (ab.n_tweaks_sharing == 2).all() and ab.card_patch_ids.eq(
+        "A@v2/patch B@v2/patch").all()
+    assert ab.beta["P1"] == pytest.approx(0.01 * -2.5 + 0.001)       # mean of A and B
+    assert ab.z["P1"] == pytest.approx((-2.5 + -2.3) / 2)
+    s = did.placebo_summary(pl, dedupe=True, ref=diag_ref).set_index(["split", "level"])
+    assert s.n_fits[("all", "all")] == 10 and s.n_tweaks[("all", "all")] == 4
+    assert s.n_failed[("all", "all")] == 1 and s.dedupe.all()
+    assert s.n_fits[("patch", "first")] == 6 and s.n_fits[("patch", "second")] == 4
+    plain = did.placebo_summary(pl, ref=diag_ref)
+    assert plain.n_fits[0] == 16 and plain.n_failed[0] == 1
+
+
+def test_placebo_vs_real_blank_below_five(diag_ref):
+    pvr = did.placebo_vs_real(diag_real(), diag_placebos(), ref=diag_ref).set_index(
+        "card_patch_id")
+    assert pvr.n_placebo.tolist() == [6, 6, 3, 1]
+    pl = 0.01 * (np.arange(1, 7) - 3.5) + 0.001                     # A/B window's pairs
+    a = pvr.loc["A@v2/patch"]
+    assert a.z_real == pytest.approx(5.0) and a.patch == "first"
+    assert a.placebo_beta_mean == pytest.approx(pl.mean())
+    assert a.placebo_beta_sd == pytest.approx(pl.std(ddof=1))
+    assert a.empirical_p == (np.abs(pl) >= 0.05).mean() == 0.0
+    assert pvr.empirical_p["B@v2/patch"] == 1.0                     # |-0.001| is tiny
+    assert a.calibrated_z == pytest.approx((0.05 - pl.mean()) / pl.std(ddof=1))
+    # C has 3 placebos, D one: both blank
+    assert pvr.loc[["C@v3/patch", "D@v3/patch"], ["empirical_p", "calibrated_z"]
+                   ].isna().all().all()
+    by = did.placebo_vs_real_by_patch(pvr.reset_index(), diag_placebos(), ref=diag_ref)
+    assert by[["patch", "who"]].values.tolist() == [["first", "real"], ["first", "placebo"],
+                                                   ["second", "real"], ["second", "placebo"]]
+    first = by.set_index(["patch", "who"]).loc[("first", "real")]
+    assert first.n_empirical_p == 2 and first.n_empirical_p_lt_05 == 1
+    assert by.set_index(["patch", "who"]).n[("second", "placebo")] == 4
+
+
+def test_sign_agreement_counts(diag_ref):
+    # A: dose +0.2, beta + (toward, z 5); B: dose -0.3, beta - (toward, z 0.1);
+    # C: dose -0.4, beta - (toward, z 3); D: upgrade-only, no direction.
+    s = did.sign_agreement(diag_real(), ref=diag_ref).set_index("patch")
+    assert s.loc["all"].tolist() == [4, 3, 3, 2, 2]
+    assert s.loc["first"].tolist() == [2, 2, 2, 1, 1]
+    assert s.loc["second"].tolist() == [2, 1, 1, 1, 1]
+    flip = diag_real().assign(beta=[-0.05, -0.001, -0.03, 0.02])
+    assert did.sign_agreement(flip, ref=diag_ref).set_index("patch").n_toward["first"] == 1
+
+
+def test_placebo_spread_by_feature(diag_ref):
+    t = did.placebo_spread_by_feature(diag_placebos(), ref=diag_ref)
+    assert t.feature.tolist() == ["treated_rate_before"] * 3 + ["n_runs"] * 3
+    assert t.groupby("feature").n_fits.sum().eq(10).all() and t.small_cell.all()
+    assert (did.placebo_spread_by_feature(diag_placebos(), dedupe=False, ref=diag_ref)
+            .groupby("feature").n_fits.sum().eq(16).all())
+
+
+def test_dose_response_sensitivity(diag_ref, tmp_path):
+    # (1, 1) gives meta.dose_response_fits' "slope per patch" slopes as they are; larger
+    # factors widen them.
+    from spirometry import meta
+    (tmp_path / "builds.csv").write_bytes((diag_ref / "builds.csv").read_bytes())
+    rng = np.random.default_rng(3)
+    k = 40
+    ts = pd.DataFrame(dict(card_patch_id=[f"T{i}@v{2 + i % 2}/patch" for i in range(k)],
+                           card_id=[f"T{i}" for i in range(k)], color="ironclad",
+                           before_builds=["v1", "v2"] * (k // 2),
+                           after_builds=["v2", "v3"] * (k // 2),
+                           stable_build=["v2", "v3"] * (k // 2), upgrade_only="no",
+                           direction="1", log_ratio=rng.uniform(-0.5, 0.5, k).round(4),
+                           mixed_direction="no", solo_estimable="yes"))
+    ts.to_csv(tmp_path / "tweak_sizes.csv", index=False)
+    lr = ts.log_ratio.astype(float)
+    real = pd.DataFrame(dict(card_patch_id=ts.card_patch_id, beta=0.01 * lr, se=0.004,
+                             treated_rate_before=0.3,
+                             beta_lo=1.3 * lr + rng.normal(0, 0.05, k),
+                             se_lo=rng.uniform(0.03, 0.08, k)))
+    out = did.dose_response_sensitivity(real, {"none": (1, 1), "x2/x3": (2, 3)},
+                                        ref=tmp_path).set_index(["factors", "patch"])
+    second = (np.arange(k) % 2).astype(float)
+    want = meta.dose_response_fits(real.beta_lo, real.se_lo, lr, second).set_index(
+        ["model", "term"])
+    assert out.slope[("none", "first")] == want.coef[("slope per patch", "slope_first")]
+    assert out.se[("none", "second")] == want.se[("slope per patch", "slope_second")]
+    assert out.se[("x2/x3", "second")] > out.se[("none", "second")]
+    assert out.se_factor[("x2/x3", "second")] == 3 and (out.n_tweaks == k).all()
+
+
+def test_placebo_leaves_fit_did_and_run_all_unchanged(ref):
+    # (d) fit_did and run_all give what they gave before placebo_fit existed (pinned
+    # numbers in test_color_scope_reproduces_before); here, the placebo path changes no
+    # state they read.
+    df = synth(effect=0.06, n_runs=600, seed=8)
+    con = fake_db(df)
+    before = did.run_all(con, ref=ref)
+    fit = did.fit_did(df, CPID, ref=ref)
+    did.placebo_all(con, ref=ref)
+    did.placebo_fit(df, CPID, "C3", ref=ref)
+    pd.testing.assert_frame_equal(did.run_all(con, ref=ref), before)
+    assert did.fit_did(df, CPID, ref=ref) == fit
+    assert before.beta[0] == pytest.approx(0.06761606607349077, rel=1e-9)
 
 
 # ------------------------------------------------------------------------------ real pages

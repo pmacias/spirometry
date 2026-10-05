@@ -77,3 +77,15 @@ def test_same_as_notebook_copy():
     X = np.column_stack([np.ones_like(x), x, np.clip(x, 0, None)])
     for a, b in zip(ns["meta_regression"](y, se, X), meta.meta_regression(y, se, X)):
         np.testing.assert_allclose(a, b)
+
+
+def test_se_inflation_default_and_per_patch():
+    # No factor or (1, 1): the existing fits, bit for bit. (f1, f2): the same as passing
+    # se already multiplied by each tweak's patch factor.
+    x, y, se = planted(k=60, seed=4)
+    second = (np.arange(60) % 3 == 0).astype(float)
+    base = meta.dose_response_fits(y, se, x, second)
+    assert base.equals(meta.dose_response_fits(y, se, x, second, se_inflation=(1, 1)))
+    infl = meta.dose_response_fits(y, se, x, second, se_inflation=(2.0, 3.5))
+    manual = meta.dose_response_fits(y, se * np.where(second == 1, 3.5, 2.0), x, second)
+    assert infl.equals(manual) and not infl.equals(base)

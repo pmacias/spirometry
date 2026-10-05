@@ -66,9 +66,17 @@ def designs(x, second):
     }
 
 
-def dose_response_fits(y, se, x, second):
+def dose_response_fits(y, se, x, second, se_inflation=None):
     """Fit the four models; one row per (model, term): model, term, term_label, coef, se,
-    z, tau2, Q, df, n_tweaks."""
+    z, tau2, Q, df, n_tweaks.
+
+    se_inflation: optional (first-patch factor, second-patch factor); each tweak's se is
+    multiplied by its patch's factor before fitting (tau2 is re-estimated on the inflated
+    errors). None (default) leaves se as given, so existing results are unchanged; the
+    placebo calibration (spirometry.did.dose_response_sensitivity) uses it."""
+    if se_inflation is not None:
+        f1, f2 = se_inflation
+        se = np.asarray(se, float) * np.where(np.asarray(second, float) == 1, f2, f1)
     rows = []
     for model, X in designs(x, second).items():
         b, s, tau2, Q, dof = meta_regression(y, se, X)

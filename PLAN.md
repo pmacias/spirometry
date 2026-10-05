@@ -250,6 +250,26 @@ card of the treated color and no effect, `"color"` ≈ 0, `"all"` ≈ 0.02 × (1
 color's share of the controls), `"other"` ≈ 0.02). Not run on real data. Next: Phil runs
 `fit_all("ctrl_all", control_scope="all")`, `fit_all("ctrl_other", control_scope="other")`
 and `did.control_pool_sizes(con)` in notebook 02.*
+*Placebo calibration (CC, branch `placebo-calibration`): `did.placebo_fit`, `placebo_all`,
+`placebo_summary`: the same DiD with an unchanged same-color card as the pseudo-treated
+card (true effect zero), to tell whether the clustered errors are honest (prompted by
+early- vs late-uploaded fits of the 43 tweaks giving z-differences with sd 1.48). Tested
+on synthetic offers (no effects: sd(z) ≈ 1; a group × card taste shared across runs,
+clustered by run only: sd(z) > 1.5). Run once on the local 1,513-page tables (2026-10-02,
+default options, 20 cards per tweak, seed 0, 40 min): 860 fits on 43 tweaks, no errors,
+`data/analysis/placebo_main.parquet`. min_offers came out at 50 (set by an upgrade-only
+tweak's upgraded offers, so it barely binds for the all-offers tweaks). Summary as
+printed, not interpreted: mean z −0.01, sd z 4.10, |z| > 2 in 57%, > 3 in 38%; first
+patch sd 4.89 (520 fits), second 2.45 (340); small / large pseudo cards (median 15,361
+offers) sd 3.42 / 4.64. The 860 rows hold 463 distinct (window, pseudo card) pairs: tweaks
+sharing a window draw the same cards with near-identical z; one row per pair, sd z 3.68.
+Diagnostics (same branch, from the saved parquets, no refit): `placebo_summary(dedupe=True)`
+with robust columns, `placebo_vs_real` / `placebo_vs_real_by_patch`, `sign_agreement`,
+`placebo_spread_by_feature`, `dose_response_sensitivity` (with
+`meta.dose_response_fits(se_inflation=...)`, default unchanged); tables in
+`data/analysis/placebo_diagnostics_*.csv`, numbers in SPIROMETRY.md ("Placebo calibration
+of the DiD errors"), where "the clustered standard errors are calibrated" is marked not met.
+Tested on synthetic fixtures. Next: Phil analyses the tables.*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -316,6 +336,10 @@ figures still to be saved from the notebooks.*
    were tested; partial pooling (step 7) is the planned answer to multiple comparisons.
    (n) Control-group scope: how much the per-card effects move with same-color, all, or
    other-character controls (tooling: `control_scope`, `control_pool_sizes`; Phil runs it).
+   (o) Placebo calibration of the DiD errors: run and tabulated (`placebo_main.parquet`,
+   `placebo_diagnostics_*.csv`; SPIROMETRY.md, "Placebo calibration of the DiD errors").
+   Left: Phil's analysis of the tables (why the spread is large; whether the second patch's
+   flat dose-response survives calibrated errors).
 8. When official act 4 (or other new content) ships: re-cache the game lists for the new
    builds and switch the mod-entity rule to per-build lists (see SPIROMETRY.md, custom and
    modded runs). The cached lists for v0.99.0 and v0.110.1 are empty: re-fetch them or fall
@@ -866,3 +890,33 @@ figures still to be saved from the notebooks.*
   `behavior_changes.csv`, rather than reparsing that file, so the rule is the same one.
   The model (fixed effects, covariates, clustering) is identical across scopes, with no
   color or character terms, so differences come from the choice of controls alone.
+- Placebo calibration (`did.placebo_fit` / `placebo_all` / `placebo_summary`, 2026-10-02):
+  the pseudo-treated card is a same-color control card (`control_cards` with
+  `control_scope="color"` and the fit's `drop_behavior_flags`), whatever `control_scope`
+  the controls use; the window's real treated card is out of the data, the pseudo card out
+  of the controls; model, clustering and options are fit_did's (upgrade-only tweaks on
+  upgraded offers, as `run_all`'s main fit). Minimum offers: fit_did itself needs only one
+  treated offer per block, so "what real tweaks need" is taken as what the least-offered
+  real tweak has: a pseudo card needs at least the smallest min(before, after) treated
+  offer count over all 43 solo-estimable tweaks (counted as loaded, ascension known,
+  upgraded only where the fit is, after weeks capped by `max_week_after`; before the other
+  fit filters), overridable with `min_offers`. Sampling is seeded per tweak by
+  (seed, card_patch_id), so a subset run draws the same cards. Tweaks sharing a window can
+  draw the same pseudo card (fits differ only in which treated card is left out), so the
+  rows are not independent. Size split in `placebo_summary`: at the median of the pseudo
+  card's offers in the fit. Not added to `spirometry.export`: its robustness table has one
+  row per (tweak, check) for the real treated card, and placebo rows are several per tweak
+  on other cards.
+- Placebo diagnostics (2026-10-02, branch `placebo-calibration`; tables and tooling only,
+  in `did` and `meta`, no notebook changes): dedupe rule: one row per (window, pseudo
+  card), window = color + before/after builds + fit_on; beta, se, z and the size columns
+  are the mean over the tweaks sharing the pair (their fits differ only in which real
+  treated card is left out, so they are near duplicates; z is the mean of the z's).
+  Robust summaries (median |z|, 1.4826 × MAD, quantiles) sit next to sd and the |z| shares
+  because a few extreme fits can drive an sd. `placebo_vs_real` compares each tweak with the
+  placebos of its own window (same color, builds and fit), not the pooled set: those share
+  the tweak's players, weeks and fit, so the comparison holds them fixed; it needs at least
+  5 placebo pairs (`MIN_PLACEBO_CARDS`), else empirical_p and calibrated_z are blank. The
+  dose-response sensitivity inflates each patch's se_lo by a factor and refits the
+  random-effects model (τ² re-estimated); factors come from the deduped summary by patch.
+  Placebo fits are all weeks, so the sensitivity uses the all-weeks estimates, not weeks 0-3.

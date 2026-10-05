@@ -11,6 +11,9 @@ returns a pandas DataFrame or a dict.
     fit_did(df, "PARRY@v0.103.2/patch")               # step 2: the DiD
     fit_event_study(df, "PARRY@v0.103.2/patch")       # step 2b: gap by week
     run_all(con)                                      # every solo-estimable tweak
+    placebo = placebo_all(con)                        # SE calibration on unchanged cards
+    placebo_summary(placebo, dedupe=True)             # z spread, one row per (window, card)
+    placebo_vs_real(run_all(con), placebo)            # each tweak against its window's placebos
 
 Model (linear probability, OLS with absorbed fixed effects, errors clustered by run_key;
 heteroskedasticity-robust and iid errors of the same fit alongside, for comparison):
@@ -24,7 +27,7 @@ control_scope picks which ones: "color" (default: the treated card's color, from
 character's runs), "all" (every character's cards, each from its own character's runs) or
 "other" (the other characters' cards only). See control_cards.
 """
-import json, pathlib, warnings
+import json, pathlib, warnings, zlib
 
 import numpy as np
 import pandas as pd
@@ -412,11 +415,21 @@ def offer_rate_check(df, card_patch_id, ref=REF):
 
 def _subset(df, card_patch_id, *, upgraded=None, group=None, drop_shared_screens=False,
             drop_behavior_flags=False, drop_uploaders=None, max_week_after=None,
-            picked_screens_only=False, control_scope="color", ref=REF):
-    """Treated card + controls, with the fit options applied. Returns (data, treated)."""
+            picked_screens_only=False, control_scope="color", pseudo=None, ref=REF):
+    """Treated card + controls, with the fit options applied. Returns (data, treated).
+    pseudo: an unchanged card of the window's color (a control under control_scope="color")
+    fit as the treated card instead (placebo_fit); it leaves the controls, and the real
+    treated card is not in the data at all (control_cards never returns it)."""
     treated = window(card_patch_id, ref)["card_id"]
-    cards = [treated] + control_cards(card_patch_id, drop_behavior_flags, df=df, ref=ref,
-                                      control_scope=control_scope)
+    controls = control_cards(card_patch_id, drop_behavior_flags, df=df, ref=ref,
+                             control_scope=control_scope)
+    if pseudo is not None:
+        if pseudo not in control_cards(card_patch_id, drop_behavior_flags, df=df, ref=ref):
+            raise ValueError(f"{card_patch_id}: {pseudo} is not an unchanged card of the "
+                             "window's color with offers (control_cards, control_scope="
+                             "'color')")
+        treated, controls = pseudo, [c for c in controls if c != pseudo]
+    cards = [treated] + controls
     d = df[df.card_id.isin(cards)]
     if drop_shared_screens:                     # screens as offered, before other filters
         shared = d.screen_id[d.card_id == treated].unique()
@@ -521,12 +534,25 @@ def fit_did(df, card_patch_id, *, upgraded=None, group=None, drop_shared_screens
 
     Ascension enters as one fixed effect per level. If group has one level in the data
     (e.g. no tagged runs), the group terms are dropped automatically."""
+    return _fit_did(df, card_patch_id, upgraded=upgraded, group=group,
+                    drop_shared_screens=drop_shared_screens,
+                    drop_behavior_flags=drop_behavior_flags, drop_uploaders=drop_uploaders,
+                    pooled_groups=pooled_groups, max_week_after=max_week_after,
+                    card_act_fe=card_act_fe, picked_screens_only=picked_screens_only,
+                    control_scope=control_scope, ref=ref)
+
+
+def _fit_did(df, card_patch_id, *, upgraded=None, group=None, drop_shared_screens=False,
+             drop_behavior_flags=False, drop_uploaders=None, pooled_groups=False,
+             max_week_after=None, card_act_fe=False, picked_screens_only=False,
+             control_scope="color", pseudo=None, ref=REF):
+    """fit_did's fit; pseudo as in _subset (placebo_fit)."""
     d, treated = _subset(df, card_patch_id, upgraded=upgraded, group=group,
                          drop_shared_screens=drop_shared_screens,
                          drop_behavior_flags=drop_behavior_flags,
                          drop_uploaders=drop_uploaders, max_week_after=max_week_after,
                          picked_screens_only=picked_screens_only,
-                         control_scope=control_scope, ref=ref)
+                         control_scope=control_scope, pseudo=pseudo, ref=ref)
     fml = "picked ~ treat_post | " + " + ".join(
         _fixed_effects(d, group, pooled_groups, card_act_fe=card_act_fe))
     fit = _feols(fml, d)
@@ -706,6 +732,387 @@ def control_pool_sizes(con, *, tweaks=None, scopes=CONTROL_SCOPES, drop_behavior
                     n_control_offers_own_color=n_own,
                     own_color_share=n_own / tot if tot else np.nan,
                     n_treated_offers=n_treated))
+    return pd.DataFrame(rows)
+
+
+# ------------------------------------------------------------------------------ placebo
+
+PATCH_NAMES = ["first", "second", "third", "fourth", "fifth"]   # as spirometry.export
+PLACEBO_COLUMNS = [
+    "card_patch_id", "pseudo_card", "beta", "se", "z", "n_runs", "treated_rate_before",
+    "error", "card_id", "color", "stable_build", "patch", "fit_on", "se_hc", "se_iid",
+    "n_offers", "n_treated_offers", "n_control_cards", "pseudo_offers_before",
+    "pseudo_offers_after", "n_eligible", "min_offers", "max_cards_per_window", "seed",
+    "control_scope", "max_week_after", "card_act_fe", "picked_screens_only"]
+PLACEBO_FIT_KEYS = ["beta", "se", "se_hc", "se_iid", "n_runs", "n_offers", "n_treated_offers",
+                    "n_control_cards", "treated_rate_before", "control_scope",
+                    "max_week_after", "card_act_fe", "picked_screens_only"]
+COUNT_SQL = """
+SELECT o.character, o.card_id, o.upgraded, list_contains(?, o.build_id) AS after,
+       count(*) AS n
+FROM offers_with_version o JOIN runs r USING (run_hash)
+WHERE list_contains(?, o.build_id) AND o.ascension IS NOT NULL
+  AND (NOT list_contains(?, o.build_id) OR o.start_time < ?)
+GROUP BY ALL
+"""
+
+
+def placebo_fit(df, card_patch_id, pseudo_card, **fit_kwargs):
+    """fit_did with `pseudo_card` as the treated card: an unchanged card of the window's
+    color that passes the control rules (control_cards with control_scope="color" and the
+    fit's drop_behavior_flags; it must have offers in df). Its true effect is zero, so
+    beta / se over many such fits shows whether the errors are honest. The window's real
+    treated card is not in the fit (it is never a control), and pseudo_card leaves the
+    controls. Same model, clustering and options as fit_did (fit_kwargs: upgraded,
+    max_week_after, control_scope, ref, ...). Returns fit_did's dict, with card_id the
+    window's real treated card, plus pseudo_card; the treated_* columns are pseudo_card's."""
+    res = _fit_did(df, card_patch_id, pseudo=pseudo_card, **fit_kwargs)
+    res["card_id"] = window(card_patch_id, fit_kwargs.get("ref", REF))["card_id"]
+    res["pseudo_card"] = pseudo_card
+    return res
+
+
+def _block_counts(con, before_builds, after_builds, max_week_after=None, ref=REF):
+    """Offers per (card_id, upgraded) and block on a window's builds, each card from its own
+    character's runs, with known ascension; after-block offers past max_week_after (weeks
+    from the first after-build's release, as load_block_data) left out. One aggregate
+    DuckDB query. Columns card_id, upgraded, before, after."""
+    before, after = before_builds.split(), after_builds.split()
+    cutoff = (pd.Timestamp("2200-01-01") if max_week_after is None else
+              release_date(after[0], ref) + pd.Timedelta(seconds=(max_week_after + 1) * WEEK))
+    n = con.execute(COUNT_SQL, [after, before + after, after, cutoff.to_pydatetime()]).df()
+    chars = {_character(c): c for c in CHARACTER_COLORS}
+    n = n[(n.character.map(chars) == n.card_id.map(card_colors(ref))).to_numpy()]
+    n["block"] = np.where(n.after, "after", "before")
+    return (n.groupby(["card_id", "upgraded", "block"]).n.sum().unstack("block")
+            .reindex(columns=["before", "after"]).fillna(0).astype(int).reset_index())
+
+
+def _card_offers(counts, card, upgraded):
+    """(before, after) offers of `card` in _block_counts' table; upgraded as fit_did's."""
+    c = counts[counts.card_id == card]
+    if upgraded is not None:
+        c = c[c.upgraded == upgraded]
+    return int(c.before.sum()), int(c.after.sum())
+
+
+def _patch_labels(ts, ref=REF):
+    """stable_build -> "first", "second", ... by release date (builds.csv), as
+    spirometry.export labels patches; blank for a build without a release date."""
+    b = _csv(pathlib.Path(ref) / "builds.csv").set_index("build_id")
+    dates = {x: b.release_date.get(x, "") for x in ts.stable_build.unique()}
+    order = sorted((x for x in dates if dates[x]), key=dates.get)
+    return {x: PATCH_NAMES[i] if i < len(PATCH_NAMES) else str(i + 1)
+            for i, x in enumerate(order)}
+
+
+def placebo_all(con, *, tweaks=None, max_cards_per_window=20, seed=0, min_offers=None,
+                ref=REF, **fit_kwargs):
+    """placebo_fit on sampled unchanged cards, for every solo-estimable tweak in
+    tweak_sizes.csv (or those in `tweaks`): one row per fit. Loads each window's data once.
+
+    Eligible pseudo cards: the tweak's control cards of its own color (control_cards,
+    control_scope="color", with fit_kwargs' drop_behavior_flags) with at least `min_offers`
+    offers in each block. Up to max_cards_per_window of them are sampled per tweak, without
+    replacement, seeded by (seed, card_patch_id), so a tweak gets the same cards whichever
+    other tweaks run. Tweaks sharing a window can draw the same pseudo card; those fits
+    differ only in which real treated card is left out of the data.
+
+    min_offers: the minimum the real tweaks meet. None (default) sets it to the smallest
+    min(before, after) treated-card offer count among all solo-estimable tweaks (not just
+    those in `tweaks`), so a pseudo card is never offered less than the least-offered real
+    tweak. Offers are counted as loaded (the window's builds, the card's own character,
+    known ascension), on the offers the fit uses (upgraded only for upgrade-only tweaks or
+    when fit_kwargs set it; after-block weeks <= max_week_after), before fit_did's other
+    filters (group, screens, uploaders) and the singleton drop. Every row carries it.
+
+    Upgrade-only tweaks are fit on upgraded offers (as run_all's main fit). fit_kwargs go to
+    placebo_fit (fit_did's options, e.g. max_week_after=3, control_scope="all").
+
+    Columns: card_patch_id, pseudo_card, beta, se, z (beta / se), n_runs,
+    treated_rate_before (the pseudo card's), error, then card_id (the real treated card),
+    color, stable_build, patch (as spirometry.export), fit_on, se_hc, se_iid, n_offers,
+    n_treated_offers (pseudo card offers in the fit), n_control_cards,
+    pseudo_offers_before / _after (the counts above), n_eligible, min_offers,
+    max_cards_per_window, seed and the fit options. A failed fit keeps its row with the
+    reason in `error`; a tweak with no eligible card gets one row with a blank pseudo_card."""
+    control_scope = fit_kwargs.get("control_scope", "color")
+    _check_scope(control_scope)
+    flags = fit_kwargs.get("drop_behavior_flags", False)
+    ts_all = _csv(pathlib.Path(ref) / "tweak_sizes.csv")
+    ts_all = ts_all[ts_all.solo_estimable == "yes"]
+    ts = ts_all if tweaks is None else ts_all[ts_all.card_patch_id.isin(tweaks)]
+    need = ts_all if min_offers is None else ts
+    counts = {k: _block_counts(con, *k, fit_kwargs.get("max_week_after"), ref)
+              for k in dict.fromkeys(zip(need.before_builds, need.after_builds))}
+    up = lambda t: True if t["upgrade_only"] == "yes" else fit_kwargs.get("upgraded")
+    offers = lambda t, card: _card_offers(counts[(t["before_builds"], t["after_builds"])],
+                                          card, up(t))
+    if min_offers is None:
+        min_offers = min(min(offers(t, t["card_id"])) for t in ts_all.to_dict("records"))
+    patch = _patch_labels(ts_all, ref)
+    opts = dict(control_scope=control_scope,
+                max_week_after=fit_kwargs.get("max_week_after"),
+                card_act_fe=fit_kwargs.get("card_act_fe", False),
+                picked_screens_only=fit_kwargs.get("picked_screens_only", False))
+    rows = []
+    for (color, before, after), g in ts.groupby(["color", "before_builds", "after_builds"],
+                                                sort=False):
+        df = load_block_data(con, color, before, after, ref, control_scope=control_scope)
+        for t in g.to_dict("records"):
+            cpid = t["card_patch_id"]
+            base = dict(card_patch_id=cpid, card_id=t["card_id"], color=color,
+                        stable_build=t["stable_build"],
+                        patch=patch.get(t["stable_build"], ""),
+                        fit_on="upgraded offers" if up(t) else (
+                            "all offers" if up(t) is None else "un-upgraded offers"),
+                        min_offers=min_offers, max_cards_per_window=max_cards_per_window,
+                        seed=seed, pseudo_card="", error="", **opts)
+            try:
+                eligible = [c for c in control_cards(cpid, flags, df=df, ref=ref)
+                            if min(offers(t, c)) >= min_offers]
+            except Exception as e:                  # report and keep going
+                rows.append(dict(base, error=f"{type(e).__name__}: {e}"))
+                continue
+            base["n_eligible"] = len(eligible)
+            if not eligible:
+                rows.append(dict(base, error=f"no eligible pseudo card (>= {min_offers} "
+                                             "offers in each block)"))
+                continue
+            rng = np.random.default_rng([seed, zlib.crc32(cpid.encode())])
+            picks = sorted(rng.choice(eligible, min(max_cards_per_window, len(eligible)),
+                                      replace=False))
+            for c in picks:
+                nb, na = offers(t, c)
+                row = dict(base, pseudo_card=c, pseudo_offers_before=nb,
+                           pseudo_offers_after=na)
+                try:
+                    kw = dict(fit_kwargs, upgraded=True) if t["upgrade_only"] == "yes" \
+                        else fit_kwargs
+                    res = placebo_fit(df, cpid, c, ref=ref, **kw)
+                    row.update({k: res[k] for k in PLACEBO_FIT_KEYS})
+                    row["z"] = res["beta"] / res["se"] if res["se"] > 0 else np.nan
+                except Exception as e:
+                    row["error"] = f"{type(e).__name__}: {e}"
+                rows.append(row)
+        del df
+    return pd.DataFrame(rows).reindex(columns=PLACEBO_COLUMNS)
+
+
+MIN_PLACEBO_CARDS = 5     # placebo_vs_real: fewer placebo pairs in a window -> blank
+PAIR_KEY = ["color", "before_builds", "after_builds", "fit_on", "pseudo_card"]
+PAIR_MEAN = ["beta", "se", "z", "se_hc", "se_iid", "n_runs", "n_offers", "n_treated_offers",
+             "treated_rate_before"]
+Z_QUANTILES = (0.05, 0.25, 0.5, 0.75, 0.95)
+
+
+def _placebo_ok(df):
+    """placebo_all rows without an error and with a finite z."""
+    z = pd.to_numeric(df.z, errors="coerce")
+    return df[(df.error.fillna("") == "") & np.isfinite(z)].assign(z=z)
+
+
+def placebo_pairs(df, ref=REF):
+    """placebo_all's successful fits, one row per (window, pseudo card): window = the
+    tweak's color, before_builds and after_builds (tweak_sizes.csv) and fit_on (upgrade-only
+    tweaks are fit on upgraded offers, a different fit). Tweaks sharing a window draw from
+    the same cards, and their fits of one pseudo card differ only in which real treated card
+    is left out of the data, so they are near duplicates. beta, se, z, se_hc, se_iid,
+    n_runs, n_offers, n_treated_offers and treated_rate_before are the mean over the tweaks
+    sharing the pair (z is the mean of their z, not mean beta / mean se); the other columns
+    are the first tweak's (card_patch_id, card_id, patch, ...). n_tweaks_sharing and
+    card_patch_ids (space-separated) say which tweaks were averaged; window is
+    "<before_builds> -> <after_builds>"."""
+    ts = _csv(pathlib.Path(ref) / "tweak_sizes.csv").set_index("card_patch_id")
+    d = _placebo_ok(df).copy()
+    for c in ("before_builds", "after_builds"):
+        d[c] = d.card_patch_id.map(ts[c])
+    g = d.groupby(PAIR_KEY, sort=False)
+    out = g.first()
+    out[PAIR_MEAN] = g[PAIR_MEAN].mean()
+    out["n_tweaks_sharing"] = g.size()
+    out["card_patch_ids"] = g.card_patch_id.agg(" ".join)
+    out = out.reset_index()
+    out["window"] = out.before_builds + " -> " + out.after_builds
+    return out
+
+
+def _z_stats(z):
+    """mean / sd of z, shares beyond 2 and 3, and robust versions: median |z| (honest
+    errors: 0.674), robust sd (1.4826 x MAD of z) and quantiles."""
+    out = dict(mean_z=z.mean(), sd_z=z.std(), share_abs_z_gt2=(z.abs() > 2).mean(),
+               share_abs_z_gt3=(z.abs() > 3).mean(), median_abs_z=z.abs().median(),
+               robust_sd_z=1.4826 * (z - z.median()).abs().median())
+    for q in Z_QUANTILES:
+        out[f"z_q{round(q * 100):02d}"] = z.quantile(q)
+    return out
+
+
+def _patch_order(patches):
+    rank = {p: i for i, p in enumerate(PATCH_NAMES)}
+    return sorted(set(patches), key=lambda p: (rank.get(p, len(rank)), p))
+
+
+def placebo_summary(df, dedupe=False, ref=REF):
+    """Calibration of placebo_all's z: n_fits, n_tweaks, mean_z, sd_z, share_abs_z_gt2 and
+    share_abs_z_gt3 (for honest errors about 0, 1, 0.046 and 0.003), overall, by patch and
+    by the pseudo card's offers in the fit (n_treated_offers): "small" below the median
+    over the fits, "large" at or above it (the cutoff is in the label). Only fits without
+    an error and with a finite z count; n_failed (overall row) counts the others.
+
+    Robust columns (less moved by a few extreme fits): median_abs_z (honest errors:
+    0.674), robust_sd_z = 1.4826 x the median absolute deviation of z (honest: 1), and
+    z's 5/25/50/75/95% quantiles z_q05 ... z_q95.
+
+    dedupe=True: one row per (window, pseudo card) pair (placebo_pairs: z averaged over
+    the tweaks sharing the pair), so near-duplicate fits count once; n_fits then counts
+    pairs and n_tweaks the tweaks behind them."""
+    ok = placebo_pairs(df, ref) if dedupe else _placebo_ok(df)
+    tweaks = lambda g: (len(set(" ".join(g.card_patch_ids).split())) if dedupe
+                        else g.card_patch_id.nunique())
+    parts = [("all", "all", ok)]
+    parts += [("patch", p, ok[ok.patch == p]) for p in _patch_order(ok.patch)]
+    if len(ok):
+        cut = ok.n_treated_offers.median()
+        small = ok.n_treated_offers < cut
+        parts += [("offers", f"small (< {cut:g})", ok[small]),
+                  ("offers", f"large (>= {cut:g})", ok[~small])]
+    out = pd.DataFrame([dict(split=s, level=lvl, n_fits=len(g), n_tweaks=tweaks(g),
+                             **_z_stats(g.z)) for s, lvl, g in parts])
+    out["n_failed"] = np.where(out.split == "all", len(df) - len(_placebo_ok(df)), np.nan)
+    out["dedupe"] = dedupe
+    return out
+
+
+def _real(real_df, ref=REF):
+    """A saved run_all result (card_patch_id as a column or the index) with patch and
+    the tweak_sizes window columns; z_real = beta / se."""
+    r = real_df.reset_index() if "card_patch_id" not in real_df.columns else real_df.copy()
+    ts = _csv(pathlib.Path(ref) / "tweak_sizes.csv").set_index("card_patch_id")
+    for c in ("color", "before_builds", "after_builds", "upgrade_only", "mixed_direction",
+              "direction", "log_ratio", "stable_build"):
+        r[c] = r.card_patch_id.map(ts[c])
+    r["patch"] = r.stable_build.map(_patch_labels(ts[ts.solo_estimable == "yes"], ref))
+    if "fit_on" not in r:
+        r["fit_on"] = np.where(r.upgrade_only == "yes", "upgraded offers", "all offers")
+    r["beta"], r["se"] = pd.to_numeric(r.beta), pd.to_numeric(r.se)
+    r["z_real"] = r.beta / r.se
+    return r
+
+
+def placebo_vs_real(real_df, placebo_df, ref=REF):
+    """Each real tweak against the placebos of its own window. real_df: a run_all result
+    (e.g. data/analysis/did_main.parquet), fit with the options placebo_df was. The
+    placebos are placebo_pairs rows with the tweak's color, builds and fit_on: the same
+    players, weeks and fit as the real estimate, other cards. One row per real tweak:
+    card_patch_id, card_id, patch, fit_on, beta_real, se_real, z_real, n_placebo (pairs in
+    the window), placebo_beta_mean, placebo_beta_sd, empirical_p (share of the window's
+    placebo |beta| >= the real |beta|) and calibrated_z ((beta_real - placebo_beta_mean) /
+    placebo_beta_sd); the last two blank when n_placebo < MIN_PLACEBO_CARDS (5). Betas
+    are in probability units, as fit_did returns them."""
+    r = _real(real_df, ref)
+    pairs = placebo_pairs(placebo_df, ref).groupby(
+        ["color", "before_builds", "after_builds", "fit_on"]).beta
+    rows = []
+    for t in r.itertuples():
+        key = (t.color, t.before_builds, t.after_builds, t.fit_on)
+        pl = pairs.get_group(key) if key in pairs.groups else pd.Series(dtype=float)
+        enough = len(pl) >= MIN_PLACEBO_CARDS
+        mean, sd = pl.mean(), pl.std()
+        rows.append(dict(
+            card_patch_id=t.card_patch_id, card_id=t.card_id, patch=t.patch,
+            fit_on=t.fit_on, beta_real=t.beta, se_real=t.se, z_real=t.z_real,
+            n_placebo=len(pl), placebo_beta_mean=mean, placebo_beta_sd=sd,
+            empirical_p=(pl.abs() >= abs(t.beta)).mean() if enough else np.nan,
+            calibrated_z=(t.beta - mean) / sd if enough and sd > 0 else np.nan))
+    return pd.DataFrame(rows)
+
+
+def placebo_vs_real_by_patch(pvr, placebo_df, ref=REF):
+    """Per patch, |beta| quantiles (5/25/50/75/95%) of the real tweaks (placebo_vs_real
+    rows) and of the placebo pairs side by side (one row each, `who` = "real" /
+    "placebo"); on the real rows, n_empirical_p (tweaks with one) and n_empirical_p_lt_05
+    (those with empirical_p < 0.05)."""
+    pairs = placebo_pairs(placebo_df, ref)
+    rows = []
+    for p in _patch_order(list(pvr.patch) + list(pairs.patch)):
+        for who, b in (("real", pvr.beta_real[pvr.patch == p]),
+                       ("placebo", pairs.beta[pairs.patch == p])):
+            row = dict(patch=p, who=who, n=len(b))
+            for q in Z_QUANTILES:
+                row[f"abs_beta_q{round(q * 100):02d}"] = b.abs().quantile(q)
+            if who == "real":
+                e = pvr.empirical_p[pvr.patch == p].dropna()
+                row.update(n_empirical_p=len(e), n_empirical_p_lt_05=int((e < 0.05).sum()))
+            rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def sign_agreement(real_df, ref=REF):
+    """Per patch (and "all"): how many real tweaks moved toward the change, by
+    spirometry.export's toward_change rule: sign(beta) = sign(direction x log_ratio),
+    defined for tweaks with one direction that are not upgrade-only. Counts only:
+    n_tweaks, n_with_direction, n_toward, and the same among |z_real| > 2
+    (n_z_gt2_with_direction, n_z_gt2_toward)."""
+    r = _real(real_df, ref)
+    dose = pd.to_numeric(r.direction) * pd.to_numeric(r.log_ratio)
+    has = ((r.mixed_direction != "yes") & (r.upgrade_only != "yes") & dose.notna()
+           & r.beta.notna())
+    toward = has & (np.sign(r.beta) == np.sign(dose))
+    big = r.z_real.abs() > 2
+    rows = []
+    for p in ["all"] + _patch_order(r.patch):
+        m = r.patch.notna() if p == "all" else (r.patch == p)
+        rows.append(dict(patch=p, n_tweaks=int(m.sum()), n_with_direction=int((m & has).sum()),
+                         n_toward=int((m & toward).sum()),
+                         n_z_gt2_with_direction=int((m & has & big).sum()),
+                         n_z_gt2_toward=int((m & toward & big).sum())))
+    return pd.DataFrame(rows)
+
+
+def placebo_spread_by_feature(placebo_df, dedupe=True, min_cell=30, ref=REF):
+    """sd_z, median_abs_z and robust_sd_z by tercile of the pseudo card's
+    treated_rate_before and of n_runs (pd.qcut; lo / hi are the tercile's range), on
+    placebo_pairs (dedupe=True, default) or every fit. n_fits per cell; small_cell when
+    under min_cell (30)."""
+    d = placebo_pairs(placebo_df, ref) if dedupe else _placebo_ok(placebo_df)
+    rows = []
+    for feat in ("treated_rate_before", "n_runs"):
+        t = pd.qcut(d[feat], 3, labels=["low", "mid", "high"])
+        for lvl in ["low", "mid", "high"]:
+            g = d[t == lvl]
+            st = _z_stats(g.z)
+            rows.append(dict(feature=feat, tercile=lvl, lo=g[feat].min(), hi=g[feat].max(),
+                             n_fits=len(g), sd_z=st["sd_z"], median_abs_z=st["median_abs_z"],
+                             robust_sd_z=st["robust_sd_z"], small_cell=len(g) < min_cell))
+    return pd.DataFrame(rows).assign(dedupe=dedupe)
+
+
+def dose_response_sensitivity(real_df, factors, ref=REF):
+    """The dose-response "slope per patch" model (spirometry.meta, all weeks, log-odds, on
+    the tweaks spirometry.export's dose_response uses: one direction, not upgrade-only,
+    with a size) refit with each tweak's se_lo multiplied by its patch's factor. factors:
+    {label: (first-patch factor, second-patch factor)}; (1, 1) gives the existing fit.
+    One row per (label, patch): factor, slope, se, z, tau2, n_tweaks (all patches)."""
+    from spirometry import meta
+    r = _real(real_df, ref)
+    if "beta_lo" not in r or "se_lo" not in r:
+        r["beta_lo"], r["se_lo"] = zip(*(to_log_odds(b, s, p) for b, s, p in zip(
+            r.beta, r.se, pd.to_numeric(r.treated_rate_before))))
+    r["dose_x"] = pd.to_numeric(r.direction) * pd.to_numeric(r.log_ratio)
+    y, se = pd.to_numeric(r.beta_lo), pd.to_numeric(r.se_lo)
+    line = r[(r.mixed_direction != "yes") & (r.upgrade_only != "yes") & r.dose_x.notna()
+             & y.notna() & (se > 0)]
+    second = (line.patch != "first").astype(float)
+    rows = []
+    for label, (f1, f2) in factors.items():
+        fits = meta.dose_response_fits(y[line.index], se[line.index], line.dose_x, second,
+                                       se_inflation=(f1, f2))
+        fits = fits[fits.model == "slope per patch"].set_index("term")
+        for p, term, f in (("first", "slope_first", f1), ("second", "slope_second", f2)):
+            rows.append(dict(factors=label, patch=p, se_factor=f, slope=fits.coef[term],
+                             se=fits.se[term], z=fits.z[term], tau2=fits.tau2[term],
+                             n_tweaks=int(fits.n_tweaks[term])))
     return pd.DataFrame(rows)
 
 

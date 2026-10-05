@@ -39,7 +39,10 @@ game's RNG decides the offers.
    patch, 23 of 26 tweaks moved the pick rate by more than two standard errors, and 18 of
    those moved the way the change pointed (median size across all 26: 4.7 percentage points).
    In the second patch, 7 of 17 did, all 7 in the direction of the change (median size 1.5
-   points).
+   points). Caveat: a placebo check on unchanged cards found the standard errors too small
+   (placebo |z| > 2 in 71% of first-patch and 37% of second-patch fits, against 5% expected),
+   so these counts are not calibrated; see SPIROMETRY.md, "Placebo calibration of the DiD
+   errors".
 2. **One worked example.** Parry (a Regent card, main number 6 → 10) went from a 13.0% to a
    27.7% pick rate, while the unchanged Regent cards stayed at 27.6% → 27.4%. The estimated
    change is +14.7 points (95% interval +13.3 to +16.2). The largest drop is Corrosive Wave
@@ -47,7 +50,10 @@ game's RNG decides the offers.
 3. **In the first patch, bigger changes moved picks more.** On the log-odds scale the slope is
    1.44 ± 0.19 per unit of ln(new/old). In the second patch it is 0.04 ± 0.31: tweaks of the
    same size, measured equally well, moved picks about a third as much (median 1.5 against
-   4.2 points), with no visible relationship to size. Why is open; see below.
+   4.2 points), with no visible relationship to size. Why is open; see below. Caveat:
+   "measured equally well" compares standard errors that the placebo check did not find
+   calibrated (by different amounts in the two patches), so equal precision is not
+   established.
 4. **Reacting to the beta notes doesn't explain it, as far as it can be tested.** Players can
    see changes in the public beta before the stable release. Where the data allow the check
    (14 of 43 tweaks), the pick-rate gap before the stable release is small or points the
@@ -61,7 +67,9 @@ drops offers that shared a screen with the changed card, or drops controls affec
 fixes. Uploaders who use a community stats mod pick cards differently from other uploaders,
 so the fits adjust for uploader group; fits on the mod users alone are noisier and shift more.
 Three cards (Patter, twice, and Sculpting Strike) were also offered more often after their
-patch, so their estimates carry a caveat.
+patch, so their estimates carry a caveat. A placebo check (the same fit with an unchanged
+card as the "changed" card, 860 fits) gave z-scores with sd 4.1 where honest errors give 1:
+the clustered standard errors are not calibrated, for reasons not yet verified.
 
 **Open questions.**
 - Why the second patch shows no size relationship. Candidates: drift in a short "before"
@@ -85,7 +93,7 @@ cards, not proof of why players changed their picks.
 | [SPIROMETRY.md](SPIROMETRY.md) | Reference: data sources, record structure, known data issues |
 | [CLAUDE.md](CLAUDE.md) | Standing instructions for Claude Code sessions |
 | `notes/` | Investigation notes: patch history endpoints (`patch_history.md`), run file structure and table proposal (`run_schema.md`), patch notes vs. card tables (`patch_notes_crosscheck.md`), card versions and DiD windows (`treatment_table.md`) |
-| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `exposure.py` builds the beta exposure table (first beta date and lead time per tweak); `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study, anticipation check) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens); `strength.py` the strength change across a patch (IV before vs. after, net of unchanged cards) and the offer balance checks; `meta.py` the dose-response meta-regression (moved from notebook 02); `export.py` the results export (aggregate tables from the saved fits, for the dashboard); `sample_results.py` synthetic saved fits for the export's tests and the sample data |
+| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `exposure.py` builds the beta exposure table (first beta date and lead time per tweak); `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study, anticipation check, placebo calibration of the errors) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens); `strength.py` the strength change across a patch (IV before vs. after, net of unchanged cards) and the offer balance checks; `meta.py` the dose-response meta-regression (moved from notebook 02; optional per-patch SE inflation); `export.py` the results export (aggregate tables from the saved fits, for the dashboard); `sample_results.py` synthetic saved fits for the export's tests and the sample data |
 | `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
 | `scripts/make_sample_results.py` | Writes `results_sample/` by running the export on synthetic saved fits |
 | `scripts/audit_extract.py` | Interim: compact audit tables from the snapshot (runs, aggregated offer counts) into `data/audit/` |
@@ -185,6 +193,7 @@ The Phase 5 functions in `spirometry.did` run on the run tables from a notebook:
 
 ```python
 import duckdb
+import pandas as pd
 from spirometry import did
 con = duckdb.connect("data/runs/runs.duckdb", read_only=True)
 df = did.load_window(con, "PARRY@v0.103.2/patch")
@@ -193,6 +202,16 @@ did.fit_did(df, "PARRY@v0.103.2/patch")
 results = did.run_all(con)            # every solo-estimable tweak
 wide = did.run_all(con, control_scope="all")         # controls from every character ("other": other characters only)
 did.control_pool_sizes(con)           # control cards and offers per tweak and scope
+placebo = did.placebo_all(con)        # unchanged cards as pseudo-treated: z should be N(0, 1)
+placebo.to_parquet("data/analysis/placebo_main.parquet")
+did.placebo_summary(placebo)          # mean / sd of z, share |z| > 2 and > 3, by patch and size
+did.placebo_summary(placebo, dedupe=True)            # one row per (window, pseudo card), robust sd
+main = pd.read_parquet("data/analysis/did_main.parquet")  # a saved run_all result
+pvr = did.placebo_vs_real(main, placebo)             # each tweak against its window's placebos
+did.placebo_vs_real_by_patch(pvr, placebo)           # |beta| quantiles, real vs placebo
+did.sign_agreement(main)              # tweaks toward the change, per patch
+did.placebo_spread_by_feature(placebo)               # z spread by pick-rate and n_runs tercile
+did.dose_response_sensitivity(main, {"x": (4.3, 2.1)})  # slope per patch, SEs inflated
 did.anticipation_check(con, "PARRY@v0.103.2/patch")   # does the gap move at the beta date?
 did.anticipation_weekly(con, "BULWARK@v0.107.1/patch")
 did.anticipation_all(con, main=results)              # every tweak, beta_main from run_all

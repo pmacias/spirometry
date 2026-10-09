@@ -50,12 +50,17 @@ Data source chosen (Spire Codex), export and cloud access verified, repo and clo
 set up, patch history endpoints checked (`notes/patch_history.md`).
 
 ### 1. Data acquisition — in progress
-- [ ] Full run snapshot (local, running). Done when the export reports its end and
+- [x] Full run snapshot (local). Done when the export reports its end and
       `--count-only` has been run. Record the start date as "snapshot as of."
-      *Status: 1,513 pages (submissions to ~2026-08-30, 2026-09-29). Daily request cap
-      found; resumes after each reset (paused on it now). Pages 873–948 were fetched again once, as files
-      949–1024 (identical apart from `player_token`; dropped by the parsers; see
-      SPIROMETRY.md). Download log checked 2026-09-28: no other overlap.*
+      *Status: complete. The export reached its end on 2026-10-04 12:22 PDT (`snapshot.log`:
+      last page 2071, 668 runs). `--count-only` (same log): 2,069,493 records, including the
+      75,996 re-downloaded repeats below; 1,525,369 distinct by (seed, start_time); 345,006
+      with a `player_token`. The run tables of 2026-10-02 (1,873 pages, 1,871,830 records)
+      predate the end, so every saved output so far misses the last ~200 pages; the final
+      rebuild is Next up 5. Snapshot start date: not in the part of the log checked (left
+      blank). A daily request cap was found during the download. Pages 873–948 were fetched
+      again once, as files 949–1024 (identical apart from `player_token`; dropped by the
+      parsers; see SPIROMETRY.md). Download log checked 2026-09-28: no other overlap.*
 - [ ] Card patch dataset (CC): `reference/builds.csv`, `reference/card_changes.csv`,
       excluded fields, text-only changes. Done when merged and Phil has reviewed the
       whitelist, the text-only list, and the build mapping.
@@ -130,7 +135,9 @@ Full build 2026-09-29 (parser 1.7.0, 1,513 pages, about 5 min): 0 pages failed, 
 unparseable lines; 75,996 exact repeats dropped (the re-downloaded pages); solo multi-record
 keys 124; `primary_run_keys_retried` 74; `runs_mod_entity_only` 453;
 `primary_offers_dedup_removed` 4,130 (1,393-page build: 119, 72, 425, 4,061). `deck_final`, `deaths` and relic/event choices not
-started.*
+started. Rebuilt 2026-10-02 22:32 UTC (parser 1.7.0, 1,873 pages, 1,871,830 records; commit
+09aa195): every file in `data/analysis/`, `results/` and `triage/out/` comes from that build.
+The final rebuild on the complete snapshot is pending (Next up 5).*
 
 ### 4. Treatment table — CC
 *Status: reference tables built (PR), `python -m spirometry.treatment`:
@@ -234,9 +241,10 @@ fits in `data/analysis/` into aggregate tables in `results/` (per tweak, per eve
 week, dose-response coefficients, robustness fits, anticipation) plus `meta.json`;
 `meta_regression` moved from notebook 02 into `spirometry.meta` (the notebook still has its
 copy; a test checks they agree). Tested on synthetic saved fits with the notebooks' column
-layout (`spirometry.sample_results`); not run on Phil's fits. The offer-rate flags stay
-blank until notebook 02 saves its section 3 table (`offer_rate.parquet`). Next: Phil runs
-the export on `data/analysis/`.*
+layout (`spirometry.sample_results`). The offer-rate flags stay
+blank until notebook 02 saves its section 3 table (`offer_rate.parquet`). Run 2026-10-02 on
+the 1,873-page fits (`results/meta.json`: 1,873 pages, tables built 22:32 UTC); notebook 02
+now saves `offer_rate.parquet`.*
 *Control-scope tooling (CC, PR): `control_scope` on `control_cards`, `load_window` /
 `load_block_data`, `fit_did`, `fit_event_study` and `run_all`: `"color"` (default, the
 same-color controls, unchanged), `"all"` (every character's unchanged cards), `"other"`
@@ -277,11 +285,15 @@ Tested on synthetic fixtures. Next: Phil analyses the tables.*
 4. **Win effects within a build:** intent-to-treat (offered → win), then IV (effect of
    picking, with the offer as instrument).
 5. **Strength change across a patch:** IV estimates pre vs. post, net of unchanged cards.
-6. **Perception vs. strength:** pick-rate effects against strength effects.
+   *Future work, not planned for field guide v2: run only if step 4's power check shows
+   per-card IV errors far smaller than predicted (decision log 2026-10-09).*
+6. **Perception vs. strength:** pick-rate effects against strength effects. *Future work
+   (needs step 5).*
 7. **Hierarchical Bayes:** partial pooling across cards, characters, and ascension, so rarely
-   offered cards don't get extreme estimates.
-8. **Staggered rollout** (beta before stable), if the audit shows enough beta runs.
-9. **Reworks:** before/after estimates, reported separately.
+   offered cards don't get extreme estimates. *Future work, not planned.*
+8. **Staggered rollout** (beta before stable), if the audit shows enough beta runs. *Future
+   work, not planned.*
+9. **Reworks:** before/after estimates, reported separately. *Future work, not planned.*
 
 ### 6. Metric and dashboard
 Selection-corrected card strength metric; dashboard (Streamlit or Observable, undecided).
@@ -289,12 +301,18 @@ Selection-corrected card strength metric; dashboard (Streamlit or Observable, un
 forest plot, Dose-response, Card, Anticipation, About) reads `results/`, else the synthetic
 `results_sample/` with a SAMPLE DATA banner. Local only; no deployment until the release
 checklist (Next up 12) is done. Not yet run on the real export. The strength metric is not
-started.*
+started. Not planned for field guide v2 (future work).*
 
 ### 7. Write-up
-README with results, portfolio card on pmacias.github.io.
-*Status: README results section drafted on the 1,513-page numbers, marked provisional;
-figures still to be saved from the notebooks.*
+Field guide v2: a personal study guide (PDF) that teaches the statistics through the project's
+own data, in the voice and format of v1 (`notes/spirometry_stats_field_guide_v1.pdf`, a study
+guide on the 1,393-page tables). Publishing undecided. Built from `writeup/` (Typst) by
+`python -m spirometry.writeup build`; every number comes from the generated
+`writeup/numbers.json` (`python -m spirometry.numbers`), and every figure from
+`scripts/writeup/figures.py`, so a rebuild never leaves stale numbers. The build runs a privacy
+check either way. README results section: drafted on the 1,513-page numbers, marked
+provisional.
+*Status: planned (tasks in Next up 15).*
 
 ## Next up
 1. ~~Review and merge the card-decisions + mod-entity PR; rerun the full build and read
@@ -302,12 +320,17 @@ figures still to be saved from the notebooks.*
 2. ~~Audit follow-up: does rising ascension explain the within-build win-rate drift.~~ No:
    mean ascension fell while win rates fell (v0.103.2). Candidate: stronger players moving
    to the betas.
-3. Let the snapshot finish; run `--count-only`. Decide whether to re-download pages 0–948
-   for `player_token`.
+3. ~~Let the snapshot finish; run `--count-only`.~~ Done 2026-10-04 (Phase 1). Pages 0–948
+   are not re-downloaded for `player_token` (the triage's token work used the pages that have
+   it).
 4. Send the maintainer message (budget per IP or per client, the daily cap, short pages,
    bulk dump, stable-only hotfixes, when `player_token` was added).
-5. Build the run tables on the full snapshot (`python -m spirometry.runs build`) and move
-   the audit notebook onto them. (Built on 1,513 pages; rebuild when the snapshot is done.)
+5. Final rebuild on the complete snapshot (`python -m spirometry.runs build`); check that
+   `build_info.pages_parsed` equals the page files on disk and `pages_failed` is 0. Then copy
+   `data/analysis/` to `data/analysis_p1873/` (as with `_p949` and `_p1393`) before anything
+   overwrites it, and rerun notebooks 01–05, the placebo calibration, the export and the
+   field guide's scripts (item 15). The audit notebook still reads the interim `data/audit/`
+   tables; moving it onto the run tables is not planned.
 6. Phase 4: review the treatment tables (`notes/treatment_table.md`). (The rebuild with
    `offers_with_version` and the deduplicated `primary_offers` is done.)
 7. Phase 5 follow-ups. Done (numbers from the 1,513-page rerun): (a) same-rarity offer-rate
@@ -317,48 +340,59 @@ figures still to be saved from the notebooks.*
    0.04 ± 0.31 against 1.44 ± 0.19); (d) robust SEs: clustering adds about 3%; (e) dedup key
    fixed in parser 1.6.0; (f) heavy-uploader check: dropping the top 10 uploaders moves
    estimates by a median 0.04 SE (only records from page 1025 on carry `uploader_hash`).
+   On the 1,873-page rebuild (triage, `triage/TRIAGE.md` A): (c) 1.41 ± 0.19 against
+   0.03 ± 0.31; (f) 0.17 SE.
    Next: (g) fit per patch within each
-   uploader group (the tooltip hypothesis) and by kind of main field; (h) where the flagged
+   uploader group (the tooltip hypothesis) and by kind of main field. *Token subset done
+   (triage G3: same pattern); kind of main field done (triage B). The per-group fits saved so
+   far (`did_tagged`, `did_untagged`) are all weeks; weeks 0–3 versions go into the final
+   rerun.* (h) where the flagged
    cards' extra offers come from (act, floor type, event fights; tooling:
-   `load_window(extra_cols=True)`); (i) duplicated runs:
+   `load_window(extra_cols=True)`). *Not planned; stays a caveat.* (i) duplicated runs:
    answered (mostly retries from a restored save; not the downloads). Rule: keep one copy
    for pick rates, drop runs whose copies differ in win, floors or abandonment from win
    analyses (done in parser 1.7.0: `runs_dedup.retried`); (j) a robustness row: the DiD on
    screens where something was picked (choice among cards, no deck-size effect; tooling:
-   `picked_screens_only`); (k) optional: card × act fixed effects (timing balance says it
-   can't change a conclusion; tooling: `card_act_fe`); (l) the upgrade-only placebos on
+   `picked_screens_only`). *In the final rerun, weeks 0–3.* (k) optional: card × act fixed
+   effects (timing balance says it can't change a conclusion; tooling: `card_act_fe`). *Not
+   planned.* (l) the upgrade-only placebos on
    Royalties and Untouchable (v0.107.1), 2.6σ and 3.2σ below zero on the rerun (drift in the
-   thin second-patch before block is the first candidate); (m) recheck "When in the run"
-   at fixed floors on the new tables. Win effects (steps 4–5): tooling in
-   `spirometry.wins`, ready to run. Strength change (step 5, IV before vs. after, net of
+   thin second-patch before block is the first candidate). *On the placebo scale they are
+   within or at the edge of what unchanged cards show (triage, Part 1 side results).* (m)
+   recheck "When in the run" at fixed floors on the new tables. *Only if the field guide uses
+   the figure.* Win effects (steps 4–5): tooling in
+   `spirometry.wins`, ready to run; a power check comes first (item 15). Strength change
+   (step 5, IV before vs. after, net of
    unchanged cards): tooling in `spirometry.strength`, ready to run; about 40 tweaks get a
    row (43 solo-estimable minus 3 upgrade-only), so the notebook should say how many rows
    were tested; partial pooling (step 7) is the planned answer to multiple comparisons.
    (n) Control-group scope: how much the per-card effects move with same-color, all, or
    other-character controls (tooling: `control_scope`, `control_pool_sizes`; Phil runs it).
+   *Done in the triage (L): z −3.55 ("other"), −3.60 ("all"); first-patch slope −12%.*
    (o) Placebo calibration of the DiD errors: run and tabulated (`placebo_main.parquet`,
    `placebo_diagnostics_*.csv`; SPIROMETRY.md, "Placebo calibration of the DiD errors").
-   Left: Phil's analysis of the tables (why the spread is large; whether the second patch's
-   flat dose-response survives calibrated errors).
+   *Analysed in the triage (C, G4): the spread is card-level and persistent; the patch
+   difference survives calibrated errors.*
 8. When official act 4 (or other new content) ships: re-cache the game lists for the new
    builds and switch the mod-entity rule to per-build lists (see SPIROMETRY.md, custom and
    modded runs). The cached lists for v0.99.0 and v0.110.1 are empty: re-fetch them or fall
    back to a neighbouring build first, or every v0.110.1 run would look modded.
 9. Anticipation (done, 2026-09-29): 14 of 43 informative, no sign of inflation; the first
-   patch can't be tested beyond 3 tweaks. Remaining: nothing until the snapshot is complete.
+   patch can't be tested beyond 3 tweaks. Remaining: rerun in the final rerun (item 5).
 10. Results export and dashboard (CC brief: `ccc_prompt_dashboard_v2.md`): built (PR) on
-   synthetic saved fits. Next: Phil adds `orc.to_parquet(OUT / "offer_rate.parquet")` to
-   notebook 02 section 3 (or decides the flags come from elsewhere), runs
-   `python -m spirometry.export --db data/runs/runs.duckdb`, and reviews the dashboard on
-   the real tables. No deployment until the release checklist below is done.
-11. README results section: drafted on the 1,513-page numbers with figure slots; Phil
-   saves the figures from the notebooks (`docs/figures/`).
-12. Release checklist (before anything is public): send the maintainer message (item 4);
+   synthetic saved fits. Notebook 02 saves `offer_rate.parquet`, and the export was run
+   2026-10-02 on the 1,873-page fits (`results/`). The dashboard is not planned for field
+   guide v2 (future work). No deployment until the release checklist below is done.
+11. README results section: drafted on the 1,513-page numbers with figure slots. Numbers
+   follow the final rerun (item 15, task 14); figure slots wait on the field guide's figure
+   script.
+12. Release checklist (only if something is published): send the maintainer message (item 4);
    clear notebook 02's output cells that show hashed uploader IDs and top-uploader counts;
    review the licenses and attribution of `reference/raw/` (wiki pages CC BY-SA, Spire Codex
    caches); aggregates only.
 13. Set `MIN_RUNS` (notebook 01, "Runs per build") from a power calculation. It is a working
-   threshold now: 2,000 primary runs, chosen by hand.
+   threshold now: 2,000 primary runs, chosen by hand. *Not planned (the windows are fixed, so
+   it changes no result).*
 14. Open questions moved out of the notebooks' "What to write down" checklists (the rest of
    those checklists is already in SPIROMETRY.md, "Phase 5 results" and "Anticipation"):
    (a) ascension as one fixed-effect level each, or banded (notebook 02: check
@@ -366,6 +400,37 @@ figures still to be saved from the notebooks.*
    check should drop (10 now); (c) notebook 03 section 6: which informative tweaks' weekly
    panels show a step, a ramp, or a straight-line drift at the first-beta date, by card (not
    yet recorded).
+15. Field guide v2 (Phase 7), one task at a time, in this order. CC = a Claude Code task
+   ending in a PR; Phil = notebook, plots or decision.
+   1. ~~Decisions~~ (Phil, 2026-10-09; decision log).
+   2. ~~Triage record on main~~ (#19).
+   3. Docs: status, decisions, structure, no new numbers (CC).
+   4. Final rebuild (Phil; item 5).
+   5. `spirometry.sensitivity`: the triage's saved-fit computations as tested tooling (rulers,
+      mixed-tweak doses, Debilitate on/off, SE inflation, leave-one-out, character terms,
+      power simulation) and the IV primer's simulation as a script, writing tables to
+      `data/analysis/writeup/`; done when it reproduces the triage's printed numbers on the
+      current `did_h3` (CC; Phil checks).
+   6. Notebook 02 for the final rerun: weeks 0–3 versions of every robustness check
+      (tagged / untagged = the tooltip check), `picked_screens_only`; remove the cells that
+      print hashed uploader IDs (Phil).
+   7. Scripts for the run-level pieces: fake patch, control scope at weeks 0–3, token subset
+      and stayers, slope by week, the pre-declared aggregates, per-group dose lines; each
+      states its spec and prediction before it runs (CC).
+   8. Copy `data/analysis/` to `data/analysis_p1873/`; final rerun of notebooks 01–05,
+      placebo, export and the scripts of 5 and 7 (Phil).
+   9. Win effects: power check on a few cards of one build with a stop rule; continue to all
+      cards of v0.107.1 only if it passes (CC script; Phil runs and decides).
+   10. `spirometry.numbers`: the generated numbers table, with staleness and privacy checks
+      (CC).
+   11. Write-up skeleton: Typst, boxes, chapter stubs, generated numbers appendix, lint for
+      hand-typed numbers, one build command (CC).
+   12. Chapters 0–3 draft, for a voice check before the rest (CC drafts; Phil reads).
+   13. Figure script for every figure (CC; Phil runs it and looks).
+   14. Remaining chapters in four PRs; Phil writes the "what was found" passages and the
+      conclusion (CC drafts).
+   15. Docs: final numbers into SPIROMETRY.md, README and PLAN (CC).
+   16. Only if Phil decides to publish: release checklist (item 12), then publish (Phil).
 
 ## Decision log
 - Spire Codex export is the primary source; sts2runs.com only for cross-checks.
@@ -920,3 +985,43 @@ figures still to be saved from the notebooks.*
   dose-response sensitivity inflates each patch's se_lo by a factor and refits the
   random-effects model (τ² re-estimated); factors come from the deduped summary by patch.
   Placebo fits are all weeks, so the sensitivity uses the all-weeks estimates, not weeks 0-3.
+- Triage (2026-10-07/08, `triage/TRIAGE.md`, merged as #19): read-only investigation of the
+  flat second patch, Parts 1 and 2, on the 1,873-page tables. Its numbers are not results until
+  rerun on the final tables (Next up 15).
+- Primary ruler: ln(new/old). The other rulers, Phil's card-review calls (Grand Finale off,
+  Crescent Spear at 0.223) and the hybrid ruler (proposed after notebook 04's results, so post
+  hoc) are sensitivity variants (Phil, 2026-10-09).
+- Debilitate v0.107.1: a nerf whose size can't be measured (it depends on the build, fight
+  length and other sources of Weak and Vulnerable). Sign ruler only. The ln dose-response is
+  reported without it (primary) and, as a sensitivity row, with it at the table dose, with the
+  reason stated (Phil, 2026-10-09). The triage's z for these two cases (−2.4 and −3.8) are
+  from fits with Reflect off; both are recomputed with Reflect on (next entry).
+- Mixed-tweak rule (triage B2) adopted (Phil, 2026-10-09), replacing the Strength-range rule
+  of 2026-10-07: a tweak is mixed only if the card's total printed output, in the unit of its
+  main field, moves in different directions for the base and the upgraded card, or two changed
+  numbers in different units move in opposite directions. Direction = the patch-note label.
+  Dose = ln(new total / old total) for the un-upgraded card at Strength and Dexterity 0,
+  counting generated cards at their printed values. A dose of 0 or of the wrong sign keeps the
+  tweak off the line (sign ruler only); game-state ranges are sensitivity only. Leading Strike
+  stays off (11 → 11 damage); Reflect is not mixed (17 → 15, upgraded 21 → 20) and goes on the
+  line at −0.125. A Shiv deals 4 damage (upgraded 6): verified from
+  `notes/patch_history_samples/changelog_1.1.0.json`.
+- Weeks 0–3 is the primary horizon for every estimate in field guide v2; all weeks is
+  secondary (Phil, 2026-10-09).
+- Week 0 stays at the `builds.csv` date. The stable population switched about 25 hours later
+  for v0.103.2 and v0.107.1 (about 01:00 UTC on 04-17 and 06-19; triage G1), the same offset in
+  both patches, so it can't make a patch difference.
+- Field guide v2 (Phil, 2026-10-09): a personal study guide in v1's voice ("your data", "your
+  notebooks") and depth, about 46 pages or longer if a chapter needs it; no reproducibility
+  appendix. Publishing undecided. Title "What Did the Patch Do?", with "Spirometry" above it.
+  Every number through the generated numbers table and every figure from a script, so a rebuild
+  can't leave stale numbers. "Clearly nonzero" is counted with clustered and with
+  placebo-scaled errors, the calibrated count first. CC drafts the teaching and method text;
+  Phil writes the "what was found" passages and the conclusion. Only if published: the
+  generated numbers, figures and PDF are committed at release, after the release checklist
+  (Next up 12); the build's privacy check runs either way.
+- Win effects for the field guide: a power check on a few cards of v0.107.1 first, with a
+  stop rule; the strength change across patches (step 5), hierarchical Bayes, the staggered
+  rollout, reworks and the dashboard are future work (Phil, 2026-10-09).
+- Before the final rerun overwrites `data/analysis/`, it is copied to `data/analysis_p1873/`
+  (as `data/analysis_p949/` and `data/analysis_p1393/`) (Phil, 2026-10-09).

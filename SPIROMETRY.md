@@ -2,14 +2,16 @@
 
 Measuring what Slay the Spire 2's balance patches actually did.
 
-Status: Phase 5, pick-rate results and the anticipation check rerun on the 1,513-page
-tables; win-effect tooling built, not yet run on the full tables.
+Status: Phase 5. Pick-rate results, the anticipation check, the placebo calibration and the
+triage (`triage/TRIAGE.md`) were run on the run tables rebuilt 2026-10-02 (1,873 pages,
+1,871,830 records, parser 1.7.0). The snapshot is complete (2026-10-04); a final rebuild and
+rerun is pending, and the numbers in this file get updated then. Win-effect tooling built, not
+yet run on the full tables.
 The pipeline is complete through Phase 4 (reference tables, run tables, treatment tables).
-The full snapshot is still downloading; the run tables are built from the first 1,513 pages
-(submissions to about 2026-08-30, parser 1.7.0, built 2026-09-29). Pick-rate results for the
-numeric tweaks are under "Phase 5 results"; the design and the reasoning behind it are in
+Pick-rate results for the numeric tweaks are under "Phase 5 results" (still the 1,513-page
+numbers; see the note there); the design and the reasoning behind it are in
 `notes/phase5_deck_v3.pdf` (made for the first pass; its numbers are from the 949-page
-tables).
+tables). The write-up is field guide v2, a personal study guide (PLAN.md Phase 7).
 
 ---
 
@@ -73,13 +75,17 @@ affiliated with Mega Crit.
     the export records don't have (`notes/run_schema.md`).
   - `start` / `end` bound submission time, not play time: a page from `start=2026-09-01`
     still had 16% of its runs on v0.98.x–v0.99.1.
-  - Snapshot so far (2026-09-29): 1,513 pages, 1,511,837 records (1,435,841 after dropping
+  - **Snapshot complete (2026-10-04).** The export reached its end on 2026-10-04 12:22 PDT
+    (`snapshot.log`: last page 2071, a short page of 668 runs). `--count-only` (same log):
+    2,069,493 records, including the 75,996 repeats below; 1,525,369 distinct by (seed,
+    start_time); 345,006 with a `player_token`. The run tables were last built on
+    2026-10-02 from 1,873 pages (0–1,872, 1,871,830 records), before the end, so the last
+    ~200 pages are in no saved output yet (PLAN.md Next up 5). Size on disk not rechecked
+    (1,393 pages: 4.6 GB, ~3.3 MB per page).
+  - Earlier state (2026-09-29): 1,513 pages, 1,511,837 records (1,435,841 after dropping
     the repeats below; 1,100,090 distinct runs), covering submissions up to about 2026-08-30
     (the date in the saved cursor, 2026-08-30 14:58 UTC; the newest play date in the
-    tables is 2026-08-30 14:57 UTC). 119,979 records were added since the 1,393-page state.
-    Size on disk not rechecked (1,393 pages: 4.6 GB, ~3.3 MB per page). The total is still
-    unknown; the site's ~1.8M figure would mean a few hundred more pages. The download is
-    paused on the rate limit until it resets.
+    tables is 2026-08-30 14:57 UTC).
   - Pages 873–948 were downloaded twice: two download processes ran at once (the older
     one woke from a rate-limit sleep and refetched the same cursor chain into the same file
     numbers, so the overwritten files got identical content), and the 2026-09-26 restart
@@ -693,7 +699,8 @@ identifiers; the export checks every table before writing.
 - `build_info` records pages parsed, not a submission end date: `meta.json`'s snapshot
   end date is blank unless given with `--snapshot-end`.
 - Tested on synthetic saved fits with the notebooks' column layout
-  (`spirometry.sample_results`, `tests/test_export.py`); not yet run on Phil's saved fits.
+  (`spirometry.sample_results`, `tests/test_export.py`). Run 2026-10-02 on the 1,873-page fits
+  (`results/meta.json`); notebook 02 now saves `offer_rate.parquet`.
   `results_sample/` holds the synthetic export the dashboard falls back to.
 
 ## Win-effect tooling (`spirometry.wins`)
@@ -945,6 +952,11 @@ there means anything at that size.
 
 ## Phase 5 results (rerun 2026-09-29, 1,513-page tables)
 
+> **Superseded numbers.** The saved fits in `data/analysis/` are from the 2026-10-02 rebuild
+> (1,873 pages), and the triage (`triage/TRIAGE.md`, Part 1 table A) lists how each number
+> below changed on it. Neither set is final: both miss the last pages of the complete
+> snapshot. This section is rewritten from the final rerun (PLAN.md Next up 15).
+
 From `notebooks/02_pick_rate_did.ipynb` (version 3) and `notebooks/03_anticipation.ipynb` on
 the run tables built 2026-09-29 from the first 1,513 export pages (submissions to about
 2026-08-30, parser 1.7.0, deduplicated by `run_key`). Results are saved in `data/analysis/`
@@ -1123,7 +1135,10 @@ date, on old-card builds):
 | Furnace | 2 | 28 | 0.0 | +5.9 ± 1.0 |
 
 **Dose-response** (38 tweaks; mixed-direction and upgrade-only kept off the line: Leading
-Strike, Reflect, Royalties, Serpent Form). x = direction × ln(new/old) of the main field; y =
+Strike and Serpent Form (first patch), Reflect, Royalties and Untouchable v0.107.1 (second
+patch). The notebooks print the left-off tweaks by card, so Untouchable v0.107.1 was missing
+from the printout, not from the fit; triage A). Under the mixed-tweak rule below, Reflect
+joins the line in the final rerun and Debilitate v0.107.1 leaves it. x = direction × ln(new/old) of the main field; y =
 β in log-odds (delta method), from after-build weeks 0–3 so both patches share a horizon;
 random-effects meta-regression. A refit on the all-weeks estimates (same model) gives the
 same picture.
@@ -1148,8 +1163,8 @@ same picture.
   in the two patches, so equal precision is not established.
   So the flat second-patch slope isn't a power problem or a smaller-changes problem: second
   patch tweaks moved picks about a third as much for the same size of change. Candidates:
-  the SlayTheStats mod's community-stats tooltips (from 2026-06-19, the day after
-  v0.107.1), drift in the thin before block (v0.103.3, stable for about three weeks; the
+  the SlayTheStats mod's community-stats tooltips (from 2026-06-19, the same UTC day the
+  stable population switched to v0.107.1, about 01:00 UTC; triage G1), drift in the thin before block (v0.103.3, stable for about three weeks; the
   upgrade-only placebos below point that way), more experienced players and a settled meta, the kind of number changed
   (several second-patch mains are power amounts or Forge). Anticipation (above) is not
   supported for the tweaks it can test.
@@ -1157,6 +1172,27 @@ same picture.
   different effects on different cards.
 - Buffs vs. nerfs, with the patch term: buff slope 1.60 ± 0.37, nerf slope 0.46 ± 0.40.
   Not distinguishable on 8 nerfs.
+
+**Dose rules (decided 2026-10-09; PLAN.md decision log).** ln(new/old) is the primary ruler;
+the other rulers, the card-review calls and the post-hoc hybrid ruler are sensitivity
+variants. Weeks 0–3 is the primary horizon.
+- *Mixed-direction tweaks* (the triage's rule, B2): a tweak is mixed only if the card's total
+  printed output, in the unit of its main field, moves in different directions for the base
+  and the upgraded card, or two changed numbers in different units move in opposite
+  directions. Its direction is the patch-note label; its dose is ln(new total / old total) for
+  the un-upgraded card at Strength and Dexterity 0, counting cards it generates at their
+  printed values. A dose of 0 or of the wrong sign keeps it off the line (sign ruler only);
+  game-state ranges (such as Strength 0–3) are sensitivity only. Leading Strike ("Buffed";
+  7 damage + 1 Shiv → 3 damage + 2 Shivs) totals 11 → 11 at Strength 0: off the line. Reflect
+  (block 17 → 15, upgrade +4 → +5: upgraded 21 → 20) moves the same way in both and is not
+  mixed: on the line at −0.125. A Shiv deals 4 damage (upgraded 6), verified from
+  `notes/patch_history_samples/changelog_1.1.0.json`. No other tweak in the two patches is
+  mixed under the rule. This replaces the Strength-range rule written 2026-10-07.
+- *Debilitate v0.107.1* (debuff duration 3 → 2 turns on a 10-damage card): a nerf whose size
+  can't be measured (it depends on the build, fight length and other sources of Weak and
+  Vulnerable). Sign ruler only; the ln dose-response is reported without it and, as a
+  sensitivity row, with it at the table dose, with the reason. It is the most influential
+  second-patch point (triage K1, K2).
 
 **Upgrade-only placebos.** Un-upgraded offers should show no effect. Serpent Form's moved
 +0.05 ± 1.1 points, but Royalties' moved −3.0 ± 1.2 (2.6σ below zero) and Untouchable
@@ -1181,7 +1217,12 @@ group; by kind of main field); why Patter and Sculpting Strike are offered more 
 (`picked_screens_only`); the "When in the run" numbers on the new tables; a final rerun
 once the snapshot is complete.
 
-## Placebo calibration of the DiD errors (2026-10-02, 1,513-page tables)
+## Placebo calibration of the DiD errors (2026-10-02, after the 1,873-page rebuild)
+
+The heading used to say "1,513-page tables". `placebo_main.parquet` was written about three
+hours after the 2026-10-02 rebuild and its real-tweak comparison uses the rebuilt
+`did_main.parquet`, so it almost certainly ran on the 1,873-page tables (inferred from file
+times; the parquet has no build stamp). Analysis of these tables: triage C and G4.
 
 Prompted by the 43 tweaks fit on early- vs late-uploaded runs giving z-differences with sd
 1.48. Design (`did.placebo_fit` / `placebo_all`): the same DiD (fit_did's model, fixed
@@ -1345,8 +1386,10 @@ the drift either way.
   1,100,090 distinct runs; solo runs are 79% of distinct runs (869,780). `scripts/snapshot_export.py` reports a `dedup` column on this key; raw `runs` counts
   are upper bounds. Whether the unit of analysis is the run or the player-run gets decided
   at parsing (a co-op run has one outcome but several players' choices).
-- **Player IDs.** Solo runs use `player_id: 1`. Multiplayer runs carry real 64-bit Steam
-  IDs. Hash these in the pipeline; publish aggregates only. Not planning player-level
+- **Player IDs.** Solo runs use `player_id: 1` (checked 2026-10-07 on every block of 100
+  pages of the tables then loaded: the share of solo runs whose `player_hash` is '1' is at
+  least 0.9998, at most 2 exceptions per about 60k records). Multiplayer runs carry real
+  64-bit Steam IDs. Hash these in the pipeline; publish aggregates only. Not planning player-level
   analysis. Raw snapshot data is git-ignored and never committed. `spirometry.runs` hashes
   Steam IDs and `player_token` with a keyed hash (HMAC-SHA256, key in `SPIROMETRY_SALT` or
   the git-ignored `.spirometry_salt`); a plain hash of a Steam ID could be reversed by
@@ -1418,6 +1461,25 @@ the drift either way.
 - **Old builds keep being played.** Every stable build has runs dated months after it was
   replaced (v0.98.x into August). The build still sets the card versions, so this doesn't
   affect treatment assignment.
+- **Release timing** (triage G1, 1,873-page tables, UTC start times). v0.103.2 and v0.107.1
+  reached stable players at about 01:00 UTC on 04-17 and 06-19, a day after their
+  `builds.csv` dates; week 0 therefore starts about 25 hours early in both patches (the same
+  offset, so it can't make a patch difference) and holds one thin day, probably beta-channel
+  play. v0.103.3 went live at about 22:00 UTC on its `builds.csv` date. The SlayTheStats
+  tooltips (2026-06-19) arrived the same UTC day as the v0.107.1 switch.
+- **`player_token` coverage** (triage G1–G2, primary population, 1,873-page tables). The key
+  is absent on pages before about 950 and present from page 1,000 on. Filled on 19.4%,
+  14.5%, 6.8% and 14.6% of primary runs of v0.99.1, v0.103.2, v0.103.3 and v0.107.1 (543,
+  500, 234 and 1,035 tokens); 397 tokens appear on both sides of the v0.103.2 release and 218
+  on both sides of v0.107.1. Token runs are almost never SlayTheStats-tagged (under 1%), so
+  the token marks a separate upload route; before June they win less and are abandoned more
+  often than other uploads, but they rank cards almost the same way (before-block pick-rate
+  correlation 0.96–0.98). Whether the token is opt-in is not yet verified. (The earlier
+  2026-10-07 counts on all records, 17.7% / 13.8% / 6.4% / 13.8%, were not restricted to the
+  primary population.)
+- **Mod cards without a "-" in their id.** About 170 mod cards reach `primary_offers` with at
+  most ~100 offers each (triage, Part 2 intro). Harmless for the fits (`did.card_colors()`
+  never makes them controls) but a candidate for a parser rule.
 - **Cheated / modded runs.** No cheat flag in the export. Audit (primary runs, 1,513 pages):
   103 of about 143,000 wins took under 15 minutes; the two that looked impossible on 1,393 pages
   (7,355 gold with 39 relics; an empty deck) are still there. No win before act 3. Too few to matter for pick rates: flagged, not
@@ -1439,7 +1501,9 @@ close to randomized. That supports:
 5. **Dose-response.** Many small buffs and nerfs of known size: model effect size against
    change size. Separate numeric tweaks from reworks.
 6. **Spillovers.** Nerfing one card shifts picks to its substitutes. SUTVA violation, but
-   also a finding: patches move the whole meta.
+   also a finding: patches move the whole meta. With same-color controls, substitution
+   biases the pick-rate DiD *away from* zero (controls rise after a nerf, fall after a buff);
+   only complements push toward zero (triage F, L).
 7. **Staggered rollout.** Beta gets changes before stable. Staggered-adoption DiD.
 8. **Survival.** Floor of death as a survival curve; hazard by encounter to find the real
    difficulty walls, and how patches to enemies/bosses moved them.
@@ -1487,7 +1551,8 @@ close to randomized. That supports:
 
 ## Open questions / next steps
 
-1. Run the full snapshot (in progress locally; 1,513 pages so far, see Data sources).
+1. ~~Run the full snapshot.~~ Done 2026-10-04 (see Data sources); final rebuild pending.
+   The audit numbers below are from the 1,513 pages.
    Audit on those pages: every build from v0.98.1 on except v0.99.0, v0.103.1 and v0.110.0
    has ≥2,000 primary runs; on the 1,393 pages, 40 of the 47 numeric-tweak cards had 4.6k or
    more primary offers on each side of their stable change (4 are never offered as rewards,
@@ -1510,6 +1575,11 @@ close to randomized. That supports:
 6. ~~Claim the cloud credit (`/claim-credit` in CC) before October 7, 2026.~~ Done.
 7. Keep Clickworthy moving in parallel (currently on Stage 1).
 8. Why the placebo spread of the DiD z is large (sd 4.10, 3.68 one row per window and card;
-   see "Placebo calibration of the DiD errors"). Not yet verified.
-9. Whether the second patch's flat dose-response survives calibrated errors (a first
-   sensitivity table is in `placebo_diagnostics_dose_sensitivity.csv`; not interpreted).
+   see "Placebo calibration of the DiD errors"). Partly answered (triage C, G4): the spread is
+   card by card and persists across patches; clustering by uploader token is a partial fix of
+   a minor part. The cause is not yet verified.
+9. Whether the second patch's flat dose-response survives calibrated errors. Answered on the
+   1,873-page tables (triage C): it does; the patch difference depends on the ruler (triage
+   B, K2) and leans on Debilitate v0.107.1 (triage K1). To be confirmed in the final rerun.
+10. Triage of the flat second patch (2026-10-07/08): done, `triage/TRIAGE.md` (Parts 1 and 2,
+   final synthesis). Nothing in it is a result until rerun on the final tables.

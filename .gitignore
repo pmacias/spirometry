@@ -28,3 +28,9 @@ venv/
 
 # Scratch notebooks (quick checks, not part of the record)
 notebooks/scratch*.ipynb
+
+# Notes
+notes/spirometry_stats_field_guide_v1.pdf
+
+# Claude settings
+.claude/*.bak

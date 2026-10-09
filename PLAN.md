@@ -52,12 +52,13 @@ set up, patch history endpoints checked (`notes/patch_history.md`).
 ### 1. Data acquisition — in progress
 - [x] Full run snapshot (local). Done when the export reports its end and
       `--count-only` has been run. Record the start date as "snapshot as of."
-      *Status: complete. The export reached its end on 2026-10-04 12:22 PDT (`snapshot.log`:
-      last page 2071, 668 runs). `--count-only` (same log): 2,069,493 records, including the
+      *Status: complete. The export reached its end on 2026-10-04 12:22 PDT: 2,071 pages
+      (files 0–2,070; `snapshot.log` numbers pages from 1, so its last line says "page 2071",
+      a short page of 668 runs). `--count-only` (same log): 2,069,493 records, including the
       75,996 re-downloaded repeats below; 1,525,369 distinct by (seed, start_time); 345,006
       with a `player_token`. The run tables of 2026-10-02 (1,873 pages, 1,871,830 records)
-      predate the end, so every saved output so far misses the last ~200 pages; the final
-      rebuild is Next up 5. Snapshot start date: not in the part of the log checked (left
+      predated the end and missed the last 198 pages; the final rebuild of 2026-10-09 covers
+      all 2,071 (Phase 3). Snapshot start date: not in the part of the log checked (left
       blank). A daily request cap was found during the download. Pages 873–948 were fetched
       again once, as files 949–1024 (identical apart from `player_token`; dropped by the
       parsers; see SPIROMETRY.md). Download log checked 2026-09-28: no other overlap.*
@@ -137,7 +138,11 @@ keys 124; `primary_run_keys_retried` 74; `runs_mod_entity_only` 453;
 `primary_offers_dedup_removed` 4,130 (1,393-page build: 119, 72, 425, 4,061). `deck_final`, `deaths` and relic/event choices not
 started. Rebuilt 2026-10-02 22:32 UTC (parser 1.7.0, 1,873 pages, 1,871,830 records; commit
 09aa195): every file in `data/analysis/`, `results/` and `triage/out/` comes from that build.
-The final rebuild on the complete snapshot is pending (Next up 5).*
+Final build on the complete snapshot (Phil, 2026-10-09 21:18 UTC, parser 1.7.0): 2,071 pages
+(0–2,070), 2,069,493 records read, 75,996 exact repeats dropped, 0 pages failed. Before
+anything is refitted on it, `data/analysis/` (the 1,873-page fits) was copied to
+`data/analysis_p1873/`. The saved fits in `data/analysis/` are still the 1,873-page ones
+until the final rerun (Next up 5).*
 
 ### 4. Treatment table — CC
 *Status: reference tables built (PR), `python -m spirometry.treatment`:
@@ -325,12 +330,11 @@ provisional.
    it).
 4. Send the maintainer message (budget per IP or per client, the daily cap, short pages,
    bulk dump, stable-only hotfixes, when `player_token` was added).
-5. Final rebuild on the complete snapshot (`python -m spirometry.runs build`); check that
-   `build_info.pages_parsed` equals the page files on disk and `pages_failed` is 0. Then copy
-   `data/analysis/` to `data/analysis_p1873/` (as with `_p949` and `_p1393`) before anything
-   overwrites it, and rerun notebooks 01–05, the placebo calibration, the export and the
-   field guide's scripts (item 15). The audit notebook still reads the interim `data/audit/`
-   tables; moving it onto the run tables is not planned.
+5. ~~Final rebuild on the complete snapshot~~ (done 2026-10-09: 2,071 pages, 0 failed;
+   Phase 3) ~~and copy `data/analysis/` to `data/analysis_p1873/`~~ (done 2026-10-09). Left:
+   rerun notebooks 01–05, the placebo calibration, the export and the field guide's scripts
+   on the final tables (item 15, task 8). The audit notebook still reads the interim
+   `data/audit/` tables; moving it onto the run tables is not planned.
 6. Phase 4: review the treatment tables (`notes/treatment_table.md`). (The rebuild with
    `offers_with_version` and the deduplicated `primary_offers` is done.)
 7. Phase 5 follow-ups. Done (numbers from the 1,513-page rerun): (a) same-rarity offer-rate
@@ -404,13 +408,18 @@ provisional.
    ending in a PR; Phil = notebook, plots or decision.
    1. ~~Decisions~~ (Phil, 2026-10-09; decision log).
    2. ~~Triage record on main~~ (#19).
-   3. Docs: status, decisions, structure, no new numbers (CC).
-   4. Final rebuild (Phil; item 5).
+   3. ~~Docs: status, decisions, structure, no new numbers~~ (#20).
+   4. ~~Final rebuild~~ (Phil, 2026-10-09; item 5), with `data/analysis_p1873/` saved first.
    5. `spirometry.sensitivity`: the triage's saved-fit computations as tested tooling (rulers,
       mixed-tweak doses, Debilitate on/off, SE inflation, leave-one-out, character terms,
-      power simulation) and the IV primer's simulation as a script, writing tables to
-      `data/analysis/writeup/`; done when it reproduces the triage's printed numbers on the
-      current `did_h3` (CC; Phil checks).
+      power simulation) and the IV primer's simulation (`spirometry.iv_sim`), writing tables
+      to `data/analysis/writeup/`; done when it reproduces the triage's printed numbers on the
+      current `did_h3` (CC; Phil checks). *Built (CC, 2026-10-09). On the 1,873-page fits it
+      reproduces triage B (all nine rulers), B2, C (SE factors, both horizons), D (the power
+      table exactly, same seed) and K1/K2; `iv_sim` reproduces the primer's saved outputs.
+      First number under the 2026-10-09 primary spec (Reflect on, Debilitate v0.107.1 off
+      the ln line), 1,873-page fits: slope1 1.41 ± 0.19, slope2 0.08 ± 0.40, z diff −3.00
+      (the plan expected about −2.5 to −2.7). Phil checks by rerunning.*
    6. Notebook 02 for the final rerun: weeks 0–3 versions of every robustness check
       (tagged / untagged = the tooltip check), `picked_screens_only`; remove the cells that
       print hashed uploader IDs (Phil).
@@ -1025,3 +1034,23 @@ provisional.
   rollout, reworks and the dashboard are future work (Phil, 2026-10-09).
 - Before the final rerun overwrites `data/analysis/`, it is copied to `data/analysis_p1873/`
   (as `data/analysis_p949/` and `data/analysis_p1393/`) (Phil, 2026-10-09).
+- Sensitivity tooling (CC's choices, open to review, 2026-10-09):
+  - The triage's saved-fit computations live in `spirometry.sensitivity`, not in
+    `triage/scripts/`, which stays a frozen record. Same model and formulas as the triage
+    (`spirometry.meta.meta_regression`, slope per patch, difference from the coefficient
+    covariance, ratio by the delta method), so the triage's numbers are the check.
+  - Line membership is a named spec (`SPECS`): "triage" (the notebooks' 38), "primary"
+    (Reflect at ln(15/17), Debilitate v0.107.1 off the ln line), "primary, Debilitate at
+    table dose", "Reflect off, Debilitate off". The mixed-tweak rule's outcome for Leading
+    Strike and Reflect is written in as `MIXED_RULE` (the tables hold no card text, so the
+    rule can't be applied by code); Reflect's rule dose equals its table dose.
+  - Under the primary spec the sign ruler also carries the sign-only tweaks: Leading
+    Strike +1 (label), Debilitate v0.107.1 −1. The other rulers use the ln line's tweaks;
+    rank and per-kind medians are recomputed on each set, as notebook 04 does.
+  - The hybrid ruler is in every ruler table, flagged `post_hoc`.
+  - The power simulation keeps the triage's design (seed 20261007, 1,000 draws, planted
+    0 / 0.3 / 0.7 / 1.0 / 1.44, three settings), run for the triage and primary specs.
+  - The IV primer's game is a module (`spirometry.iv_sim`) rather than a script, so it is
+    tested; its functions are the notebook's, unchanged (a test checks the source).
+  - Outputs: CSVs in `data/analysis/writeup/` (git-ignored), each passed through the
+    export's privacy check before writing.

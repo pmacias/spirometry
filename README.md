@@ -25,7 +25,7 @@ See [PLAN.md](PLAN.md) for the research questions and methods.
 
 > **Provisional.** Computed on the first 1,513 pages of the run export (about 1.1 million
 > distinct runs, submissions to about 2026-08-30). The export has since been downloaded in
-> full (2,072 pages, 2026-10-04); these numbers are replaced after the final rebuild.
+> full (2,071 pages, 2026-10-04); these numbers are replaced after the final rebuild.
 
 **What was tested.** 43 card changes where a single number changed: 26 in patch v0.103.2 and
 17 in v0.107.1. The data are about 816,000 solo, unmodded runs. For each changed card, the
@@ -94,7 +94,7 @@ cards, not proof of why players changed their picks.
 | [SPIROMETRY.md](SPIROMETRY.md) | Reference: data sources, record structure, known data issues |
 | [CLAUDE.md](CLAUDE.md) | Standing instructions for Claude Code sessions |
 | `notes/` | Investigation notes: patch history endpoints (`patch_history.md`), run file structure and table proposal (`run_schema.md`), patch notes vs. card tables (`patch_notes_crosscheck.md`), card versions and DiD windows (`treatment_table.md`); the Phase 5 design decks (`phase5_deck_v1.pdf`, `phase5_deck_v3.pdf`) and the statistics field guide v1 (`spirometry_stats_field_guide_v1.pdf`, a study guide on the 1,393-page tables; v2 is planned, PLAN.md Phase 7) |
-| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `exposure.py` builds the beta exposure table (first beta date and lead time per tweak); `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study, anticipation check, placebo calibration of the errors) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens); `strength.py` the strength change across a patch (IV before vs. after, net of unchanged cards) and the offer balance checks; `meta.py` the dose-response meta-regression (moved from notebook 02; optional per-patch SE inflation); `export.py` the results export (aggregate tables from the saved fits, for the dashboard); `sample_results.py` synthetic saved fits for the export's tests and the sample data |
+| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `exposure.py` builds the beta exposure table (first beta date and lead time per tweak); `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study, anticipation check, placebo calibration of the errors) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens); `strength.py` the strength change across a patch (IV before vs. after, net of unchanged cards) and the offer balance checks; `meta.py` the dose-response meta-regression (moved from notebook 02; optional per-patch SE inflation); `export.py` the results export (aggregate tables from the saved fits, for the dashboard); `sample_results.py` synthetic saved fits for the export's tests and the sample data; `sensitivity.py` the dose-response's sensitivity tables for the field guide (rulers, dose specs, review calls, mixed tweaks, leave-one-out, character terms, SE inflation, power by simulation); `iv_sim.py` the IV primer's simulated game as tables |
 | `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
 | `scripts/make_sample_results.py` | Writes `results_sample/` by running the export on synthetic saved fits |
 | `scripts/audit_extract.py` | Interim: compact audit tables from the snapshot (runs, aggregated offer counts) into `data/audit/` |
@@ -238,6 +238,14 @@ res = strength.strength_change(con, "PARRY@v0.103.2/patch")  # Strength(blocks, 
 res = strength.strength_all(con)                  # every solo-estimable numeric tweak
 strength.save(res, "data/analysis", "main")       # parquet; strength.load(...) reads it back
 strength.balance_all(data, "ironclad")            # is the offer unrelated to pre-offer traits?
+```
+
+Tables for the field guide, from the saved fits (no run tables needed; CSVs in
+`data/analysis/writeup/`, git-ignored):
+
+```bash
+python -m spirometry.sensitivity --analysis data/analysis --out data/analysis/writeup  # ~3 s
+python -m spirometry.iv_sim --out data/analysis/writeup                               # ~5 s
 ```
 
 Export the pick-rate results for the dashboard: aggregate tables per tweak / week from the

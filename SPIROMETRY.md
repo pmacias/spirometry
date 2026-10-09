@@ -4,8 +4,9 @@ Measuring what Slay the Spire 2's balance patches actually did.
 
 Status: Phase 5. Pick-rate results, the anticipation check, the placebo calibration and the
 triage (`triage/TRIAGE.md`) were run on the run tables rebuilt 2026-10-02 (1,873 pages,
-1,871,830 records, parser 1.7.0). The snapshot is complete (2026-10-04); a final rebuild and
-rerun is pending, and the numbers in this file get updated then. Win-effect tooling built, not
+1,871,830 records, parser 1.7.0). The snapshot is complete (2026-10-04) and the run tables
+were rebuilt on all of it on 2026-10-09 (2,071 pages); the saved fits are still the
+1,873-page ones until the final rerun, and the numbers in this file get updated then. Win-effect tooling built, not
 yet run on the full tables.
 The pipeline is complete through Phase 4 (reference tables, run tables, treatment tables).
 Pick-rate results for the numeric tweaks are under "Phase 5 results" (still the 1,513-page
@@ -75,13 +76,14 @@ affiliated with Mega Crit.
     the export records don't have (`notes/run_schema.md`).
   - `start` / `end` bound submission time, not play time: a page from `start=2026-09-01`
     still had 16% of its runs on v0.98.x–v0.99.1.
-  - **Snapshot complete (2026-10-04).** The export reached its end on 2026-10-04 12:22 PDT
-    (`snapshot.log`: last page 2071, a short page of 668 runs). `--count-only` (same log):
-    2,069,493 records, including the 75,996 repeats below; 1,525,369 distinct by (seed,
-    start_time); 345,006 with a `player_token`. The run tables were last built on
-    2026-10-02 from 1,873 pages (0–1,872, 1,871,830 records), before the end, so the last
-    ~200 pages are in no saved output yet (PLAN.md Next up 5). Size on disk not rechecked
-    (1,393 pages: 4.6 GB, ~3.3 MB per page).
+  - **Snapshot complete (2026-10-04).** The export reached its end on 2026-10-04 12:22 PDT:
+    2,071 pages (files 0–2,070; `snapshot.log` numbers pages from 1, so its last line says
+    "page 2071", a short page of 668 runs). `--count-only` (same log): 2,069,493 records,
+    including the 75,996 repeats below; 1,525,369 distinct by (seed, start_time); 345,006
+    with a `player_token`. Run tables: built on 2026-10-02 from 1,873 pages (0–1,872,
+    1,871,830 records; the saved fits so far), and on 2026-10-09 21:18 UTC from all 2,071
+    pages (2,069,493 records read, 75,996 repeats dropped, 0 pages failed). Size on disk not
+    rechecked (1,393 pages: 4.6 GB, ~3.3 MB per page).
   - Earlier state (2026-09-29): 1,513 pages, 1,511,837 records (1,435,841 after dropping
     the repeats below; 1,100,090 distinct runs), covering submissions up to about 2026-08-30
     (the date in the saved cursor, 2026-08-30 14:58 UTC; the newest play date in the
@@ -702,6 +704,35 @@ identifiers; the export checks every table before writing.
   (`spirometry.sample_results`, `tests/test_export.py`). Run 2026-10-02 on the 1,873-page fits
   (`results/meta.json`); notebook 02 now saves `offer_rate.parquet`.
   `results_sample/` holds the synthetic export the dashboard falls back to.
+
+## Sensitivity tooling (`spirometry.sensitivity`, `spirometry.iv_sim`)
+
+For the field guide (PLAN.md Phase 7). Tables only, from saved fits; no run-level data.
+`python -m spirometry.sensitivity --analysis data/analysis --out data/analysis/writeup`
+reads `did_h3.parquet` (the dose line), `did_main.parquet` (all weeks, for the SE table),
+`placebo_diagnostics_summary.csv` and `placebo_main.parquet`, and writes: `rulers.csv` (every
+ruler under every spec), `dose_points.csv` (each spec's points, ln line and sign ruler),
+`review_calls.csv`, `mixed.csv` (Leading Strike and Reflect at fixed doses), `leave_out.csv`
+(each tweak and each character left out), `character.csv` and `character_counts.csv`,
+`se_inflation.csv` (placebo factors, shared and separate τ², additive placebo variance),
+`spread.csv` (real vs placebo scatter) and `power.csv` (power by simulation). About 3 s.
+- **Specs** (which tweaks are on the ln line): "triage" (notebooks 02 and 04's 38),
+  "primary" (the 2026-10-09 decisions: Reflect at ln(15/17), Debilitate v0.107.1 off the ln
+  line; the sign ruler adds Leading Strike +1 and Debilitate −1), "primary, Debilitate at
+  table dose", "Reflect off, Debilitate off".
+- **Rulers**: ln(new/old) (primary), outcome in pp, absolute change, rank, percent, ln over
+  the kind's median, sign only, absolute over the kind's median, mean of base and upgraded
+  ln, and the hybrid ruler, marked `post_hoc` (proposed after notebook 04's results).
+- Checked on the 1,873-page fits (2026-10-09): reproduces triage B, B2, C, K1 and K2 to
+  every printed digit and D's power table exactly (same seed). Under the primary spec:
+  slope1 1.41 ± 0.19, slope2 0.08 ± 0.40, z diff −3.00 (24 + 14 tweaks); with Debilitate at
+  its table dose −4.08; triage spec −3.80. Synthetic tests: `tests/test_sensitivity.py`.
+
+`python -m spirometry.iv_sim --out data/analysis/writeup` reruns `notebooks/iv_primer.ipynb`'s
+simulated game with the notebook's seeds and writes `iv_sim_*.csv` (one dataset, 300 draws
+and their summary, weak instruments, confounding strength, broken instruments, who the IV is
+about). About 5 s. Its numbers equal the notebook's saved outputs (e.g. naive 0.1301, ITT
+0.0265, first stage 0.2988, IV 0.0887; 300 draws: naive covers the truth 23.7%, IV 94.3%).
 
 ## Win-effect tooling (`spirometry.wins`)
 
@@ -1551,7 +1582,8 @@ close to randomized. That supports:
 
 ## Open questions / next steps
 
-1. ~~Run the full snapshot.~~ Done 2026-10-04 (see Data sources); final rebuild pending.
+1. ~~Run the full snapshot.~~ Done 2026-10-04 (see Data sources); run tables rebuilt on it
+   2026-10-09, final rerun of the fits pending.
    The audit numbers below are from the 1,513 pages.
    Audit on those pages: every build from v0.98.1 on except v0.99.0, v0.103.1 and v0.110.0
    has ≥2,000 primary runs; on the 1,393 pages, 40 of the 47 numeric-tweak cards had 4.6k or

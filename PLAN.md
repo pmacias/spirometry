@@ -141,8 +141,9 @@ started. Rebuilt 2026-10-02 22:32 UTC (parser 1.7.0, 1,873 pages, 1,871,830 reco
 Final build on the complete snapshot (Phil, 2026-10-09 21:18 UTC, parser 1.7.0): 2,071 pages
 (0–2,070), 2,069,493 records read, 75,996 exact repeats dropped, 0 pages failed. Before
 anything is refitted on it, `data/analysis/` (the 1,873-page fits) was copied to
-`data/analysis_p1873/`. The saved fits in `data/analysis/` are still the 1,873-page ones
-until the final rerun (Next up 5).*
+`data/analysis_p1873/`. Final rerun on it (`scripts/final_rerun.sh`, 2026-10-09 22:40 to
+2026-10-10 00:17 UTC, 5,852 s, no errors): `data/analysis/`, `data/analysis/writeup/` and
+`results/` now come from the 2,071-page build; `triage/out/` stays on the 1,873-page one.*
 
 ### 4. Treatment table — CC
 *Status: reference tables built (PR), `python -m spirometry.treatment`:
@@ -283,6 +284,12 @@ with robust columns, `placebo_vs_real` / `placebo_vs_real_by_patch`, `sign_agree
 `data/analysis/placebo_diagnostics_*.csv`, numbers in SPIROMETRY.md ("Placebo calibration
 of the DiD errors"), where "the clustered standard errors are calibrated" is marked not met.
 Tested on synthetic fixtures. Next: Phil analyses the tables.*
+*Final rerun (2026-10-10, 2,071-page tables, `scripts/final_rerun.sh`): every step above refit
+on the complete snapshot, plus notebook 02's weeks 0–3 checks; numbers in SPIROMETRY.md
+("Phase 5 results", "Placebo calibration of the DiD errors", "Audit decisions"). Against the
+1,873-page fits no estimate moved by more than its old SE; the classifications that changed
+(Furnace v0.107.1 now clearly nonzero, Patter v0.107.1 no longer flagged against all
+controls, Reflect informative for anticipation) are listed there.*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -331,10 +338,12 @@ provisional.
 4. Send the maintainer message (budget per IP or per client, the daily cap, short pages,
    bulk dump, stable-only hotfixes, when `player_token` was added).
 5. ~~Final rebuild on the complete snapshot~~ (done 2026-10-09: 2,071 pages, 0 failed;
-   Phase 3) ~~and copy `data/analysis/` to `data/analysis_p1873/`~~ (done 2026-10-09). Left:
-   rerun notebooks 01–05, the placebo calibration, the export and the field guide's scripts
-   on the final tables (item 15, task 8). The audit notebook still reads the interim
-   `data/audit/` tables; moving it onto the run tables is not planned.
+   Phase 3) ~~and copy `data/analysis/` to `data/analysis_p1873/`~~ (done 2026-10-09)
+   ~~and rerun notebooks 01–05, the placebo calibration, the export and the sensitivity
+   tables on the final tables~~ (done 2026-10-10, item 15 task 8; numbers in SPIROMETRY.md,
+   nothing moved by more than one SE from the 1,873-page fits). Left: task 7's scripts, once
+   built. The audit notebook still reads the interim `data/audit/` tables (rebuilt on all
+   2,071 pages in the rerun); moving it onto the run tables is not planned.
 6. Phase 4: review the treatment tables (`notes/treatment_table.md`). (The rebuild with
    `offers_with_version` and the deduplicated `primary_offers` is done.)
 7. Phase 5 follow-ups. Done (numbers from the 1,513-page rerun): (a) same-rarity offer-rate
@@ -345,22 +354,26 @@ provisional.
    fixed in parser 1.6.0; (f) heavy-uploader check: dropping the top 10 uploaders moves
    estimates by a median 0.04 SE (only records from page 1025 on carry `uploader_hash`).
    On the 1,873-page rebuild (triage, `triage/TRIAGE.md` A): (c) 1.41 ± 0.19 against
-   0.03 ± 0.31; (f) 0.17 SE.
+   0.03 ± 0.31; (f) 0.17 SE. Final rerun (2,071 pages): (c) 1.40 ± 0.19 against
+   0.05 ± 0.31 (primary spec 0.09 ± 0.40); (f) 0.18 SE (weeks 0–3: 0.14).
    Next: (g) fit per patch within each
    uploader group (the tooltip hypothesis) and by kind of main field. *Token subset done
    (triage G3: same pattern); kind of main field done (triage B). The per-group fits saved so
-   far (`did_tagged`, `did_untagged`) are all weeks; weeks 0–3 versions go into the final
-   rerun.* (h) where the flagged
+   far (`did_tagged`, `did_untagged`) are all weeks; weeks 0–3 versions are in the final
+   rerun (`did_h3_tagged`, `did_h3_untagged`: median shift from `did_h3` 1.94 and 0.58 SE).* (h) where the flagged
    cards' extra offers come from (act, floor type, event fights; tooling:
    `load_window(extra_cols=True)`). *Not planned; stays a caveat.* (i) duplicated runs:
    answered (mostly retries from a restored save; not the downloads). Rule: keep one copy
    for pick rates, drop runs whose copies differ in win, floors or abandonment from win
    analyses (done in parser 1.7.0: `runs_dedup.retried`); (j) a robustness row: the DiD on
    screens where something was picked (choice among cards, no deck-size effect; tooling:
-   `picked_screens_only`). *In the final rerun, weeks 0–3.* (k) optional: card × act fixed
+   `picked_screens_only`). *Run in the final rerun at weeks 0–3
+   (`did_h3_picked_screens_only`): median shift 0.76 SE from `did_h3`, 30% beyond 2 SE, no
+   sign flips.* (k) optional: card × act fixed
    effects (timing balance says it can't change a conclusion; tooling: `card_act_fe`). *Not
    planned.* (l) the upgrade-only placebos on
-   Royalties and Untouchable (v0.107.1), 2.6σ and 3.2σ below zero on the rerun (drift in the
+   Royalties and Untouchable (v0.107.1), 2.6σ and 3.2σ below zero on the 1,513-page rerun,
+   2.1σ and 5.0σ on the final one (drift in the
    thin second-patch before block is the first candidate). *On the placebo scale they are
    within or at the edge of what unchanged cards show (triage, Part 1 side results).* (m)
    recheck "When in the run" at fixed floors on the new tables. *Only if the field guide uses
@@ -382,16 +395,20 @@ provisional.
    modded runs). The cached lists for v0.99.0 and v0.110.1 are empty: re-fetch them or fall
    back to a neighbouring build first, or every v0.110.1 run would look modded.
 9. Anticipation (done, 2026-09-29): 14 of 43 informative, no sign of inflation; the first
-   patch can't be tested beyond 3 tweaks. Remaining: rerun in the final rerun (item 5).
+   patch can't be tested beyond 3 tweaks. Final rerun (2026-10-10): 16 of 43 informative (3
+   and 13); of the 12 with a clearly nonzero main effect, Crescent Spear and Furnace have a
+   post-beta gap on the same side as the main effect and larger (SPIROMETRY.md,
+   "Anticipation").
 10. Results export and dashboard (CC brief: `ccc_prompt_dashboard_v2.md`): built (PR) on
    synthetic saved fits. Notebook 02 saves `offer_rate.parquet`, and the export was run
-   2026-10-02 on the 1,873-page fits (`results/`). The dashboard is not planned for field
+   2026-10-02 on the 1,873-page fits and 2026-10-10 on the final ones (`results/`). The dashboard is not planned for field
    guide v2 (future work). No deployment until the release checklist below is done.
-11. README results section: drafted on the 1,513-page numbers with figure slots. Numbers
-   follow the final rerun (item 15, task 14); figure slots wait on the field guide's figure
+11. README results section: drafted on the 1,513-page numbers with figure slots; numbers
+   updated to the final rerun 2026-10-10. Figure slots wait on the field guide's figure
    script.
 12. Release checklist (only if something is published): send the maintainer message (item 4);
-   clear notebook 02's output cells that show hashed uploader IDs and top-uploader counts;
+   clear notebook 02's output cells that show top-uploader run counts (the hashed IDs are
+   gone since task 6);
    review the licenses and attribution of `reference/raw/` (wiki pages CC BY-SA, Spire Codex
    caches); aggregates only.
 13. Set `MIN_RUNS` (notebook 01, "Runs per build") from a power calculation. It is a working
@@ -422,12 +439,28 @@ provisional.
       (the plan expected about −2.5 to −2.7). Phil checks by rerunning.*
    6. Notebook 02 for the final rerun: weeks 0–3 versions of every robustness check
       (tagged / untagged = the tooltip check), `picked_screens_only`; remove the cells that
-      print hashed uploader IDs (Phil).
+      print hashed uploader IDs (Phil). *Edited, not run (CC, 2026-10-09): section 7 gets
+      "Weeks 0–3 versions of the checks": every check of section 7 (pooled_groups, tagged,
+      untagged, drop_shared_screens, drop_behavior_flags, drop_top_uploaders) refit with
+      `max_week_after=3` and saved as `did_h3_<check>.parquet`, plus
+      `did_h3_picked_screens_only.parquet`, summarized against `did_h3` (section 7's
+      `compare` / new `summarize` take a `base`, default main as before); the second patch's
+      before-block variants at weeks 0–3 go to `second_patch_checks_h3.parquet`
+      (`second_patch_checks` takes `max_week_after`). Cells 27 and 41 print uploader run
+      counts only, no hashed IDs; their outputs are cleared. No other cell changed.*
    7. Scripts for the run-level pieces: fake patch, control scope at weeks 0–3, token subset
       and stayers, slope by week, the pre-declared aggregates, per-group dose lines; each
       states its spec and prediction before it runs (CC).
    8. Copy `data/analysis/` to `data/analysis_p1873/`; final rerun of notebooks 01–05,
-      placebo, export and the scripts of 5 and 7 (Phil).
+      placebo, export and the scripts of 5 and 7 (Phil). *`scripts/final_rerun.sh` (CC,
+      2026-10-09, not run): audit extract, notebooks 01–05, placebo calibration and
+      diagnostics, export, `spirometry.sensitivity`, `spirometry.iv_sim`, stopping at the
+      first error; `--from <step>` resumes at a step without moving `data/analysis/`
+      aside. The scripts of 7 aren't built yet, so it doesn't run them. Expected run
+      time about 1 h 45 min (estimate from the 1,873-page run times, not measured).*
+      *Run by Phil 2026-10-09/10 (log `logs/final_rerun.log`): 5,852 s, every step
+      finished, no fit errors; notebook 02 2,642 s, placebo 2,569 s. Done except the
+      scripts of 7, which follow when built.*
    9. Win effects: power check on a few cards of one build with a stop rule; continue to all
       cards of v0.107.1 only if it passes (CC script; Phil runs and decides).
    10. `spirometry.numbers`: the generated numbers table, with staleness and privacy checks
@@ -438,7 +471,9 @@ provisional.
    13. Figure script for every figure (CC; Phil runs it and looks).
    14. Remaining chapters in four PRs; Phil writes the "what was found" passages and the
       conclusion (CC drafts).
-   15. Docs: final numbers into SPIROMETRY.md, README and PLAN (CC).
+   15. Docs: final numbers into SPIROMETRY.md, README and PLAN (CC). *Pick-rate,
+      anticipation, placebo and audit numbers updated 2026-10-10 from the final rerun; redo
+      for anything the later tasks add.*
    16. Only if Phil decides to publish: release checklist (item 12), then publish (Phil).
 
 ## Decision log
@@ -1054,3 +1089,40 @@ provisional.
     tested; its functions are the notebook's, unchanged (a test checks the source).
   - Outputs: CSVs in `data/analysis/writeup/` (git-ignored), each passed through the
     export's privacy check before writing.
+- Final rerun tooling (CC's choices, open to review, 2026-10-09):
+  - Notebook 02's weeks 0–3 checks are compared with `did_h3`, not `did_main`, so a shift
+    measures the check, not the horizon.
+  - The second patch's before-block variants at weeks 0–3 are saved as
+    `second_patch_checks_h3.parquet`, not `did_h3_second_patch_checks.parquet`: the export
+    reads every `did_*.parquet` except `did_main`, `did_second_patch_checks` and the horizon
+    file as a one-row-per-tweak check, and three rows per tweak would stop it (repeated
+    `card_patch_id, check`). The `did_h3_<check>` files do go into `results/robustness.csv`,
+    as checks named `h3_<check>`.
+  - `scripts/final_rerun.sh` forces refits by moving `data/analysis/` to
+    `data/analysis_before_final_<UTC time>/` (a rename; nothing is deleted) and starting
+    from an empty one, instead of editing the notebooks' `FORCE` flags. Notebook 02 already
+    has `FORCE = True` (the script checks it); notebook 03 refits when its file is missing.
+    Old fits that nothing in the rerun remakes (e.g. `did_ctrl_all`) are left behind with
+    the rest, so they can't reach the export as if they were current.
+  - The placebo calibration and its diagnostics had no script (they ran from a session, as
+    in README's `did` snippet); the script runs them inline with the 2026-10-02 defaults.
+    The diagnostics CSV names other than `summary`, `vs_real_by_patch` and
+    `dose_sensitivity` (named in SPIROMETRY.md / TRIAGE.md) follow the function names; the
+    earlier files' other names weren't recorded. `dose_sensitivity` uses
+    `sensitivity.placebo_factors` (factor 1, by-patch and one-factor sd and robust sd), a
+    superset of the three settings in SPIROMETRY.md.
+- Final rerun docs (CC's choices, open to review, 2026-10-10):
+  - "Moved by more than one SE" compares each final estimate with the 1,873-page one in units
+    of the 1,873-page SE: per tweak for every saved fit present in both
+    (`did_main`, `did_h3`, the six all-weeks checks, the second-patch variants), and per
+    coefficient for the dose-response, sensitivity and anticipation tables. The 1,873-page
+    aggregates were rebuilt from `data/analysis_p1873/` with the same export and sensitivity
+    code (into a scratch folder, not `results/`). The weeks 0–3 checks have no 1,873-page
+    counterpart. Counts that changed class without a 1-SE move are reported too.
+  - Where an existing sentence no longer matched the numbers it was replaced by the numbers:
+    "about a third as much" (now median 1.9 against 4.1 points, a bit under half), and the
+    anticipation summary "small or on the opposite side of zero" (Crescent Spear and Furnace
+    now have same-side, larger post-beta gaps; Crescent Spear already did on the 1,873
+    pages). Interpretive text that the numbers still fit was kept as it was.
+  - Notebook 02 keeps `FORCE = True`: it has been committed that way since 2026-09-29
+    (`False` before), and `scripts/final_rerun.sh` requires it. Notebook 03 keeps `False`.

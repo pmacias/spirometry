@@ -3,9 +3,9 @@
 Measuring what Slay the Spire 2's early-access balance patches actually did.
 
 **Status:** work in progress. Pick-rate results for the numeric tweaks (first analysis
-phase) and an anticipation check are below and in [SPIROMETRY.md](SPIROMETRY.md). The run
-snapshot is complete (2026-10-04); the results are being finalised on a last rebuild, so the
-numbers below will move. Win-effect tooling is built, not yet run on the full data.
+phase) and an anticipation check are below and in [SPIROMETRY.md](SPIROMETRY.md). They are
+from the final rerun (2026-10-10) on the complete run snapshot (2,071 export pages, downloaded
+by 2026-10-04). Win-effect tooling is built, not yet run on the full data.
 
 ## The question
 
@@ -23,12 +23,12 @@ See [PLAN.md](PLAN.md) for the research questions and methods.
 
 ## Results so far
 
-> **Provisional.** Computed on the first 1,513 pages of the run export (about 1.1 million
-> distinct runs, submissions to about 2026-08-30). The export has since been downloaded in
-> full (2,071 pages, 2026-10-04); these numbers are replaced after the final rebuild.
+> Computed on the complete run export (2,071 pages, about 1.5 million distinct runs, play
+> dates to 2026-10-04). No estimate moved by more than one standard error from the previous
+> rebuild (1,873 pages); see SPIROMETRY.md, "Phase 5 results".
 
 **What was tested.** 43 card changes where a single number changed: 26 in patch v0.103.2 and
-17 in v0.107.1. The data are about 816,000 solo, unmodded runs. For each changed card, the
+17 in v0.107.1. The data are about 1.12 million solo, unmodded runs. For each changed card, the
 question is how much its pick rate (picked / offered) changed, compared with unchanged cards
 of the same character over the same builds (a difference-in-differences). Before that, an
 offer-rate check confirms the patch didn't change how often the card is offered, since the
@@ -37,28 +37,35 @@ game's RNG decides the offers.
 **Findings**
 
 1. **Players responded to the changes, more in the first patch than the second.** In the first
-   patch, 23 of 26 tweaks moved the pick rate by more than two standard errors, and 18 of
-   those moved the way the change pointed (median size across all 26: 4.7 percentage points).
-   In the second patch, 7 of 17 did, all 7 in the direction of the change (median size 1.5
-   points). Caveat: a placebo check on unchanged cards found the standard errors too small
-   (placebo |z| > 2 in 71% of first-patch and 37% of second-patch fits, against 5% expected),
+   patch, 22 of 26 tweaks moved the pick rate by more than two standard errors, and 18 of
+   the 21 with one direction moved the way the change pointed (median size across all 26:
+   4.7 percentage points). In the second patch, 9 of 17 did, all 9 in the direction of the
+   change (median size 1.7 points). Caveat: a placebo check on unchanged cards found the
+   standard errors too small (placebo |z| > 2 in 72% of first-patch and 37% of second-patch
+   fits, against 5% expected),
    so these counts are not calibrated; see SPIROMETRY.md, "Placebo calibration of the DiD
    errors".
-2. **One worked example.** Parry (a Regent card, main number 6 → 10) went from a 13.0% to a
-   27.7% pick rate, while the unchanged Regent cards stayed at 27.6% → 27.4%. The estimated
-   change is +14.7 points (95% interval +13.3 to +16.2). The largest drop is Corrosive Wave
-   (a nerf): 42.8% → 28.8%, −16.4 points.
+2. **One worked example.** Parry (a Regent card, main number 6 → 10) went from a 13.1% to a
+   27.1% pick rate, while the unchanged Regent cards went from 27.8% to 27.3%. The estimated
+   change is +14.5 points (95% interval +13.2 to +15.8). The largest drop is Corrosive Wave
+   (a nerf): 42.3% → 28.6%, −15.9 points.
 3. **In the first patch, bigger changes moved picks more.** On the log-odds scale the slope is
-   1.44 ± 0.19 per unit of ln(new/old). In the second patch it is 0.04 ± 0.31: tweaks of the
-   same size, measured equally well, moved picks about a third as much (median 1.5 against
-   4.2 points), with no visible relationship to size. Why is open; see below. Caveat:
+   1.40 ± 0.19 per unit of ln(new/old) (first four weeks after each release). In the second
+   patch it is 0.05 ± 0.31: tweaks of the same size, measured equally well, moved picks a bit
+   under half as much (median 1.9 against 4.1 points), with no visible relationship to size.
+   Under the dose rules decided on 2026-10-09 (Reflect on the line, Debilitate's second-patch
+   nerf off it) the second slope is 0.09 ± 0.40 and the difference between the patches is
+   z = −2.97 (−3.0 to −3.1 with standard errors scaled by the placebo check). Why is open;
+   see below. Caveat:
    "measured equally well" compares standard errors that the placebo check did not find
    calibrated (by different amounts in the two patches), so equal precision is not
    established.
-4. **Reacting to the beta notes doesn't explain it, as far as it can be tested.** Players can
-   see changes in the public beta before the stable release. Where the data allow the check
-   (14 of 43 tweaks), the pick-rate gap before the stable release is small or points the
-   other way from the main effect, which is not what a reaction to the notes would look like.
+4. **Reacting to the beta notes doesn't explain it for most of the tweaks it can test.**
+   Players can see changes in the public beta before the stable release. The data allow the
+   check for 16 of 43 tweaks, 12 of them with a clear main effect. For 10 of those 12 the
+   pick-rate gap before the stable release is small or points the other way from the main
+   effect, which is not what a reaction to the notes would look like; for two second-patch
+   cards (Crescent Spear and Furnace) it moved the same way as the main effect, by more.
 
 <!-- FIGURE 1: forest plot, every tweak's estimated change with its 95% interval (docs/figures/forest.png) -->
 <!-- FIGURE 2: dose-response, one point per tweak, first and second patch drawn separately (docs/figures/dose_response.png) -->
@@ -67,14 +74,15 @@ game's RNG decides the offers.
 drops offers that shared a screen with the changed card, or drops controls affected by bug
 fixes. Uploaders who use a community stats mod pick cards differently from other uploaders,
 so the fits adjust for uploader group; fits on the mod users alone are noisier and shift more.
-Three cards (Patter, twice, and Sculpting Strike) were also offered more often after their
-patch, so their estimates carry a caveat. A placebo check (the same fit with an unchanged
-card as the "changed" card, 860 fits) gave z-scores with sd 4.1 where honest errors give 1:
+Three card changes (Patter in both patches and Sculpting Strike) were also offered more
+often after their patch, so their estimates carry a caveat. A placebo check (the same fit
+with an unchanged card as the "changed" card, 860 fits) gave z-scores with sd 4.2 where
+honest errors give 1:
 the clustered standard errors are not calibrated, for reasons not yet verified.
 
 **Open questions.**
 - Why the second patch shows no size relationship. Candidates: drift in a short "before"
-  period (two upgrade-only placebo checks in the second patch moved by 2.6 and 3.2 standard
+  period (two upgrade-only placebo checks in the second patch moved by 2.1 and 5.0 standard
   errors when they shouldn't have, which points at drift rather than a real reaction),
   community-stats tooltips that arrived the day after v0.107.1, and the kind of number
   changed.
@@ -98,12 +106,13 @@ cards, not proof of why players changed their picks.
 | `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
 | `scripts/make_sample_results.py` | Writes `results_sample/` by running the export on synthetic saved fits |
 | `scripts/audit_extract.py` | Interim: compact audit tables from the snapshot (runs, aggregated offer counts) into `data/audit/` |
+| `scripts/final_rerun.sh` | The final rerun, in order: audit extract, notebooks 01–05, placebo calibration and diagnostics, export, sensitivity tables, IV simulation; stops at the first error. Moves `data/analysis/` to `data/analysis_before_final_<time>/` first so nothing cached is reused; `--from <step>` resumes at a step (names in the script's header) and leaves `data/analysis/` in place; notebook logs in `logs/`. About 1 h 45 min (estimate) |
 | `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power. `02_pick_rate_did.ipynb`: offer-rate check, pick-rate DiD, event studies, robustness, dose-response. `03_anticipation.ipynb`: does the gap between a changed card and its controls already move at the first-beta date, on builds where players still have the old card? `iv_primer.ipynb`: a simulation showing why the naive win effect is biased and how the offer as an instrument fixes it. `04_dose_diagnostics.ipynb`: the dose-response under other rulers, leave-one-out and slopes by kind of number. `05_tweak_ledger.ipynb`: every derived dose next to the numbers it came from (writes `data/analysis/tweak_ledger.csv`) |
 | `triage/` | Record of a read-only investigation of the flat second patch (2026-10-07/08): `TRIAGE.md` (report and final synthesis), `scripts/` (each says how to run it), `out/` (card-level estimates, aggregates only), `figures/`. On the 1,873-page tables; not a result until rerun on the final tables |
 | `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes, change events, card-patch net fields, per-build card versions, DiD windows, numeric tweak sizes, beta exposure (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages) |
 | `data/runs/` | Run tables built locally by `spirometry.runs` (git-ignored, never committed) |
 | `data/audit/` | Audit tables built locally by `scripts/audit_extract.py` (git-ignored) |
-| `data/analysis/` | Saved fits from notebooks 02, 03 and 05 and the placebo calibration (git-ignored). Earlier sets are kept beside it: `analysis_p949/` (first pass), `analysis_p1393/` (1,393-page tables), `analysis_prev/` (earlier fits; which tables they came from is not recorded here) |
+| `data/analysis/` | Saved fits from notebooks 02, 03 and 05 and the placebo calibration (git-ignored). Earlier sets are kept beside it: `analysis_p949/` (first pass), `analysis_p1393/` (1,393-page tables), `analysis_p1873/` (1,873-page tables), `analysis_before_final_<time>/` (what `scripts/final_rerun.sh` moved aside), `analysis_prev/` (earlier fits; which tables they came from is not recorded here) |
 | `dashboard/` | Streamlit dashboard (`app.py` pages, `charts.py` plots, `data.py` loading) on the exported tables; local only, not deployed |
 | `results/` | Aggregate tables written by `spirometry.export` (git-ignored until the release checklist is done) |
 | `results_sample/` | Synthetic tables in the same layout, so the dashboard runs without real results (every page says SAMPLE DATA) |

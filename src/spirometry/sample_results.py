@@ -6,7 +6,12 @@ write_inputs(analysis_dir, ref_dir) writes parquet files with the column layout 
 did_second_patch_checks, anticipation_main, offer_rate) and a matching reference folder
 (tweak_sizes.csv, builds.csv, beta_exposure.csv). Cards are named SAMPLE_01, SAMPLE_02, ...
 so the numbers can't be mistaken for results; windows use the real stable builds.
+
+write_numbers_inputs(analysis_dir, results_dir, ref_dir) adds what spirometry.numbers reads:
+the export of those fits (meta.json with a synthetic build stamp), the placebo summary and
+spirometry.sensitivity's rulers and se_inflation tables.
 """
+import json
 import pathlib
 
 import numpy as np
@@ -211,4 +216,64 @@ def write_inputs(analysis_dir, ref_dir, seed=0, n_first=14, n_second=9):
     _second_patch(main, rng).to_parquet(analysis_dir / "did_second_patch_checks.parquet")
     _anticipation(main, tw, rng).to_parquet(analysis_dir / "anticipation_main.parquet")
     _offer_rate(main, rng).to_parquet(analysis_dir / "offer_rate.parquet")
+    return tw
+
+
+SAMPLE_STAMP = dict(tables_built_at_utc="2026-01-01T00:00:00+00:00", snapshot_pages="12",
+                    snapshot_last_page="11", parser_version="sample")
+
+
+def _placebo_summary(rng):
+    """placebo_diagnostics_summary.csv's layout (did.placebo_summary, both dedupe settings)."""
+    rows = []
+    for dedupe, n_all in [(False, 460), (True, 250)]:
+        for split, level, sd, n in [("all", "all", 3.5, n_all),
+                                    ("patch", "first", 4.5, n_all * 3 // 5),
+                                    ("patch", "second", 2.2, n_all * 2 // 5)]:
+            z = rng.normal(0, sd, n)
+            rows.append(dict(split=split, level=level, n_fits=n,
+                             n_tweaks=23 if level == "all" else 14, mean_z=z.mean(), sd_z=z.std(ddof=1),
+                             share_abs_z_gt2=(abs(z) > 2).mean(),
+                             share_abs_z_gt3=(abs(z) > 3).mean(), median_abs_z=np.median(abs(z)),
+                             robust_sd_z=1.4826 * np.median(abs(z - np.median(z))),
+                             n_failed=0.0 if level == "all" else np.nan, dedupe=dedupe))
+    return pd.DataFrame(rows)
+
+
+def write_numbers_inputs(analysis_dir, results_dir, ref_dir, seed=0, stamp=None):
+    """Everything spirometry.numbers reads, synthetic: write_inputs, the export into
+    results_dir (meta.json given a build stamp, `stamp` or SAMPLE_STAMP, and sample: true),
+    the placebo summary and spirometry.sensitivity's rulers and se_inflation tables in
+    analysis_dir/writeup. Returns the tweak table."""
+    from spirometry import export, sensitivity as S
+
+    analysis_dir, results_dir = pathlib.Path(analysis_dir), pathlib.Path(results_dir)
+    rng = np.random.default_rng(seed + 1)
+    tw = write_inputs(analysis_dir, ref_dir, seed=seed)
+    export.export(analysis_dir, results_dir, ref_dir, sample=True)
+    m = json.loads((results_dir / "meta.json").read_text())
+    m.update(stamp or SAMPLE_STAMP)
+    (results_dir / "meta.json").write_text(json.dumps(m, indent=2) + "\n")
+
+    summary = _placebo_summary(rng)
+    summary.to_csv(analysis_dir / "placebo_diagnostics_summary.csv", index=False)
+
+    def fits(name):          # the saved fits hold the tweak columns as text here
+        f = pd.read_parquet(analysis_dir / f"did_{name}.parquet")
+        for c in ["log_ratio", "upgraded_log_ratio", "direction"]:
+            f[c] = pd.to_numeric(f[c], errors="coerce")
+        return S.prepare(f)
+
+    D, Dw = fits("h3"), fits("main")
+    factors = S.placebo_factors(summary)
+    out = analysis_dir / "writeup"
+    out.mkdir(exist_ok=True)
+    rulers = pd.concat([S.ruler_table(D, s) for s in S.SPECS], ignore_index=True)
+    se = pd.concat([S.se_inflation_table(S.dose_line(d, s), factors, label=f"{s}, {lab}")
+                    for s in S.SPECS
+                    for d, lab in [(D, "weeks 0-3 (did_h3)"), (Dw, "all weeks (did_main)")]],
+                   ignore_index=True)
+    for name, df in [("rulers", rulers), ("se_inflation", se)]:
+        df.insert(0, "fits", "did_h3")
+        df.to_csv(out / f"{name}.csv", index=False)
     return tw

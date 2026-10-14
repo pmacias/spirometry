@@ -8,8 +8,12 @@ data/
 # Real results export (spirometry.export): aggregates, but not committed until the release
 # checklist (PLAN.md, Next up 12) is done. results_sample/ (synthetic) is committed.
 results/
+writeup/numbers.json
+writeup/numbers.csv
 # HMAC key for player-ID hashes (spirometry.runs); never commit
 .spirometry_salt
+
+
 
 # Python
 __pycache__/

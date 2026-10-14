@@ -1040,7 +1040,7 @@ unchanged cards of the same character; "clearly nonzero" = |β| > 2 SE):
 "In the direction of the change" leaves out mixed-direction and upgrade-only tweaks (the
 first patch's Leading Strike is clearly nonzero but mixed).
 Caveat: "clearly nonzero" uses the clustered SE, and the placebo check (see "Placebo
-calibration of the DiD errors") found |z| > 2 in 72% of first-patch and 37% of second-patch
+calibration of the DiD errors") found |z| > 2 in 72% of first-patch and 36% of second-patch
 placebo fits, so these counts are not calibrated.
 
 - Largest: Corrosive Wave −15.9 (pick rate 42% → 29%), Parry +14.5 (13% → 27%), Leading

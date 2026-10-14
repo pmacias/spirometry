@@ -463,8 +463,17 @@ provisional.
       scripts of 7, which follow when built.*
    9. Win effects: power check on a few cards of one build with a stop rule; continue to all
       cards of v0.107.1 only if it passes (CC script; Phil runs and decides).
-   10. `spirometry.numbers`: the generated numbers table, with staleness and privacy checks
-      (CC).
+   10. spirometry.numbers: the generated numbers table, with staleness and privacy checks (CC).
+       Built (CC, 2026-10-14): python -m spirometry.numbers --analysis data/analysis --results 
+       results --out writeup/numbers.json writes numbers.json and numbers.csv (git-ignored). 
+       The build stamp comes from results/meta.json, and the module never opens the database. 
+       It refuses inputs older than the stamp, a sample export without --allow-sample, missing 
+       values and anything the export's privacy check catches. First batch on the final rerun: 
+       96 keys (snapshot pages, tweak counts, clearly nonzero and toward-the-change counts per 
+       patch and horizon, median |β|, dose-response slopes under the triage and primary specs 
+       and with placebo-scaled SEs, placebo z spread). Left out: records, distinct runs (two
+       sources disagree), date range, calibrated clearly-nonzero counts (rule not decided).
+       Tested on synthetic outputs (sample_results.write_numbers_inputs).
    11. Write-up skeleton: Typst, boxes, chapter stubs, generated numbers appendix, lint for
       hand-typed numbers, one build command (CC).
    12. Chapters 0–3 draft, for a voice check before the rest (CC drafts; Phil reads).
@@ -474,6 +483,9 @@ provisional.
    15. Docs: final numbers into SPIROMETRY.md, README and PLAN (CC). *Pick-rate,
       anticipation, placebo and audit numbers updated 2026-10-10 from the final rerun; redo
       for anything the later tasks add.*
+      Tests: 210 passed, 5 skipped (smoke tests need real data), run locally 2026-10-14. 
+      The cloud sandbox can’t read reference/raw/, so the parser, patch-history and treatment 
+      tests only run locally.
    16. Only if Phil decides to publish: release checklist (item 12), then publish (Phil).
 
 ## Decision log
@@ -1125,4 +1137,10 @@ provisional.
     now have same-side, larger post-beta gaps; Crescent Spear already did on the 1,873
     pages). Interpretive text that the numbers still fit was kept as it was.
   - Notebook 02 keeps `FORCE = True`: it has been committed that way since 2026-09-29
-    (`False` before), and `scripts/final_rerun.sh` requires it. Notebook 03 keeps `False`.
+    (`False` before), and `scripts/final_rerun.sh` requires it. Notebook 03 keeps `False`.  
+  - Numbers table (CC's choices, open to review, 2026-10-14): one key per printed number, 
+    dotted lower-case. Estimates come as three keys: <key>, <key>_se and <key>_pm. 
+    Negatives print with U+2212. Percent shares are rounded to whole points. Weeks 
+    0–3 "toward the change" uses the export's rule on beta_h. The privacy check skips 
+    numeric values, because 16 digits of a float match the hashed-id pattern. Only 
+    provenance rows are flagged appendix.

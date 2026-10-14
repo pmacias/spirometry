@@ -4,6 +4,11 @@
         [--ref reference] [--db data/runs/runs.duckdb] [--horizon h3] [--skip-errors]
         [--snapshot-end YYYY-MM-DD] [--min-cell-offers 10]
 
+--db (read-only) fills meta.json's build stamp from build_info and the snapshot's play
+dates from the run tables: snapshot_start_date / snapshot_end_date = the first and last UTC
+start date over the primary population (play_dates_all_records: the same over every
+record). Aggregates only. --snapshot-end overrides the end date.
+
 Reads what notebooks/02_pick_rate_did.ipynb and 03_anticipation.ipynb save in
 data/analysis/ (git-ignored):
 
@@ -29,7 +34,8 @@ plus reference/tweak_sizes.csv, beta_exposure.csv and builds.csv. Writes to --ou
     dose_response.csv   the four meta-regression models (spirometry.meta), both horizons
     robustness.csv      one row per (tweak, check): beta, se
     anticipation.csv    one row per tweak (only when anticipation_main.parquet exists)
-    meta.json           provenance: build_info (only with --db), inputs, blanks and why
+    meta.json           provenance: build_info and the play-date range (only with --db),
+                        inputs, blanks and why
 
 Derived columns (everything else is copied from the fits or tweak_sizes.csv):
 
@@ -156,6 +162,14 @@ def _yes_no(cond, valid=None):
     return out
 
 
+def toward_change(beta, dose_x, single):
+    """"yes" when sign(beta) = sign(dose_x), "no" otherwise; blank where the tweak has no
+    single direction (`single` false: mixed-direction or upgrade-only) or beta or dose_x is
+    missing. dose_x = direction x log_ratio."""
+    return _yes_no(np.sign(beta) == np.sign(dose_x),
+                   single & dose_x.notna() & beta.notna())
+
+
 def _upgrade_delta(tw):
     strip = lambda s: _num(s.str.replace("+", "", regex=False))
     return strip(tw.upgrade_new) - strip(tw.upgrade_old)
@@ -217,8 +231,7 @@ def pick_rate_did(main, h, tw):
     out["dose_x"] = out.direction * out.log_ratio
     out["dose_x_upgraded"] = out.direction * out.upgraded_log_ratio
     single = (out.mixed_direction != "yes") & (out.upgrade_only != "yes")
-    out["toward_change"] = _yes_no(np.sign(out.beta) == np.sign(out.dose_x),
-                                   single & out.dose_x.notna() & out.beta.notna())
+    out["toward_change"] = toward_change(out.beta, out.dose_x, single)
     dose = np.where(out.upgrade_only == "yes", out.direction * _upgrade_delta(t), out.dose_x)
     out["change"] = np.where(pd.isna(dose), "", np.where(dose > 0, "buff", "nerf"))
     return out.reset_index()[PICK_RATE_COLUMNS]
@@ -368,10 +381,48 @@ def build_info(db):
         con.close()
 
 
+PLAY_DATES_POPULATION = "primary runs (runs.PRIMARY_RUN_FILTER on runs)"
+
+
+def _date(v):
+    """A start_time (TIMESTAMP, or epoch seconds) -> 'YYYY-MM-DD' (UTC); '' when missing."""
+    if v is None:
+        return ""
+    if isinstance(v, (int, float)):
+        v = datetime.datetime.fromtimestamp(v, datetime.timezone.utc)
+    return v.date().isoformat()
+
+
+def play_dates(db):
+    """First and last play date (UTC date of start_time) in the run tables, read-only, two
+    aggregates per population: the primary population (PRIMARY_RUN_FILTER: released builds,
+    started on or after the build's release, solo, unmodded, Neow start) and every record.
+    Copies of a run share start_time, so runs and runs_dedup give the same dates. {} when
+    the database has no runs table."""
+    import duckdb
+    from spirometry.runs import PRIMARY_RUN_FILTER
+    con = duckdb.connect(str(db), read_only=True)
+    try:
+        names = {r[0] for r in con.execute(
+            "SELECT table_name FROM information_schema.tables").fetchall()}
+        if "runs" not in names:
+            return {}
+        a = con.execute("SELECT min(start_time), max(start_time) FROM runs").fetchone()
+        p = con.execute("SELECT min(r.start_time), max(r.start_time) FROM runs r "
+                        f"WHERE {PRIMARY_RUN_FILTER}").fetchone()
+    finally:
+        con.close()
+    return dict(start=_date(p[0]), end=_date(p[1]), all_start=_date(a[0]),
+                all_end=_date(a[1]))
+
+
 def meta_info(db, snapshot_end, inputs, skipped, notes, horizon_label):
     blank = {}
     info = build_info(db) if db else {}
+    dates = play_dates(db) if db else {}
     why = ("no --db given" if not db else "not in build_info")
+    why_dates = ("no --db given" if not db else
+                 "no runs table, or no primary run with a start_time")
     m = dict(sample=False,
              exported_at_utc=datetime.datetime.now(datetime.timezone.utc)
              .isoformat(timespec="seconds"),
@@ -379,16 +430,22 @@ def meta_info(db, snapshot_end, inputs, skipped, notes, horizon_label):
              snapshot_pages=info.get("pages_parsed", ""),
              snapshot_last_page=info.get("last_page", ""),
              tables_built_at_utc=info.get("built_at_utc", ""),
-             snapshot_end_date=snapshot_end or "",
-             snapshot_end_date_source="--snapshot-end" if snapshot_end else "",
+             snapshot_start_date=dates.get("start", ""),
+             snapshot_end_date=snapshot_end or dates.get("end", ""),
+             snapshot_dates_source=("run tables, " + PLAY_DATES_POPULATION
+                                    if dates.get("start") else ""),
+             snapshot_end_date_source=("--snapshot-end" if snapshot_end else
+                                       "run tables" if dates.get("end") else ""),
+             play_dates_all_records=dict(start=dates.get("all_start", ""),
+                                         end=dates.get("all_end", "")),
              horizon=horizon_label)
     for k in ["parser_version", "snapshot_pages", "snapshot_last_page",
               "tables_built_at_utc"]:
         if not m[k]:
             blank[k] = why
-    if not snapshot_end:
-        blank["snapshot_end_date"] = ("build_info records pages, not submission dates; "
-                                      "pass --snapshot-end to set it")
+    for k in ["snapshot_start_date", "snapshot_end_date"]:
+        if not m[k]:
+            blank[k] = why_dates
     m.update(blank_reasons=blank, inputs=inputs, skipped=skipped, notes=notes)
     return m
 
@@ -500,7 +557,8 @@ def main(argv=None):
     p.add_argument("--horizon", default="h3", help="fixed-horizon fit: did_<horizon>.parquet")
     p.add_argument("--skip-errors", action="store_true",
                    help="leave out fit rows with an error instead of stopping")
-    p.add_argument("--snapshot-end", default=None, help="snapshot end date for meta.json")
+    p.add_argument("--snapshot-end", default=None,
+                   help="override meta.json's snapshot end date (default: from --db)")
     p.add_argument("--min-cell-offers", type=int, default=10,
                    help="drop event-study cells with fewer treated offers")
     a = p.parse_args(argv)

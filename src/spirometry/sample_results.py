@@ -8,10 +8,10 @@ did_second_patch_checks, anticipation_main, offer_rate) and a matching reference
 so the numbers can't be mistaken for results; windows use the real stable builds.
 
 write_numbers_inputs(analysis_dir, results_dir, ref_dir) adds what spirometry.numbers reads:
-the export of those fits (meta.json with a synthetic build stamp), the placebo summary and
-spirometry.sensitivity's rulers and se_inflation tables.
+the export of those fits against a tiny synthetic runs.duckdb (write_sample_db: build_info
+and run start times), a snapshot.log, the placebo summary and spirometry.sensitivity's
+rulers, se_inflation and calibrated_counts tables.
 """
-import json
 import pathlib
 
 import numpy as np
@@ -219,8 +219,35 @@ def write_inputs(analysis_dir, ref_dir, seed=0, n_first=14, n_second=9):
     return tw
 
 
-SAMPLE_STAMP = dict(tables_built_at_utc="2026-01-01T00:00:00+00:00", snapshot_pages="12",
-                    snapshot_last_page="11", parser_version="sample")
+SAMPLE_BUILD_INFO = dict(parser_version="sample", pages_parsed="12", last_page="11",
+                         built_at_utc="2026-01-01T00:00:00+00:00")
+# (start_time UTC, primary?): the primary runs span 2026-03-18 .. 2026-07-02; the
+# non-primary records (a playtest build, a run started before its build's release) lie
+# outside it, so the two ranges differ.
+SAMPLE_RUN_STARTS = [("2026-03-18 09:00:00", True), ("2026-05-02 23:59:59", True),
+                     ("2026-07-02 18:30:00", True), ("2026-02-27 12:00:00", False),
+                     ("2026-07-04 08:00:00", False)]
+
+
+def write_sample_db(path, build_info=None, runs=True):
+    """A tiny synthetic runs.duckdb: build_info and, with runs=True, a `runs` table with the
+    columns runs.PRIMARY_RUN_FILTER and the export's play dates read."""
+    import duckdb
+    con = duckdb.connect(str(path))
+    try:
+        con.execute("CREATE TABLE build_info (key VARCHAR, value VARCHAR)")
+        con.executemany("INSERT INTO build_info VALUES (?, ?)",
+                        [[k, v] for k, v in (build_info or SAMPLE_BUILD_INFO).items()])
+        if runs:
+            con.execute("""CREATE TABLE runs (start_time TIMESTAMP, n_players INTEGER,
+                           is_custom BOOLEAN, is_modded BOOLEAN, released BOOLEAN,
+                           before_release BOOLEAN, neow_start BOOLEAN)""")
+            con.executemany("INSERT INTO runs VALUES (?, 1, false, false, ?, ?, true)",
+                            [[t, primary, False] if primary or t < "2026-03"
+                             else [t, True, True] for t, primary in SAMPLE_RUN_STARTS])
+    finally:
+        con.close()
+    return path
 
 
 def _placebo_summary(rng):
@@ -240,20 +267,20 @@ def _placebo_summary(rng):
     return pd.DataFrame(rows)
 
 
-def write_numbers_inputs(analysis_dir, results_dir, ref_dir, seed=0, stamp=None):
-    """Everything spirometry.numbers reads, synthetic: write_inputs, the export into
-    results_dir (meta.json given a build stamp, `stamp` or SAMPLE_STAMP, and sample: true),
-    the placebo summary and spirometry.sensitivity's rulers and se_inflation tables in
-    analysis_dir/writeup. Returns the tweak table."""
+def write_numbers_inputs(analysis_dir, results_dir, ref_dir, seed=0):
+    """Everything spirometry.numbers reads, synthetic: write_inputs; the export into
+    results_dir with a synthetic runs.duckdb (write_sample_db, beside results_dir), so
+    meta.json has a build stamp and play dates (and sample: true); the placebo summary;
+    spirometry.sensitivity's rulers, se_inflation and calibrated_counts tables in
+    analysis_dir/writeup; and a snapshot.log beside results_dir. Returns the tweak table."""
     from spirometry import export, sensitivity as S
 
     analysis_dir, results_dir = pathlib.Path(analysis_dir), pathlib.Path(results_dir)
     rng = np.random.default_rng(seed + 1)
     tw = write_inputs(analysis_dir, ref_dir, seed=seed)
-    export.export(analysis_dir, results_dir, ref_dir, sample=True)
-    m = json.loads((results_dir / "meta.json").read_text())
-    m.update(stamp or SAMPLE_STAMP)
-    (results_dir / "meta.json").write_text(json.dumps(m, indent=2) + "\n")
+    db = write_sample_db(results_dir.parent / "sample_runs.duckdb")
+    export.export(analysis_dir, results_dir, ref_dir, db=db, sample=True)
+    write_snapshot_log(results_dir.parent / "snapshot.log")
 
     summary = _placebo_summary(rng)
     summary.to_csv(analysis_dir / "placebo_diagnostics_summary.csv", index=False)
@@ -276,4 +303,48 @@ def write_numbers_inputs(analysis_dir, results_dir, ref_dir, seed=0, stamp=None)
     for name, df in [("rulers", rulers), ("se_inflation", se)]:
         df.insert(0, "fits", "did_h3")
         df.to_csv(out / f"{name}.csv", index=False)
+    placebo = placebo_fits(D, rng)
+    factors = S.placebo_factors_by_horizon(placebo, ref=ref_dir)
+    S.calibrated_counts({"weeks 0-3": D, "all weeks": Dw}, factors).to_csv(
+        out / "calibrated_counts.csv", index=False)
     return tw
+
+
+def placebo_fits(D, rng, n_cards=12, sd={"first": 4.5, "second": 2.2}, horizons=(None,)):
+    """placebo_main.parquet's layout (did.placebo_all): for each tweak in D (a prepared fit)
+    n_cards pseudo cards with z ~ N(0, sd of its patch), at each max_week_after in
+    `horizons` (None = all weeks, as the saved run). Pseudo cards are shared within a
+    color and patch, as real windows share them."""
+    rows = []
+    for h in horizons:
+        for cpid, t in D.iterrows():
+            for k in range(n_cards):
+                se = float(rng.uniform(0.004, 0.01))
+                z = float(rng.normal(0, sd[t.patch]))
+                rows.append(dict(card_patch_id=cpid, pseudo_card=f"PSEUDO_{t.color}_{k:02d}",
+                                 beta=z * se, se=se, z=z, n_runs=5000, treated_rate_before=0.2,
+                                 error="", card_id=t.card_id, color=t.color,
+                                 stable_build=t.stable_build, patch=t.patch, fit_on=t.fit_on,
+                                 se_hc=se, se_iid=se, n_offers=100000,
+                                 n_treated_offers=int(rng.integers(2000, 30000)),
+                                 max_week_after=h))
+    return pd.DataFrame(rows)
+
+
+SAMPLE_LOG_TOTAL = (11234, 10987)    # records, distinct
+
+
+def write_snapshot_log(path, pages=12, end=True):
+    """A snapshot.log in scripts/snapshot_export.py's format: one line per page (numbered
+    from 1), "reached end of export", then --count-only's table ending in "total"."""
+    lines = [f"2026-01-01 00:{i:02d}:00-0700 page {i}: 1000 runs, 3.1 MB, remaining budget "
+             f"{100 - i}" for i in range(1, pages + 1)]
+    if end:
+        lines.append("2026-01-01 00:59:00-0700 reached end of export")
+    lines += ["build                         runs     dedup",
+              "v0.99.1                       9000      8800",
+              "v0.103.2                      2234      2187",
+              f"total                      {SAMPLE_LOG_TOTAL[0]:>7d}   {SAMPLE_LOG_TOTAL[1]:>7d}",
+              "records with a player_token: 1234"]
+    pathlib.Path(path).write_text("\n".join(lines) + "\n")
+    return path

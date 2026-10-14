@@ -175,18 +175,40 @@ def test_hash_like_values_and_repeated_keys_stop_the_export(inputs, tmp_path):
 
 
 def test_meta_from_build_info(inputs, tmp_path):
-    duckdb = pytest.importorskip("duckdb")
-    db = tmp_path / "runs.duckdb"
-    con = duckdb.connect(str(db))
-    con.execute("CREATE TABLE build_info (key VARCHAR, value VARCHAR)")
-    con.executemany("INSERT INTO build_info VALUES (?, ?)",
-                    [["parser_version", "1.7.0"], ["pages_parsed", "12"],
-                     ["last_page", "11"], ["built_at_utc", "2026-09-29T10:00:00+00:00"]])
-    con.close()
+    pytest.importorskip("duckdb")
+    db = sample_results.write_sample_db(tmp_path / "runs.duckdb", build_info={
+        "parser_version": "1.7.0", "pages_parsed": "12", "last_page": "11",
+        "built_at_utc": "2026-09-29T10:00:00+00:00"})
     t, out = run(inputs, tmp_path, db=db, snapshot_end="2026-08-30")
     m = t["meta"]
     assert (m["parser_version"], m["snapshot_pages"]) == ("1.7.0", "12")
     assert m["snapshot_end_date"] == "2026-08-30" and m["blank_reasons"] == {}
+    assert m["snapshot_end_date_source"] == "--snapshot-end"
+
+
+def test_meta_play_dates_from_run_tables(inputs, tmp_path):
+    pytest.importorskip("duckdb")
+    db = sample_results.write_sample_db(tmp_path / "runs.duckdb")
+    t, out = run(inputs, tmp_path, db=db)
+    m = json.loads((out / "meta.json").read_text())
+    # primary runs only: the playtest-build record and the before-release one are outside
+    assert (m["snapshot_start_date"], m["snapshot_end_date"]) == ("2026-03-18", "2026-07-02")
+    assert m["play_dates_all_records"] == {"start": "2026-02-27", "end": "2026-07-04"}
+    assert m["snapshot_end_date_source"] == "run tables"
+    assert "primary" in m["snapshot_dates_source"] and m["blank_reasons"] == {}
+    blob = json.dumps(m)
+    assert not export.HASH_VALUE.search(blob)                 # aggregates only
+
+
+def test_meta_play_dates_blank_without_runs(inputs, tmp_path):
+    pytest.importorskip("duckdb")
+    db = sample_results.write_sample_db(tmp_path / "runs.duckdb", runs=False)
+    t, out = run(inputs, tmp_path, db=db)
+    m = t["meta"]
+    assert m["snapshot_start_date"] == "" and m["snapshot_end_date"] == ""
+    assert "no runs table" in m["blank_reasons"]["snapshot_start_date"]
+    t, out = run(inputs, tmp_path)
+    assert "no --db" in t["meta"]["blank_reasons"]["snapshot_end_date"]
 
 
 def test_cli(inputs, tmp_path, capsys):

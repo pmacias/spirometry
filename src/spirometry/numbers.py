@@ -2,7 +2,7 @@
 final-rerun outputs.
 
     python -m spirometry.numbers --analysis data/analysis --results results \
-        --out writeup/numbers.json [--allow-sample]
+        --out writeup/numbers.json [--snapshot-log snapshot.log] [--allow-sample]
 
 Writes writeup/numbers.json (read by the Typst source: #n("key")) and writeup/numbers.csv
 beside it (the same rows, for reading). One row per number:
@@ -21,18 +21,29 @@ beside it (the same rows, for reading). One row per number:
 
 Inputs (nothing else is read; the run database is never opened):
 
-    results/meta.json                            build stamp (written by spirometry.export
-                                                 with --db), snapshot pages
+    results/meta.json                            build stamp and play-date range (written
+                                                 by spirometry.export with --db), pages
     results/pick_rate_did.csv                    per-tweak DiD, both horizons
     results/dose_response.csv                    the notebooks' meta-regressions (triage spec)
     <analysis>/writeup/rulers.csv                spirometry.sensitivity: slopes per spec
     <analysis>/writeup/se_inflation.csv          same, SEs scaled by the placebo spread
+    <analysis>/writeup/calibrated_counts.csv     same: clearly nonzero on placebo-scaled z
     <analysis>/placebo_diagnostics_summary.csv   placebo calibration, z spread
+    snapshot.log                                 the download log (scripts/snapshot_export.py):
+                                                 last page and --count-only's records total.
+                                                 Only three kinds of line are read (page
+                                                 lines, "reached end of export", "total").
+                                                 It predates the tables, so it is exempt from
+                                                 the staleness check.
 
 Guards (each stops the run and writes nothing):
-- Build stamp: results/meta.json must carry tables_built_at_utc, snapshot_pages and
-  parser_version. A sample export (meta.json "sample": true) is refused unless
-  --allow-sample.
+- Build stamp: results/meta.json must carry tables_built_at_utc, snapshot_pages,
+  parser_version, snapshot_start_date and snapshot_end_date. A sample export (meta.json
+  "sample": true) is refused unless --allow-sample.
+- Snapshot log: it must say "reached end of export" and have a "total" line, and its last
+  page (numbered from 1) must equal meta.json's snapshot_pages.
+- Calibrated counts: calibrated_counts.csv's uncalibrated rows (spread "none") must equal
+  the counts from pick_rate_did.csv, so both use the same tweaks and rule.
 - Staleness: an input file last modified before tables_built_at_utc was not made from these
   tables; the run names it.
 - Privacy: every input table and the output pass spirometry.export.check_output
@@ -40,10 +51,16 @@ Guards (each stops the run and writes nothing):
 - A value that is missing in its source stops the run (no blank numbers in the text).
 
 Counting rules (as the export and SPIROMETRY.md define them):
-- clearly nonzero = |beta| > 2 clustered SE (export's clearly_nonzero / clearly_nonzero_h).
-- toward the change = sign(beta) = sign(direction x ln ratio), for tweaks with one
-  direction (not mixed, not upgrade-only): the export's toward_change for all weeks; the
-  same rule on beta_h for weeks 0-3 (the export has no weeks 0-3 column for it).
+- uncalibrated clearly nonzero (did.<h>.<patch>.uncalibrated.*) = |beta| > 2 clustered SE
+  (export's clearly_nonzero / clearly_nonzero_h).
+- calibrated clearly nonzero (did.<h>.<patch>.calibrated.*, the lead count by the decision
+  log): |z / factor| > 2, factor = the patch's robust placebo sd at the same horizon;
+  calibrated_plain_sd.* is the same with the plain placebo sd (sensitivity). Computed by
+  spirometry.sensitivity.calibrated_counts; formatted here. A horizon without placebo fits
+  has no keys and is listed under "missing" in numbers.json's build header.
+- toward the change = export.toward_change (sign(beta) = sign(direction x ln ratio), for
+  tweaks with one direction: not mixed, not upgrade-only), on beta for all weeks and on
+  beta_h for weeks 0-3 (the export has no weeks 0-3 column for it).
 - median |beta| in percentage points (beta x 100), all solo-estimable tweaks of the patch.
 - Placebo spreads are all-weeks fits (the placebo calibration ran on all weeks).
 """
@@ -52,11 +69,13 @@ import argparse, datetime, json, math, pathlib, re, sys
 import numpy as np
 import pandas as pd
 
-from spirometry.export import ExportError, check_output
+from spirometry.export import ExportError, check_output, toward_change
 
 MINUS = "−"
 KEY = re.compile(r"^[a-z0-9_]+(\.[a-z0-9_]+)*$")
 HORIZONS = {"h3": "weeks 0-3", "all": "all weeks"}
+HORIZON_KEY = {v: k for k, v in HORIZONS.items()}
+SPREAD_KEY = {"robust sd": "calibrated", "sd": "calibrated_plain_sd"}
 PATCHES = ["first", "second"]
 COLUMNS = ["key", "value", "text", "source", "column", "horizon", "spec", "build",
            "appendix"]
@@ -145,6 +164,7 @@ def _paths(analysis, results):
             "dose": r / "dose_response.csv",
             "rulers": a / "writeup" / "rulers.csv",
             "se_inflation": a / "writeup" / "se_inflation.csv",
+            "calibrated": a / "writeup" / "calibrated_counts.csv",
             "placebo": a / "placebo_diagnostics_summary.csv"}
 
 
@@ -153,11 +173,12 @@ def read_stamp(meta, allow_sample=False):
     if meta.get("sample") and not allow_sample:
         raise NumbersError("results/meta.json is a sample export (sample: true); "
                            "pass --allow-sample to build from it")
-    need = ["tables_built_at_utc", "snapshot_pages", "parser_version"]
+    need = ["tables_built_at_utc", "snapshot_pages", "parser_version",
+            "snapshot_start_date", "snapshot_end_date"]
     blank = [k for k in need if not str(meta.get(k, "")).strip()]
     if blank:
-        raise NumbersError(f"results/meta.json has no build stamp ({', '.join(blank)} "
-                           f"blank): rerun spirometry.export with --db")
+        raise NumbersError(f"results/meta.json has no build stamp or play dates "
+                           f"({', '.join(blank)} blank): rerun spirometry.export with --db")
     built = datetime.datetime.fromisoformat(meta["tables_built_at_utc"])
     if built.tzinfo is None:
         raise NumbersError("tables_built_at_utc has no time zone")
@@ -176,6 +197,34 @@ def check_fresh(paths, built):
                            f"{built.isoformat(timespec='seconds')}): {'; '.join(old)}")
 
 
+PAGE_LINE = re.compile(r"\bpage (\d+): \d+ runs\b")
+TOTAL_LINE = re.compile(r"^total\s+(\d+)\s+(\d+)\s*$")
+
+
+def read_snapshot_log(path):
+    """(last page, records) from the download log: the last "page N: ... runs" line (the
+    log numbers pages from 1, so N is the page count; files are 0 .. N-1) and the first
+    column of --count-only's "total" line (records, repeats included; the second column,
+    distinct runs, is not used). Refuses a log without "reached end of export"."""
+    last = records = None
+    end = False
+    for line in pathlib.Path(path).read_text().splitlines():
+        m = PAGE_LINE.search(line)
+        if m:
+            last = int(m.group(1))
+        elif "reached end of export" in line:
+            end = True
+        else:
+            m = TOTAL_LINE.match(line.strip())
+            if m:
+                records = int(m.group(1))
+    if not end:
+        raise NumbersError(f"{path}: no 'reached end of export' line (snapshot unfinished)")
+    if last is None or records is None:
+        raise NumbersError(f"{path}: no page lines or no 'total' line")
+    return last, records
+
+
 def private(name, df):
     """spirometry.export's privacy check, as a NumbersError."""
     try:
@@ -184,10 +233,12 @@ def private(name, df):
         raise NumbersError(f"privacy check: {e}") from None
 
 
-def load(analysis="data/analysis", results="results", allow_sample=False):
-    """Read and check every input. Returns (meta, built, tables, paths)."""
+def load(analysis="data/analysis", results="results", allow_sample=False,
+         snapshot_log="snapshot.log"):
+    """Read and check every input. Returns (meta, built, tables, paths, log)."""
     paths = _paths(analysis, results)
-    missing = [str(p) for p in paths.values() if not p.exists()]
+    missing = [str(p) for p in [*paths.values(), pathlib.Path(snapshot_log)]
+               if not p.exists()]
     if missing:
         raise NumbersError(f"missing input(s): {', '.join(missing)}")
     meta = json.loads(paths["meta"].read_text())
@@ -200,7 +251,11 @@ def load(analysis="data/analysis", results="results", allow_sample=False):
         df = pd.read_csv(p)
         private(str(p), df)
         tables[name] = df
-    return meta, built, tables, paths
+    last, records = read_snapshot_log(snapshot_log)
+    if str(last) != str(meta["snapshot_pages"]).strip():
+        raise NumbersError(f"{snapshot_log} ends at page {last}, results/meta.json says "
+                           f"{meta['snapshot_pages']} pages")
+    return meta, built, tables, paths, dict(last_page=last, records=records)
 
 
 # ------------------------------------------------------------------------------- keys
@@ -219,46 +274,97 @@ def _filter(where):
     return ", ".join(f"{c} = {v}" for c, v in where.items())
 
 
-def provenance_keys(T, meta, src):
+def provenance_keys(T, meta, src, log, src_log):
     T.add("build.tables_built_at", meta["tables_built_at_utc"],
           fmt_time(meta["tables_built_at_utc"]), src, "tables_built_at_utc", appendix=True)
     T.add("build.parser_version", str(meta["parser_version"]), str(meta["parser_version"]),
           src, "parser_version", appendix=True)
     T.count("snapshot.pages", int(meta["snapshot_pages"]), src, "snapshot_pages",
             appendix=True)
-    if str(meta.get("snapshot_last_page", "")).strip():
-        T.count("snapshot.last_page", int(meta["snapshot_last_page"]), src,
-                "snapshot_last_page", appendix=True)
+    T.count("snapshot.last_page", log["last_page"], src_log,
+            "last 'page N: ... runs' line (pages numbered from 1; files 0 to N-1)",
+            appendix=True)
+    T.count("snapshot.records", log["records"], src_log,
+            "'total' line, first column (records read, repeats included)", appendix=True)
+    for k in ["start", "end"]:
+        T.add(f"snapshot.{k}_date", meta[f"snapshot_{k}_date"], meta[f"snapshot_{k}_date"],
+              src, f"snapshot_{k}_date ({meta.get('snapshot_dates_source', '')})",
+              appendix=True)
     if str(meta.get("exported_at_utc", "")).strip():
         T.add("build.results_exported_at", meta["exported_at_utc"],
               fmt_time(meta["exported_at_utc"]), src, "exported_at_utc", appendix=True)
 
 
 def did_keys(T, p, src):
-    """Tweak counts, clearly nonzero, toward the change and median |beta|, per patch and
-    horizon."""
+    """Tweak counts, uncalibrated clearly nonzero (clustered SE), toward the change and
+    median |beta|, per patch and horizon. Returns the counts, for the check against
+    calibrated_counts.csv's uncalibrated rows."""
+    counts = {}
     T.count("tweaks.solo_estimable", len(p), src, "rows")
     for pt in PATCHES:
         T.count(f"tweaks.{pt}", (p.patch == pt).sum(), src, f"rows, patch = {pt}")
-    single = (p.mixed_direction != "yes") & (p.upgrade_only != "yes") & p.dose_x.notna()
+    single = (p.mixed_direction != "yes") & (p.upgrade_only != "yes")
     for hz, (b, s, cn) in {"all": ("beta", "se", "clearly_nonzero"),
                            "h3": ("beta_h", "se_h", "clearly_nonzero_h")}.items():
         horizon = HORIZONS[hz]
-        toward = np.sign(p[b]) == np.sign(p.dose_x)
+        toward = pd.Series(toward_change(p[b], p.dose_x, single), index=p.index)
         for pt in PATCHES:
             g = p.patch == pt
             clear = g & (p[cn] == "yes")
-            T.count(f"did.{hz}.{pt}.clearly_nonzero", clear.sum(), src,
-                    f"{cn} = yes (|{b}| > 2 {s}), patch = {pt}", horizon=horizon)
-            T.count(f"did.{hz}.{pt}.clearly_nonzero_with_direction", (clear & single).sum(),
-                    src, f"{cn} = yes, not mixed, not upgrade-only, patch = {pt}",
+            n = dict(n_clearly_nonzero=int(clear.sum()),
+                     n_clearly_nonzero_with_direction=int((clear & (toward != "")).sum()),
+                     n_toward=int((clear & (toward == "yes")).sum()))
+            counts[(horizon, pt)] = n
+            pre = f"did.{hz}.{pt}.uncalibrated"
+            what = f"uncalibrated: {cn} = yes (|{b}| > 2 clustered {s}), patch = {pt}"
+            T.count(f"{pre}.clearly_nonzero", n["n_clearly_nonzero"], src, what,
                     horizon=horizon)
-            T.count(f"did.{hz}.{pt}.clearly_nonzero_toward", (clear & single & toward).sum(),
-                    src, f"{cn} = yes, one direction, sign({b}) = sign(dose_x), "
-                         f"patch = {pt}", horizon=horizon)
+            T.count(f"{pre}.clearly_nonzero_with_direction",
+                    n["n_clearly_nonzero_with_direction"], src,
+                    f"{what}; not mixed, not upgrade-only", horizon=horizon)
+            T.count(f"{pre}.clearly_nonzero_toward", n["n_toward"], src,
+                    f"{what}; export.toward_change({b}) = yes", horizon=horizon)
             med = 100 * p.loc[g, b].abs().median()
             T.add(f"did.{hz}.{pt}.median_abs_beta_pp", med, fmt_num(med, 1), src,
                   f"median |{b}| x 100, patch = {pt}", horizon=horizon)
+    return counts
+
+
+def calibrated_keys(T, c, src, uncalibrated):
+    """Clearly nonzero on placebo-scaled z (calibrated_counts.csv), per patch, horizon and
+    spread. Checks the file's uncalibrated rows against pick_rate_did.csv's counts. Returns
+    the keys left out (no placebo fits at that horizon), with the reason."""
+    missing = []
+    for r in c.itertuples():
+        hz = HORIZON_KEY.get(r.horizon)
+        if hz is None:
+            raise NumbersError(f"{src}: unknown horizon {r.horizon!r}")
+        if r.spread == "none":
+            mine = uncalibrated.get((r.horizon, r.patch))
+            theirs = dict(n_clearly_nonzero=r.n_clearly_nonzero,
+                          n_clearly_nonzero_with_direction=r.n_clearly_nonzero_with_direction,
+                          n_toward=r.n_toward)
+            if mine is None or any(int(theirs[k]) != v for k, v in mine.items()):
+                raise NumbersError(f"{src}: uncalibrated counts ({r.horizon}, {r.patch}) "
+                                   f"{theirs} differ from pick_rate_did.csv's {mine}")
+            continue
+        pre = f"did.{hz}.{r.patch}.{SPREAD_KEY[r.spread]}"
+        if r.status != "ok":
+            missing.append(dict(keys=f"{pre}.*", reason=str(r.status)))
+            continue
+        w = f"horizon = {r.horizon}, patch = {r.patch}, spread = {r.spread}"
+        kw = dict(horizon=r.horizon)
+        T.add(f"{pre}.factor", float(r.factor), fmt_num(r.factor, 2), src, f"factor, {w}",
+              **kw)
+        T.count(f"{pre}.n_placebo", r.n_placebo, src, f"n_placebo (window, pseudo card "
+                f"pairs), {w}", **kw)
+        T.count(f"{pre}.n_tweaks", r.n_tweaks, src, f"n_tweaks, {w}", **kw)
+        T.count(f"{pre}.clearly_nonzero", r.n_clearly_nonzero, src,
+                f"n_clearly_nonzero (|z / factor| > 2), {w}", **kw)
+        T.count(f"{pre}.clearly_nonzero_with_direction", r.n_clearly_nonzero_with_direction,
+                src, f"n_clearly_nonzero_with_direction, {w}", **kw)
+        T.count(f"{pre}.clearly_nonzero_toward", r.n_toward, src, f"n_toward, {w}", **kw)
+    return missing
 
 
 def dose_keys(T, dose, rulers, se_inf, src_dose, src_rulers, src_se):
@@ -329,14 +435,16 @@ def placebo_keys(T, pl, src):
 
 # ------------------------------------------------------------------------------- build
 
-def build(analysis="data/analysis", results="results", allow_sample=False):
+def build(analysis="data/analysis", results="results", allow_sample=False,
+          snapshot_log="snapshot.log"):
     """Every key, checked. Returns (rows DataFrame, header dict)."""
-    meta, built, t, paths = load(analysis, results, allow_sample)
+    meta, built, t, paths, log = load(analysis, results, allow_sample, snapshot_log)
     stamp = (f"tables built {meta['tables_built_at_utc']}; {meta['snapshot_pages']} pages; "
              f"parser {meta['parser_version']}")
     T = Table(stamp)
-    provenance_keys(T, meta, str(paths["meta"]))
-    did_keys(T, t["pick_rate"], str(paths["pick_rate"]))
+    provenance_keys(T, meta, str(paths["meta"]), log, str(snapshot_log))
+    unc = did_keys(T, t["pick_rate"], str(paths["pick_rate"]))
+    missing = calibrated_keys(T, t["calibrated"], str(paths["calibrated"]), unc)
     dose_keys(T, t["dose"], t["rulers"], t["se_inflation"], str(paths["dose"]),
               str(paths["rulers"]), str(paths["se_inflation"]))
     placebo_keys(T, t["placebo"], str(paths["placebo"]))
@@ -350,9 +458,10 @@ def build(analysis="data/analysis", results="results", allow_sample=False):
                   tables_built_at_utc=meta["tables_built_at_utc"],
                   snapshot_pages=str(meta["snapshot_pages"]),
                   parser_version=str(meta["parser_version"]),
+                  missing=missing,
                   inputs={str(p): datetime.datetime.fromtimestamp(
                       p.stat().st_mtime, datetime.timezone.utc).isoformat(timespec="seconds")
-                      for p in paths.values()})
+                      for p in [*paths.values(), pathlib.Path(snapshot_log)]})
     return df, header
 
 
@@ -372,16 +481,19 @@ def main(argv=None):
     p.add_argument("--analysis", default="data/analysis")
     p.add_argument("--results", default="results")
     p.add_argument("--out", default="writeup/numbers.json")
+    p.add_argument("--snapshot-log", default="snapshot.log")
     p.add_argument("--allow-sample", action="store_true",
                    help="build from a sample export (results/meta.json sample: true)")
     a = p.parse_args(argv)
     try:
-        df, header = build(a.analysis, a.results, a.allow_sample)
+        df, header = build(a.analysis, a.results, a.allow_sample, a.snapshot_log)
     except NumbersError as e:
         sys.exit(f"numbers stopped: {e}")
     write(df, header, a.out)
     print(f"{len(df)} numbers ({int(df.appendix.sum())} for the appendix), tables built "
           f"{header['tables_built_at_utc']}, {header['snapshot_pages']} pages")
+    for m in header["missing"]:
+        print(f"missing: {m['keys']} ({m['reason']})")
     print(f"-> {a.out}, {pathlib.Path(a.out).with_suffix('.csv')}")
 
 

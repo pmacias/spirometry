@@ -474,6 +474,16 @@ provisional.
        and with placebo-scaled SEs, placebo z spread). Left out: records, distinct runs (two
        sources disagree), date range, calibrated clearly-nonzero counts (rule not decided).
        Tested on synthetic outputs (sample_results.write_numbers_inputs).
+       Follow-up (CC, 2026-10-14): snapshot keys: records (2,069,493) and last page (2,071)
+       from snapshot.log; play-date range from meta.json, which the export now fills from the
+       run tables with --db (primary runs). Calibrated "clearly nonzero"
+       (sensitivity.calibrated_counts, data/analysis/writeup/calibrated_counts.csv), all
+       weeks: first patch 13 of 26 (12 toward the change), second 4 of 17 (4); uncalibrated
+       22 and 9. Weeks 0–3 calibrated counts missing: the saved placebo fits are all weeks
+       (max_week_after empty on all 860); they need a weeks 0–3 placebo run
+       (did.placebo_all, max_week_after=3, about 45 min). Uncalibrated keys renamed
+       did.<h>.<patch>.uncalibrated.*. Phil reruns the export (--db), sensitivity and
+       numbers before numbers.json has the new keys.
    11. Write-up skeleton: Typst, boxes, chapter stubs, generated numbers appendix, lint for
       hand-typed numbers, one build command (CC).
    12. Chapters 0–3 draft, for a voice check before the rest (CC drafts; Phil reads).
@@ -1144,3 +1154,21 @@ provisional.
     0–3 "toward the change" uses the export's rule on beta_h. The privacy check skips 
     numeric values, because 16 digits of a float match the hashed-id pattern. Only 
     provenance rows are flagged appendix.
+- Calibrated "clearly nonzero" (Phil, 2026-10-14): calibrated z = a tweak's z divided by its
+  patch's robust placebo sd: `did.placebo_summary`'s `robust_sd_z` (1.4826 × MAD), on the
+  deduplicated (window, pseudo card) pairs, the same factor as `se_inflation`'s "robust sd by
+  patch". `median_abs_z` is the other robust column; it isn't used because it would need a
+  new scale (÷ 0.674). One factor per patch, from placebo fits at the estimate's own horizon
+  (weeks 0–3 placebos for weeks 0–3 estimates, primary; all weeks for all weeks, secondary).
+  Clearly nonzero = |calibrated z| > 2; toward the change by `export.toward_change`. The
+  plain placebo sd is the sensitivity row. The uncalibrated counts stay, labelled
+  `uncalibrated`.
+- Snapshot dates (CC's choice, open to review, 2026-10-14): `snapshot_start_date` /
+  `snapshot_end_date` = the first and last UTC play date over the primary population
+  (`runs.PRIMARY_RUN_FILTER`), so launch, playtest and wrong-clock runs can't set the range;
+  the same over every record goes in `meta.json` as `play_dates_all_records`.
+  `--snapshot-end` still overrides the end date.
+- Snapshot size in the numbers table: records and last page come from `snapshot.log` (its
+  "total" line and its last page line, numbered from 1), checked against `meta.json`'s page
+  count. Distinct runs stays out while 1,525,369 (`--count-only`) and 1,525,329 (audit)
+  disagree.

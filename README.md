@@ -257,10 +257,14 @@ python -m spirometry.sensitivity --analysis data/analysis --out data/analysis/wr
 python -m spirometry.iv_sim --out data/analysis/writeup                               # ~5 s
 ```
 
-The field guide's numbers table, after the export and the two commands above (reads
-`results/` and `data/analysis/`, never the run database; stops if an input is older than the
-tables in `results/meta.json`, or on anything identifying). Writes `writeup/numbers.json` and
-`writeup/numbers.csv`, git-ignored:
+`sensitivity` also writes `calibrated_counts.csv` (clearly nonzero on z scaled by the
+placebo spread, per patch and horizon) when `data/analysis/placebo_main.parquet` exists.
+
+The field guide's numbers table, after the export (with `--db`, which puts the build stamp
+and the snapshot's play dates into `results/meta.json`) and the two commands above. It reads
+`results/`, `data/analysis/` and `snapshot.log`, never the run database; it stops if an input
+is older than the tables in `results/meta.json`, if the play dates are blank, or on anything
+identifying. Writes `writeup/numbers.json` and `writeup/numbers.csv`, git-ignored:
 
 ```bash
 python -m spirometry.numbers --analysis data/analysis --results results --out writeup/numbers.json
@@ -269,11 +273,13 @@ python -m spirometry.numbers --analysis data/analysis --results results --out wr
 Export the pick-rate results for the dashboard: aggregate tables per tweak / week from the
 fits notebooks 02 and 03 saved in `data/analysis/` (no run-level rows, no uploader IDs; the
 export stops if a fit has an `error` row unless `--skip-errors`). `--db` reads `build_info`
-(read-only) for the provenance in `meta.json`; without it those fields stay blank:
+and the first and last play date of the primary runs (read-only, aggregates only) for the
+provenance in `meta.json`; without it those fields stay blank:
 
 ```bash
 python -m spirometry.export --analysis data/analysis --out results --db data/runs/runs.duckdb
-# options: --horizon h3 (fixed-horizon fit file) --skip-errors --snapshot-end YYYY-MM-DD
+# options: --horizon h3 (fixed-horizon fit file) --skip-errors
+#          --snapshot-end YYYY-MM-DD (overrides the end date from --db)
 ```
 
 Run the dashboard locally (reads `results/`, or the synthetic `results_sample/` when

@@ -3,6 +3,7 @@ the keys, the formatting, and the stamp, staleness and privacy guards. No run da
 import json
 import os
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -19,7 +20,8 @@ def dirs(tmp_path):
 
 
 def build(dirs, **kw):
-    return N.build(*dirs, allow_sample=True, **kw)
+    return N.build(*dirs, allow_sample=True, snapshot_log=dirs[1].parent / "snapshot.log",
+                   **kw)
 
 
 def test_formatting():
@@ -40,7 +42,13 @@ def test_expected_keys_and_values(dirs):
     assert df.key.is_unique and len(df) > 50
     for key in ["build.tables_built_at", "build.parser_version", "snapshot.pages",
                 "tweaks.solo_estimable", "tweaks.first", "tweaks.second",
-                "did.all.first.clearly_nonzero", "did.h3.second.clearly_nonzero_toward",
+                "snapshot.records", "snapshot.last_page", "snapshot.start_date",
+                "snapshot.end_date",
+                "did.all.first.uncalibrated.clearly_nonzero",
+                "did.h3.second.uncalibrated.clearly_nonzero_toward",
+                "did.all.first.calibrated.clearly_nonzero",
+                "did.all.second.calibrated.factor",
+                "did.all.second.calibrated_plain_sd.clearly_nonzero_toward",
                 "did.h3.first.median_abs_beta_pp",
                 "dose.triage.h3.slope_first_pm", "dose.triage.all.slope_second",
                 "dose.primary.h3.slope_second_pm", "dose.primary.h3.z_diff",
@@ -52,9 +60,24 @@ def test_expected_keys_and_values(dirs):
     p = pd.read_csv(dirs[1] / "pick_rate_did.csv")
     assert k.loc["tweaks.solo_estimable", "value"] == len(p)
     first = p[p.patch == "first"]
-    assert k.loc["did.all.first.clearly_nonzero", "value"] == (first.clearly_nonzero == "yes").sum()
+    assert (k.loc["did.all.first.uncalibrated.clearly_nonzero", "value"]
+            == (first.clearly_nonzero == "yes").sum())
     toward = first[(first.clearly_nonzero == "yes") & (first.toward_change == "yes")]
-    assert k.loc["did.all.first.clearly_nonzero_toward", "value"] == len(toward)
+    assert k.loc["did.all.first.uncalibrated.clearly_nonzero_toward", "value"] == len(toward)
+    assert "uncalibrated" in k.loc["did.all.first.uncalibrated.clearly_nonzero", "column"]
+    # snapshot keys: the log's last page and total, meta.json's primary play dates
+    assert k.loc["snapshot.last_page", "value"] == 12
+    assert k.loc["snapshot.records", "text"] == "11,234"
+    assert k.loc["snapshot.records", "source"].endswith("snapshot.log")
+    assert (k.loc["snapshot.start_date", "value"], k.loc["snapshot.end_date", "value"]) \
+        == ("2026-03-18", "2026-07-02")
+    # calibrated counts: as calibrated_counts.csv, factor > 1 can only remove results
+    c = pd.read_csv(dirs[0] / "writeup" / "calibrated_counts.csv")
+    r = c[(c.horizon == "all weeks") & (c.patch == "first") & (c.spread == "robust sd")].iloc[0]
+    assert k.loc["did.all.first.calibrated.clearly_nonzero", "value"] == r.n_clearly_nonzero
+    assert k.loc["did.all.first.calibrated.factor", "text"] == N.fmt_num(r.factor, 2)
+    assert (k.loc["did.all.first.calibrated.clearly_nonzero", "value"]
+            <= k.loc["did.all.first.uncalibrated.clearly_nonzero", "value"])
     d = pd.read_csv(dirs[1] / "dose_response.csv")
     r = d[(d.horizon == "weeks 0-3") & (d.model == "slope per patch")
           & (d.term == "slope_first")].iloc[0]
@@ -67,9 +90,15 @@ def test_expected_keys_and_values(dirs):
     assert (df.build.str.contains("12 pages") & df.build.str.contains("parser sample")).all()
     assert set(df.horizon) <= {"", "weeks 0-3", "all weeks"}
     assert k.loc["dose.primary.h3.slope_first", "spec"] == "primary"
-    assert k.loc["did.h3.first.clearly_nonzero", "horizon"] == "weeks 0-3"
+    assert k.loc["did.h3.first.uncalibrated.clearly_nonzero", "horizon"] == "weeks 0-3"
     assert k.loc["snapshot.pages", "appendix"] and not k.loc["dose.triage.h3.z_diff", "appendix"]
     assert header["sample"] is True
+    # the synthetic placebo fits are all weeks: weeks 0-3 calibrated keys are missing
+    assert not any(key.startswith("did.h3.first.calibrated") for key in k.index)
+    assert {m["keys"] for m in header["missing"]} == {
+        f"did.h3.{pt}.{s}.*" for pt in ["first", "second"]
+        for s in ["calibrated", "calibrated_plain_sd"]}
+    assert all("weeks 0-3" in m["reason"] for m in header["missing"])
 
 
 def test_toward_change_weeks_0_3_uses_the_export_rule(dirs):
@@ -79,7 +108,7 @@ def test_toward_change_weeks_0_3_uses_the_export_rule(dirs):
     s = p[(p.patch == "second") & (p.clearly_nonzero_h == "yes") & (p.mixed_direction != "yes")
           & (p.upgrade_only != "yes") & p.dose_x.notna()]
     n = ((s.beta_h > 0) == (s.dose_x > 0)).sum()
-    assert k.loc["did.h3.second.clearly_nonzero_toward", "value"] == n
+    assert k.loc["did.h3.second.uncalibrated.clearly_nonzero_toward", "value"] == n
 
 
 def test_writes_json_and_csv(dirs, tmp_path):
@@ -99,14 +128,14 @@ def test_writes_json_and_csv(dirs, tmp_path):
 def test_cli(dirs, tmp_path, capsys):
     out = tmp_path / "w" / "numbers.json"
     N.main(["--analysis", str(dirs[0]), "--results", str(dirs[1]), "--out", str(out),
-            "--allow-sample"])
+            "--snapshot-log", str(dirs[1].parent / "snapshot.log"), "--allow-sample"])
     assert out.exists() and out.with_suffix(".csv").exists()
     assert "numbers" in capsys.readouterr().out
 
 
 def test_refuses_sample_without_flag(dirs):
     with pytest.raises(N.NumbersError, match="sample"):
-        N.build(*dirs)
+        N.build(*dirs, snapshot_log=dirs[1].parent / "snapshot.log")
 
 
 def test_staleness_guard_names_the_old_file(dirs):
@@ -159,3 +188,59 @@ def test_bad_or_repeated_key_refused():
     T.add("a.b", 1.0, "1.0", "src", "col")
     with pytest.raises(N.NumbersError, match="twice"):
         T.add("a.b", 2.0, "2.0", "src", "col")
+
+
+@pytest.mark.parametrize("field", ["snapshot_start_date", "snapshot_end_date"])
+def test_blank_play_dates_refused(dirs, field):
+    m = json.loads((dirs[1] / "meta.json").read_text())
+    m[field] = ""
+    (dirs[1] / "meta.json").write_text(json.dumps(m))
+    with pytest.raises(N.NumbersError, match=field):
+        build(dirs)
+
+
+def test_snapshot_log_guards(dirs):
+    log = dirs[1].parent / "snapshot.log"
+    sample_results.write_snapshot_log(log, pages=12, end=False)
+    with pytest.raises(N.NumbersError, match="reached end of export"):
+        build(dirs)
+    sample_results.write_snapshot_log(log, pages=11)
+    with pytest.raises(N.NumbersError, match="ends at page 11"):
+        build(dirs)
+    log.unlink()
+    with pytest.raises(N.NumbersError, match="missing input"):
+        build(dirs)
+
+
+def test_read_snapshot_log(tmp_path):
+    log = sample_results.write_snapshot_log(tmp_path / "s.log", pages=7)
+    assert N.read_snapshot_log(log) == (7, sample_results.SAMPLE_LOG_TOTAL[0])
+
+
+def test_uncalibrated_rows_must_match_pick_rate(dirs):
+    p = dirs[0] / "writeup" / "calibrated_counts.csv"
+    c = pd.read_csv(p)
+    c.loc[c.spread == "none", "n_clearly_nonzero"] += 1
+    c.to_csv(p, index=False)
+    with pytest.raises(N.NumbersError, match="differ from pick_rate_did"):
+        build(dirs)
+
+
+def test_weeks_0_3_calibrated_keys_when_placebos_exist(dirs):
+    from spirometry import sensitivity as S
+    a, r = dirs
+    ref = a.parent / "ref"
+    D = {}
+    for name in ["h3", "main"]:
+        f = pd.read_parquet(a / f"did_{name}.parquet")
+        for col in ["log_ratio", "upgraded_log_ratio", "direction"]:
+            f[col] = pd.to_numeric(f[col], errors="coerce")
+        D[name] = S.prepare(f)
+    rng = np.random.default_rng(0)
+    placebo = sample_results.placebo_fits(D["h3"], rng, horizons=(None, 3))
+    S.calibrated_counts({"weeks 0-3": D["h3"], "all weeks": D["main"]},
+                        S.placebo_factors_by_horizon(placebo, ref=ref)).to_csv(
+        a / "writeup" / "calibrated_counts.csv", index=False)
+    df, header = build(dirs)
+    assert header["missing"] == []
+    assert "did.h3.second.calibrated.clearly_nonzero_toward" in set(df.key)

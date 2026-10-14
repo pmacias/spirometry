@@ -186,17 +186,113 @@ def test_run_writes_tables(tmp_path):
     an = tmp_path / "analysis"
     an.mkdir()
     fits = synthetic_fits().reset_index()
-    fits.to_parquet(an / "did_h3.parquet")
+    fits["se"] = fits.se_lo * 0.2                     # as beta = 0.2 beta_lo
+    fits.assign(max_week_after=3.0).to_parquet(an / "did_h3.parquet")   # as the saved fits
     fits.to_parquet(an / "did_main.parquet")
     summary, placebo = placebo_inputs()
     summary.to_csv(an / "placebo_diagnostics_summary.csv", index=False)
+    # placebo_all's columns the calibrated counts need: each placebo row on a real tweak of
+    # its patch, z, and the tweaks' windows in a tweak_sizes.csv
+    ids = {pt: fits.card_patch_id[(fits.before_builds == S.SECOND_BEFORE) == (pt == "second")]
+           .tolist() for pt in ["first", "second"]}
+    placebo["card_patch_id"] = [ids[pt][i % len(ids[pt])] for i, pt in enumerate(placebo.patch)]
+    placebo["z"] = placebo.beta / placebo.se
+    placebo = placebo.assign(se_hc=placebo.se, se_iid=placebo.se, n_runs=5000,
+                             n_offers=100000, n_treated_offers=4000)
     placebo.to_parquet(an / "placebo_main.parquet")
+    ref = tmp_path / "ref"
+    ref.mkdir()
+    fits.assign(after_builds=np.where(fits.before_builds == S.SECOND_BEFORE, "v0.107.1",
+                                      "v0.103.2"))[
+        ["card_patch_id", "before_builds", "after_builds"]].to_csv(ref / "tweak_sizes.csv",
+                                                                   index=False)
     out = tmp_path / "writeup"
-    t = S.run(an, out, n_sim=20)
+    t = S.run(an, out, n_sim=20, ref=ref)
     for name in ["rulers", "dose_points", "review_calls", "mixed", "leave_out", "character",
                  "character_counts", "se_inflation", "spread", "power"]:
         assert (out / f"{name}.csv").exists(), name
         assert (t[name].fits == "did_h3").all()
     assert set(t["rulers"].spec) == set(S.SPECS)
     assert "additive placebo variance" in set(t["se_inflation"].setting)
+    c = t["calibrated_counts"]
+    assert (out / "calibrated_counts.csv").exists()
+    assert set(c.horizon) == {"weeks 0-3", "all weeks"}
+    # the synthetic placebo fits (placebo_inputs) carry no horizon: all weeks only
+    assert (c[(c.horizon == "weeks 0-3") & (c.spread != "none")].status != "ok").all()
     assert "seed" not in t["power"].columns
+
+
+# ------------------------------------------------------------------- calibrated counts
+
+def _fits_for_counts(z, patch, mixed="no"):
+    """A prepared fit: one tweak per z, direction +1, a buff (ln ratio 0.2), se 0.01."""
+    n = len(z)
+    d = pd.DataFrame({
+        "card_patch_id": [f"C{i}@v/patch" for i in range(n)],
+        "card_id": [f"C{i}" for i in range(n)],
+        "color": "silent", "before_builds": [S.SECOND_BEFORE if p == "second" else "v0.99.1"
+                                             for p in patch],
+        "direction": 1, "log_ratio": 0.2, "old": "5", "new": "6", "main_field": "damage",
+        "mixed_direction": mixed, "upgrade_only": "no", "error": "",
+        "se": 0.01, "beta": np.array(z) * 0.01})
+    d["beta_lo"], d["se_lo"] = d.beta * 5, d.se * 5
+    return S.prepare(d)
+
+
+def test_calibration_removes_a_result():
+    # z 3 and 10 (toward a buff) and -14 (against) in the first patch; z 3 in the second
+    D = _fits_for_counts([3.0, 10.0, -14.0, 3.0], ["first", "first", "first", "second"])
+    factors = {("all weeks", "first"): dict(robust_sd=4.0, sd=6.5, n_placebo=50),
+               ("all weeks", "second"): dict(robust_sd=1.2, sd=1.6, n_placebo=40)}
+    c = S.calibrated_counts({"all weeks": D, "weeks 0-3": D}, factors).set_index(
+        ["horizon", "patch", "spread"])
+    none = c.loc[("all weeks", "first", "none")]
+    assert (none.n_clearly_nonzero, none.n_toward, none.factor) == (3, 2, 1.0)
+    rob = c.loc[("all weeks", "first", "robust sd")]        # 3/4 drops; 10/4, 14/4 stay
+    assert (rob.n_clearly_nonzero, rob.n_clearly_nonzero_with_direction, rob.n_toward,
+            rob.factor, rob.n_placebo) == (2, 2, 1, 4.0, 50)
+    sd = c.loc[("all weeks", "first", "sd")]                # 10/6.5 drops too, 14/6.5 stays
+    assert (sd.n_clearly_nonzero, sd.n_toward) == (1, 0)
+    assert c.loc[("all weeks", "second", "robust sd")].n_clearly_nonzero == 1   # 3/1.2
+    assert c.loc[("all weeks", "second", "sd")].n_clearly_nonzero == 0          # 3/1.6
+    miss = c.loc[("weeks 0-3", "first", "robust sd")]       # no weeks 0-3 placebo fits
+    assert np.isnan(miss.factor) and miss.status.startswith("missing")
+    assert c.loc[("weeks 0-3", "first", "none")].status == "ok"
+
+
+def test_calibrated_toward_uses_the_export_rule():
+    D = _fits_for_counts([5.0, -5.0], ["first", "first"], mixed="yes")
+    c = S.calibrated_counts({"all weeks": D}, {}).set_index(["patch", "spread"])
+    r = c.loc[("first", "none")]
+    assert (r.n_clearly_nonzero, r.n_clearly_nonzero_with_direction, r.n_toward) == (2, 0, 0)
+
+
+def test_placebo_factors_by_horizon_match_placebo_summary(tmp_path):
+    pytest.importorskip("pyfixest")
+    from spirometry import did, sample_results
+    a, ref = tmp_path / "a", tmp_path / "ref"
+    sample_results.write_inputs(a, ref, seed=2)
+    f = pd.read_parquet(a / "did_h3.parquet")
+    for col in ["log_ratio", "upgraded_log_ratio", "direction"]:
+        f[col] = pd.to_numeric(f[col], errors="coerce")
+    D = S.prepare(f)
+    placebo = sample_results.placebo_fits(D, np.random.default_rng(1), horizons=(None, 3))
+    fac = S.placebo_factors_by_horizon(placebo, ref=ref)
+    assert set(fac) == {(h, p) for h in ["all weeks", "weeks 0-3"]
+                        for p in ["first", "second"]}
+    allw = placebo[placebo.max_week_after.isna()]
+    summ = did.placebo_summary(allw, dedupe=True, ref=ref).set_index(["split", "level"])
+    assert fac[("all weeks", "first")]["robust_sd"] == pytest.approx(
+        summ.loc[("patch", "first"), "robust_sd_z"])
+    assert fac[("all weeks", "second")]["n_placebo"] == summ.loc[("patch", "second"), "n_fits"]
+    # one entry per horizon only when fits exist at it
+    assert set(S.placebo_factors_by_horizon(allw, ref=ref)) == {("all weeks", "first"),
+                                                               ("all weeks", "second")}
+
+
+def test_horizon_label():
+    assert S.horizon_label(pd.Series([np.nan, None])) == "all weeks"
+    assert S.horizon_label(None) == "all weeks"
+    assert S.horizon_label(pd.Series([3.0, 3.0])) == "weeks 0-3"
+    with pytest.raises(ValueError):
+        S.horizon_label(pd.Series([3.0, 4.0]))

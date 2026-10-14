@@ -3,8 +3,16 @@
 The triage's saved-fit computations (`triage/TRIAGE.md` sections B, B2, C, D, K1, K2) as
 tested functions, so they can be rerun on any set of saved fits and written out as tables for
 the field guide. Input: a `did_*.parquet` saved by notebook 02 (one row per tweak, indexed by
-`card_patch_id`) and the placebo tables. No run-level data. numpy and pandas only; the model
-is `spirometry.meta.meta_regression`.
+`card_patch_id`) and the placebo tables. No run-level data. numpy and pandas; the model
+is `spirometry.meta.meta_regression`; the calibrated counts use `spirometry.did`'s placebo
+summary (imported only there).
+
+Calibrated "clearly nonzero" (`calibrated_counts.csv`, Phil's rule of 2026-10-14): each
+tweak's z = beta / se divided by its patch's robust placebo sd (did.placebo_summary's
+robust_sd_z, 1.4826 x MAD, on the deduplicated (window, pseudo card) pairs, the same factors
+as se_inflation's "robust sd by patch"), from placebo fits at the estimate's own horizon;
+clearly nonzero = |calibrated z| > 2; the plain placebo sd is the sensitivity row. Written
+only when placebo_main.parquet exists; a horizon without placebo fits gets blank rows.
 
 The model throughout is the notebook's "slope per patch":
     y = a + c [second] + b1 x [first] + b2 x [second],   weights 1 / (se^2 + tau^2)
@@ -430,6 +438,90 @@ def spread_table(L, pairs):
     return pd.DataFrame(rows)
 
 
+# --------------------------------------------------------------- calibrated counts
+
+SPREADS = {"none": None, "robust sd": "robust_sd_z", "sd": "sd_z"}   # spread -> column
+
+
+def horizon_label(max_week_after):
+    """A fit's horizon from its max_week_after column: all missing -> "all weeks",
+    one value k -> "weeks 0-k"; several values is an error (a mixed table)."""
+    v = pd.to_numeric(pd.Series(max_week_after), errors="coerce").dropna().unique()
+    if len(v) == 0:
+        return "all weeks"
+    if len(v) > 1:
+        raise ValueError(f"fits mix horizons: max_week_after {sorted(v)}")
+    return f"weeks 0-{int(v[0])}"
+
+
+def placebo_factors_by_horizon(placebo, ref="reference"):
+    """{(horizon, patch): dict(robust_sd=..., sd=..., n_placebo=...)} from placebo_main
+    (did.placebo_all's rows): the fits are split by their own horizon (max_week_after;
+    missing = all weeks) and each part goes through did.placebo_summary(dedupe=True), the
+    diagnostics' own estimator: robust_sd_z = 1.4826 x MAD of z, sd_z, and n_placebo = the
+    number of (window, pseudo card) pairs behind them. A horizon with no placebo fits has no
+    entry."""
+    from spirometry import did
+    mwa = placebo["max_week_after"] if "max_week_after" in placebo else pd.Series(
+        np.nan, index=placebo.index)
+    labels = pd.to_numeric(mwa, errors="coerce").map(
+        lambda v: "all weeks" if pd.isna(v) else f"weeks 0-{int(v)}")
+    out = {}
+    for h, g in placebo.groupby(labels):
+        summ = did.placebo_summary(g, dedupe=True, ref=ref)
+        for r in summ[summ.split == "patch"].itertuples():
+            out[(h, r.level)] = dict(robust_sd=float(r.robust_sd_z), sd=float(r.sd_z),
+                                     n_placebo=int(r.n_fits))
+    return out
+
+
+def calibrated_counts(fits, factors):
+    """"Clearly nonzero" with the z's scaled by the placebo spread (Phil's rule,
+    2026-10-14): calibrated z = (beta / se) / factor, factor = the tweak's patch's placebo
+    spread at the fit's horizon; clearly nonzero = |calibrated z| > 2; toward the change =
+    the export's rule (export.toward_change), counted among the clearly nonzero tweaks with
+    a single direction.
+
+    fits: {horizon: prepared fit table (prepare())}; factors: placebo_factors_by_horizon's
+    dict. One row per (patch, horizon, spread): spread "none" (factor 1: the uncalibrated
+    count on clustered SEs, as the export's clearly_nonzero), "robust sd" (primary) and
+    "sd" (sensitivity). Where no placebo fits exist at the horizon the row has a blank
+    factor and counts, and `status` says why."""
+    from spirometry.export import toward_change
+
+    rows = []
+    for horizon, d in fits.items():
+        d = d[d.beta.notna() & (d.se > 0)]
+        single = (d.mixed_direction != "yes") & (d.upgrade_only != "yes")
+        toward = toward_change(d.beta, d.x, single)
+        z = d.beta / d.se
+        for patch in ["first", "second"]:
+            g = d.patch == patch
+            f = factors.get((horizon, patch))
+            for spread, col in SPREADS.items():
+                base = dict(patch=patch, horizon=horizon, spread=spread,
+                            n_tweaks=int(g.sum()))
+                if col is not None and f is None:
+                    rows.append(dict(base, factor=np.nan, n_placebo=np.nan,
+                                     n_clearly_nonzero=np.nan,
+                                     n_clearly_nonzero_with_direction=np.nan,
+                                     n_toward=np.nan,
+                                     status=f"missing: no placebo fits at {horizon}"))
+                    continue
+                factor = 1.0 if col is None else f[col.replace("_z", "")]
+                clear = g & ((z / factor).abs() > 2)
+                rows.append(dict(base, factor=factor,
+                                 n_placebo=np.nan if col is None else f["n_placebo"],
+                                 n_clearly_nonzero=int(clear.sum()),
+                                 n_clearly_nonzero_with_direction=int(
+                                     (clear & (toward != "")).sum()),
+                                 n_toward=int((clear & (toward == "yes")).sum()),
+                                 status="ok"))
+    return pd.DataFrame(rows, columns=[
+        "patch", "horizon", "spread", "factor", "n_placebo", "n_tweaks", "n_clearly_nonzero",
+        "n_clearly_nonzero_with_direction", "n_toward", "status"])
+
+
 # ------------------------------------------------------------------------------ power
 
 POWER_SEED = 20261007
@@ -495,7 +587,7 @@ def power_simulation(L, inflated, n_sim=1000, seed=POWER_SEED, planted=PLANTED,
 # ------------------------------------------------------------------------------ run
 
 def run(analysis="data/analysis", out=None, fits="h3", all_weeks="main",
-        specs=tuple(SPECS), n_sim=1000):
+        specs=tuple(SPECS), n_sim=1000, ref="reference"):
     """Every table, from the saved fits in `analysis`. Returns {name: DataFrame}; with `out`,
     writes `<name>.csv` there after the export's privacy check."""
     from spirometry.export import check_output
@@ -532,6 +624,15 @@ def run(analysis="data/analysis", out=None, fits="h3", all_weeks="main",
     if pairs is not None:
         t["spread"] = pd.concat([spread_table(dose_line(D, s), pairs).assign(spec=s)
                                  for s in specs], ignore_index=True)
+    if pp.exists():
+        fits_by_h = {horizon_label(D.get("max_week_after")): D}
+        if Dw is not None:
+            hw = horizon_label(Dw.get("max_week_after"))
+            if hw in fits_by_h:
+                raise ValueError(f"did_{fits} and did_{all_weeks} are both {hw}")
+            fits_by_h[hw] = Dw
+        t["calibrated_counts"] = calibrated_counts(
+            fits_by_h, placebo_factors_by_horizon(pd.read_parquet(pp), ref=ref))
     t["power"] = pd.concat(
         [power_simulation(dose_line(D, s), factors["robust sd by patch"], n_sim=n_sim)
          .assign(spec=s) for s in ("triage", PRIMARY)], ignore_index=True)
@@ -553,8 +654,9 @@ def main(argv=None):
     p.add_argument("--fits", default="h3", help="saved fit for the dose line: did_<fits>.parquet")
     p.add_argument("--all-weeks", default="main", help="all-weeks fit for the se table")
     p.add_argument("--n-sim", type=int, default=1000)
+    p.add_argument("--ref", default="reference", help="tweak_sizes.csv for the placebo pairs")
     a = p.parse_args(argv)
-    t = run(a.analysis, a.out, a.fits, a.all_weeks, n_sim=a.n_sim)
+    t = run(a.analysis, a.out, a.fits, a.all_weeks, n_sim=a.n_sim, ref=a.ref)
     for name, df in t.items():
         print(f"{name + '.csv':24s} {len(df):5d} rows")
     r = t["rulers"]
@@ -563,6 +665,14 @@ def main(argv=None):
     for s, row in ln.iterrows():
         print(f"  {s:36s} n {row.n1}+{row.n2}  slope1 {row.slope1:.3f} ± {row.se1:.3f}  "
               f"slope2 {row.slope2:+.3f} ± {row.se2:.3f}  z diff {row.z_diff:+.2f}")
+    if "calibrated_counts" in t:
+        print("\nclearly nonzero (toward the change / with a direction), by placebo spread:")
+        c = t["calibrated_counts"]
+        for r in c.itertuples():
+            n = ("missing" if r.status != "ok" else
+                 f"{r.n_clearly_nonzero:.0f} of {r.n_tweaks} ({r.n_toward:.0f} / "
+                 f"{r.n_clearly_nonzero_with_direction:.0f})")
+            print(f"  {r.horizon:10s} {r.patch:7s} {r.spread:10s} factor {r.factor:5.2f}  {n}")
     print(f"-> {a.out}/")
 
 

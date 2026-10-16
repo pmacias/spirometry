@@ -101,6 +101,7 @@ def _fit_rows(tw, rng, horizon=None):
                    after_week_max=weeks_after if horizon is None else horizon,
                    n_offers=int(n_tr * 40), n_singletons_dropped=int(rng.integers(0, 30)),
                    n_runs=int(n_tr * 12), n_treated_offers=n_tr,
+                   n_control_cards=60 + n_tr % 40,     # no rng draw: other draws unchanged
                    treated_rate_before=p0, treated_rate_after=p0 + beta + (c1 - c0),
                    control_rate_before=c0, control_rate_after=c1,
                    formula="picked ~ treat_post | card_id^upg + card_id^group + block^group"
@@ -220,7 +221,11 @@ def write_inputs(analysis_dir, ref_dir, seed=0, n_first=14, n_second=9):
 
 
 SAMPLE_BUILD_INFO = dict(parser_version="sample", pages_parsed="12", last_page="11",
-                         built_at_utc="2026-01-01T00:00:00+00:00")
+                         built_at_utc="2026-01-01T00:00:00+00:00",
+                         records_read="11234", duplicate_records_dropped="321",
+                         duplicates_with_different_content="0",
+                         solo_run_keys_multi_record="7", primary_offers_dedup_removed="150",
+                         solo_run_keys_retried="3", primary_run_keys_retried="2")
 # (start_time UTC, primary?): the primary runs span 2026-03-18 .. 2026-07-02; the
 # non-primary records (a playtest build, a run started before its build's release) lie
 # outside it, so the two ranges differ.
@@ -267,20 +272,29 @@ def _placebo_summary(rng):
     return pd.DataFrame(rows)
 
 
-def write_numbers_inputs(analysis_dir, results_dir, ref_dir, seed=0):
+def write_numbers_inputs(analysis_dir, results_dir, ref_dir, seed=0, triage_dir=None):
     """Everything spirometry.numbers reads, synthetic: write_inputs; the export into
     results_dir with a synthetic runs.duckdb (write_sample_db, beside results_dir), so
-    meta.json has a build stamp and play dates (and sample: true); the placebo summary;
-    spirometry.sensitivity's rulers, se_inflation and calibrated_counts tables in
-    analysis_dir/writeup; and a snapshot.log beside results_dir. Returns the tweak table."""
-    from spirometry import export, sensitivity as S
+    meta.json has a build stamp, play dates and dedup counts (and sample: true); the placebo
+    fits (all weeks) and diagnostics; spirometry.sensitivity's tables (sensitivity.run) in
+    analysis_dir/writeup; IV-primer-shaped tables; notebook 01's audit summary; synthetic
+    triage outputs (in triage_dir, default beside results_dir, under out_final/) and
+    spirometry.checks' design_checks.csv; and a snapshot.log beside results_dir. Returns the
+    tweak table."""
+    from spirometry import checks, did, export, sensitivity as S
 
     analysis_dir, results_dir = pathlib.Path(analysis_dir), pathlib.Path(results_dir)
+    ref_dir = pathlib.Path(ref_dir)
     rng = np.random.default_rng(seed + 1)
     tw = write_inputs(analysis_dir, ref_dir, seed=seed)
     db = write_sample_db(results_dir.parent / "sample_runs.duckdb")
     export.export(analysis_dir, results_dir, ref_dir, db=db, sample=True)
     write_snapshot_log(results_dir.parent / "snapshot.log")
+    (ref_dir / "card_changes.csv").write_text(
+        "card_id,stable_build,change_kind\n" + "".join(
+            f"{r.card_id},{r.stable_build},tweak\n" for r in tw.itertuples())
+        + "REWORKED,v0.103.2,rework\nREWORKED,v0.103.2,rework+cost_change\n"
+          "WORDING,v0.107.1,text_only\n")
 
     summary = _placebo_summary(rng)
     summary.to_csv(analysis_dir / "placebo_diagnostics_summary.csv", index=False)
@@ -291,23 +305,158 @@ def write_numbers_inputs(analysis_dir, results_dir, ref_dir, seed=0):
             f[c] = pd.to_numeric(f[c], errors="coerce")
         return S.prepare(f)
 
-    D, Dw = fits("h3"), fits("main")
-    factors = S.placebo_factors(summary)
-    out = analysis_dir / "writeup"
-    out.mkdir(exist_ok=True)
-    rulers = pd.concat([S.ruler_table(D, s) for s in S.SPECS], ignore_index=True)
-    se = pd.concat([S.se_inflation_table(S.dose_line(d, s), factors, label=f"{s}, {lab}")
-                    for s in S.SPECS
-                    for d, lab in [(D, "weeks 0-3 (did_h3)"), (Dw, "all weeks (did_main)")]],
-                   ignore_index=True)
-    for name, df in [("rulers", rulers), ("se_inflation", se)]:
-        df.insert(0, "fits", "did_h3")
-        df.to_csv(out / f"{name}.csv", index=False)
-    placebo = placebo_fits(D, rng)
-    factors = S.placebo_factors_by_horizon(placebo, ref=ref_dir)
-    S.calibrated_counts({"weeks 0-3": D, "all weeks": Dw}, factors).to_csv(
-        out / "calibrated_counts.csv", index=False)
+    D = fits("h3")
+    placebo = placebo_fits(D, rng).assign(min_offers=51, seed=0)
+    placebo["treated_rate_before"] = rng.uniform(0.05, 0.4, len(placebo))   # for the terciles
+    placebo["n_runs"] = rng.integers(20000, 70000, len(placebo))
+    placebo.to_parquet(analysis_dir / "placebo_main.parquet")
+    main = pd.read_parquet(analysis_dir / "did_main.parquet")
+    pvr = did.placebo_vs_real(main, placebo, ref=ref_dir)
+    pvr.to_csv(analysis_dir / "placebo_diagnostics_vs_real.csv", index=False)
+    did.placebo_vs_real_by_patch(pvr, placebo, ref=ref_dir).to_csv(
+        analysis_dir / "placebo_diagnostics_vs_real_by_patch.csv", index=False)
+    did.placebo_spread_by_feature(placebo, ref=ref_dir).to_csv(
+        analysis_dir / "placebo_diagnostics_spread_by_feature.csv", index=False)
+    second = pd.read_parquet(analysis_dir / "did_second_patch_checks.parquet")
+    second.to_parquet(analysis_dir / "second_patch_checks_h3.parquet")
+    S.run(analysis_dir, analysis_dir / "writeup", n_sim=20, ref=ref_dir)
+    write_iv_tables(analysis_dir / "writeup")
+    write_audit_summary(analysis_dir)
+    triage_dir = pathlib.Path(triage_dir or results_dir.parent / "triage")
+    write_triage_outputs(triage_dir / "out_final", D, rng)
+    rows, _ = checks.build(triage_dir, analysis_dir, results_dir,
+                           old_analysis=analysis_dir.parent / "no_old_tables")
+    rows.to_csv(analysis_dir / "writeup" / "design_checks.csv", index=False)
     return tw
+
+
+def write_iv_tables(out):
+    """spirometry.iv_sim's tables, in its columns, with made-up values."""
+    out = pathlib.Path(out)
+    q = ["naive", "itt", "first_stage", "iv"]
+    common = dict(F=5000.0, n_runs=50000, share_offered=0.3, share_picked=0.09,
+                  win_pickers=0.43, win_non_pickers=0.30)
+    pd.DataFrame([dict(quantity=k, label=k, estimate=e, se=s, truth=t, **common)
+                  for k, e, s, t in [("naive", 0.13, 0.008, 0.1), ("itt", 0.027, 0.005, np.nan),
+                                     ("first_stage", 0.3, 0.004, np.nan),
+                                     ("iv", 0.09, 0.015, 0.1)]]).to_csv(
+        out / "iv_sim_single.csv", index=False)
+    rng = np.random.default_rng(1)
+    pd.DataFrame(dict(draw=range(60), naive=rng.normal(0.133, 0.012, 60), naive_se=0.012,
+                      itt=0.03, itt_se=0.007, first_stage=0.3, fs_se=0.006, F=2500.0,
+                      iv=rng.normal(0.103, 0.025, 60), iv_se=0.024)).to_csv(
+        out / "iv_sim_draws.csv", index=False)
+    pd.DataFrame(dict(estimator=["naive", "iv"], mean=[0.133, 0.103],
+                      sd_across_draws=[0.012, 0.025], mean_reported_se=[0.012, 0.024],
+                      share_ci_covers_truth=[0.24, 0.94])).to_csv(
+        out / "iv_sim_draws_summary.csv", index=False)
+    pd.DataFrame(dict(pick_intercept=[-1, -6], first_stage=[0.3, 0.004], F=[650.0, 6.0],
+                      share_F_below_10=[0.0, 0.92], naive_median=[0.13, 0.14],
+                      naive_p10=[0.1, -0.29], naive_p90=[0.16, 0.38], iv_median=[0.09, -0.23],
+                      iv_p10=[0.04, -4.9], iv_p90=[0.16, 4.4])).to_csv(
+        out / "iv_sim_weak.csv", index=False)
+    pd.DataFrame(dict(case=["clean", "offer depends on skill"], naive=[0.13, 0.15],
+                      iv=[0.10, 0.17], first_stage=[0.3, 0.36], iv_bias=[0.003, 0.066])).to_csv(
+        out / "iv_sim_broken.csv", index=False)
+    pd.DataFrame(dict(quantity=["IV estimate", "true average effect, among runs that picked X",
+                                "true average effect, among all runs"],
+                      effect=[0.133, 0.129, 0.100])).to_csv(out / "iv_sim_het.csv", index=False)
+    pd.DataFrame(dict(skill_on_win=[0.0, 0.05], naive=[0.10, 0.13], iv=[0.10, 0.10],
+                      naive_bias=[0.0, 0.03], iv_bias=[0.003, 0.003])).to_csv(
+        out / "iv_sim_confounding.csv", index=False)
+
+
+AUDIT_ROWS = [  # key, value, unit (notebook 01's audit_summary.csv layout)
+    ("pages", 12, "count"), ("records", 11000, "count"), ("repeats_dropped", 234, "count"),
+    ("distinct_runs", 10980, "count"), ("distinct_runs_per_build_sum", None, "count"),
+    ("run_keys_in_several_builds", 7, "count"), ("primary_runs", 8000, "count"),
+    ("primary_share", 0.7286, "share"), ("lag_median_days", 16.8, "days"),
+    ("lag_share_over_30d", 0.44, "share"), ("thin_builds", 1, "count"),
+    ("groups_0_103_2_sd_z", 4.01, "z"), ("groups_0_103_2_spearman", 0.95, "corr"),
+    ("win_rate_v0_103_2_tagged", 0.27, "rate"), ("win_rate_v0_103_2_untagged", 0.20, "rate"),
+    ("win_rate_v0_103_2_gap", 0.07, "rate")]
+
+
+def write_audit_summary(analysis_dir):
+    """notebook 01's saved aggregates, made up: audit_summary.csv (its per-build distinct
+    sum equals the sample snapshot.log's total, as on the real tables),
+    audit_runs_per_build.csv and audit_upload_lag.csv."""
+    a = pathlib.Path(analysis_dir)
+    rows = [dict(key=k, label=k.replace("_", " "),
+                 value=SAMPLE_LOG_TOTAL[1] if v is None else v, unit=u,
+                 population="synthetic", definition="synthetic") for k, v, u in AUDIT_ROWS]
+    pd.DataFrame(rows).to_csv(a / "audit_summary.csv", index=False)
+    b = pd.DataFrame(BUILDS + [("v0.99.0", "2026-03-12"), ("v0.104.0", "2026-04-23")],
+                     columns=["build_id", "release"])
+    b["branch"] = np.where(b.build_id.isin(["v0.99.0", "v0.104.0"]), "beta", "stable")
+    b["runs"] = [3000, 2500, 1500, 4000, 300, 900]
+    b["primary"] = (b.runs * 0.73).round().astype(int)
+    b["records"], b["primary_finished"] = (b.runs * 1.3).astype(int), (b.primary * 0.8).astype(int)
+    b["thin"] = b.primary < 400
+    b.to_csv(a / "audit_runs_per_build.csv", index=False)
+    days = np.array([0, 1, 7, 30, 90, 180])
+    pd.DataFrame(dict(days=days, share_all=np.exp(-days / 60), share_tagged=np.exp(-days / 150),
+                      share_untagged=np.exp(-days / 20), n_all=8000, n_tagged=2000,
+                      n_untagged=6000)).to_csv(a / "audit_upload_lag.csv", index=False)
+
+
+def write_triage_outputs(out, D, rng):
+    """The triage scripts' saved CSVs (i, j, g3/g4, l), in their columns, made up from the
+    prepared fit D (did_h3): enough for spirometry.checks, no meaning."""
+    out = pathlib.Path(out)
+    out.mkdir(parents=True, exist_ok=True)
+    L = D[(D.mixed_direction != "yes") & (D.upgrade_only != "yes")]
+    sec = L[L.patch == "second"]
+    rows = []
+    for horizon in ["weeks 0-3", "all weeks"]:
+        for cp, t in sec.iterrows():
+            se = float(rng.uniform(0.005, 0.012))
+            b = float(rng.normal(0, 2 * se))
+            k = t.treated_rate_before * (1 - t.treated_rate_before)
+            rows.append(dict(card_patch_id=cp, card_id=t.card_id, color=t.color,
+                             horizon=horizon, x=t.x, beta=b, se=se, se_hc=se, beta_lo=b / k,
+                             se_lo=se / k, real_beta_lo=t.beta_lo, n_offers=100000,
+                             n_treated_offers=5000, n_control_cards=70, after_week_max=3,
+                             treated_rate_before=t.treated_rate_before))
+    pd.DataFrame(rows).to_csv(out / "i_fake_patch.csv", index=False)
+    pre = L.assign(pre_lo=rng.normal(0, 0.1, len(L)), pre_se_lo=0.08)
+    pre["pre_pp"], pre["pre_se_pp"], pre["pre_n"] = 100 * pre.pre_lo * 0.16, 1.3, 3000
+    pre["eff_pp"] = 100 * pre.beta
+    pre["opposes"] = np.sign(pre.pre_lo) == -np.sign(pre.x)
+    pre[["card_id", "patch", "x", "pre_lo", "pre_se_lo", "pre_pp", "pre_se_pp", "pre_n",
+         "beta_lo", "se_lo", "eff_pp", "opposes"]].rename_axis("card_patch_id").reset_index() \
+        .to_csv(out / "j_premove.csv", index=False)
+    pd.DataFrame([dict(model=m, patch=p, n=n, slope_x=1.4, se_x=0.2, pre_coef=pc, pre_se=ps,
+                       intercept=0.0, tau2=0.06)
+                  for m, p, n, pc, ps in [("effect ~ x", "first", 13, np.nan, np.nan),
+                                          ("effect ~ x + pre (declared)", "first", 13, 0.7, 0.5),
+                                          ("effect ~ x + pre (comparison only)", "second", 8,
+                                           -0.1, 0.3)]]).to_csv(out / "j_models.csv",
+                                                                 index=False)
+    pd.DataFrame([dict(week=w, n_tweaks=13, median_offers=900, slope=1.3 + 0.05 * w, se=0.22,
+                       intercept=0.0, tau2=0.05, slope_vs_week_m1=1.35, se_vs_week_m1=0.22)
+                  for w in range(6)]).to_csv(out / "j_weekly.csv", index=False)
+    g3 = []
+    for cp, t in L.iterrows():
+        for tfe in (False, True):
+            k = t.treated_rate_before * (1 - t.treated_rate_before)
+            b = float(t.beta + rng.normal(0, t.se))
+            g3.append(dict(card_patch_id=cp, card_id=t.card_id, patch=t.patch, x=t.x,
+                           token_fe=tfe, error="", beta=b, se_run=2.5 * t.se,
+                           se_tok=3.2 * t.se, beta_lo=b / k, se_lo=2.5 * t.se / k,
+                           se_lo_tok=3.2 * t.se / k, n_treated_before=300, n_treated_after=300))
+    pd.DataFrame(g3).to_csv(out / "g3_token_fits.csv", index=False)
+    pd.DataFrame([dict(window="w", patch=p, pseudo_card=f"P{i}", error="",
+                       beta=float(rng.normal(0, 0.03)), se_run=0.015, se_tok=0.02)
+                  for i, p in enumerate(["first", "second"] * 10)]).to_csv(
+        out / "g4_token_placebo.csv", index=False)
+    for scope, shift in [("other", 0.004), ("all", 0.003)]:
+        c = D.assign(beta=D.beta + shift * np.where(D.patch == "first", 1, 0),
+                     n_control_cards=280)
+        c["beta_lo"] = c.beta / (c.treated_rate_before * (1 - c.treated_rate_before))
+        c.rename_axis("card_patch_id").reset_index()[
+            ["card_patch_id", "beta", "se", "beta_lo", "se_lo", "n_control_cards"]].to_csv(
+            out / f"did_h3_ctrl_{scope}.csv", index=False)
 
 
 def placebo_fits(D, rng, n_cards=12, sd={"first": 4.5, "second": 2.2}, horizons=(None,)):

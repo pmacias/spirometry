@@ -7,7 +7,10 @@
 --db (read-only) fills meta.json's build stamp from build_info and the snapshot's play
 dates from the run tables: snapshot_start_date / snapshot_end_date = the first and last UTC
 start date over the primary population (play_dates_all_records: the same over every
-record). Aggregates only. --snapshot-end overrides the end date.
+record). Aggregates only. --snapshot-end overrides the end date. It also copies build_info's
+deduplication counts into meta.json's "dedup" (DEDUP_FIELDS: records read, exact repeats
+dropped and how many of them differed, solo run keys with several records, primary offers
+removed by run_key deduplication, retried solo and primary run keys).
 
 Reads what notebooks/02_pick_rate_did.ipynb and 03_anticipation.ipynb save in
 data/analysis/ (git-ignored):
@@ -383,6 +386,29 @@ def build_info(db):
 
 PLAY_DATES_POPULATION = "primary runs (runs.PRIMARY_RUN_FILTER on runs)"
 
+# build_info's deduplication counts (spirometry.runs), copied into meta.json's "dedup" with
+# --db: meta.json key -> build_info key.
+DEDUP_FIELDS = {
+    "records_read": "records_read",
+    "exact_repeats_dropped": "duplicate_records_dropped",
+    "exact_repeats_with_different_content": "duplicates_with_different_content",
+    "solo_run_keys_multi_record": "solo_run_keys_multi_record",
+    "primary_offers_dedup_removed": "primary_offers_dedup_removed",
+    "solo_run_keys_retried": "solo_run_keys_retried",
+    "primary_run_keys_retried": "primary_run_keys_retried",
+}
+
+
+def dedup_info(info):
+    """build_info's deduplication counts under DEDUP_FIELDS' names, as integers; a field
+    build_info lacks is left out (its reason goes in blank_reasons)."""
+    out = {}
+    for name, key in DEDUP_FIELDS.items():
+        v = str(info.get(key, "")).strip()
+        if v:
+            out[name] = int(float(v))
+    return out
+
 
 def _date(v):
     """A start_time (TIMESTAMP, or epoch seconds) -> 'YYYY-MM-DD' (UTC); '' when missing."""
@@ -438,11 +464,15 @@ def meta_info(db, snapshot_end, inputs, skipped, notes, horizon_label):
                                        "run tables" if dates.get("end") else ""),
              play_dates_all_records=dict(start=dates.get("all_start", ""),
                                          end=dates.get("all_end", "")),
+             dedup=dedup_info(info),
              horizon=horizon_label)
     for k in ["parser_version", "snapshot_pages", "snapshot_last_page",
               "tables_built_at_utc"]:
         if not m[k]:
             blank[k] = why
+    for k in DEDUP_FIELDS:
+        if k not in m["dedup"]:
+            blank[f"dedup.{k}"] = why
     for k in ["snapshot_start_date", "snapshot_end_date"]:
         if not m[k]:
             blank[k] = why_dates

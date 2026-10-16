@@ -20,14 +20,19 @@ J3  per post-release week w inside v0.103.2 (weeks 0..5 are complete before v0.1
 J4  as J1 for patch 2's 14 tweaks: movement from week -3 to week -1 (= -coef(week -3)).
 
 Read-only; runs in a second.    python triage/scripts/j_reversion.py
+
+Writes (added for the final-table rerun; TRIAGE_OUT sets the folder, TRIAGE_AN the fits):
+j_premove.csv (J1 and J4: one row per line tweak, patch column), j_models.csv (J2's models
+and J4's comparison model) and j_weekly.csv (J3). Card-level estimates only.
 """
+import os
 import sys
 
 import numpy as np
 import pandas as pd
 
 sys.path.insert(0, "triage/scripts")
-from common import AN, all_tweaks, fit, on_line  # noqa: E402
+from common import AN, OUT, all_tweaks, fit, on_line  # noqa: E402
 
 pd.set_option("display.width", 220)
 ES = pd.read_parquet(f"{AN}/event_studies.parquet")
@@ -76,6 +81,16 @@ def report_pre(d, label):
 D1 = premove("first", -4)
 report_pre(D1, "J1: patch 1, movement week -4 -> -1 (log-odds), next to the weeks 0-3 effect")
 
+MODELS = []
+
+
+def model(name, patch, b, c, n, tau2=None, pre=True):
+    s = np.sqrt(np.diag(c))
+    MODELS.append(dict(model=name, patch=patch, n=n, slope_x=b[1], se_x=s[1],
+                       pre_coef=b[2] if pre else np.nan, pre_se=s[2] if pre else np.nan,
+                       intercept=b[0], tau2=np.nan if tau2 is None else tau2))
+
+
 # J2
 print("\n== J2: patch 1, beta_lo ~ 1 + x + pre (random-effects meta-regression)")
 X0 = np.column_stack([np.ones(len(D1)), D1.x])
@@ -83,6 +98,8 @@ b0, c0, t0, Q0, df0 = fit(D1.beta_lo, D1.se_lo, X0)
 X = np.column_stack([np.ones(len(D1)), D1.x, D1.pre_lo])
 b, c, t2, Q, dof = fit(D1.beta_lo, D1.se_lo, X)
 s, s0 = np.sqrt(np.diag(c)), np.sqrt(np.diag(c0))
+model("effect ~ x", "first", b0, c0, len(D1), t0, pre=False)
+model("effect ~ x + pre (declared)", "first", b, c, len(D1), t2)
 print(f"without pre: slope on x {b0[1]:.3f} ± {s0[1]:.3f}; tau2 {t0:.4f}")
 print(f"with pre:    slope on x {b[1]:.3f} ± {s[1]:.3f}; pre coefficient {b[2]:+.3f} ± {s[2]:.3f} "
       f"(z {b[2] / s[2]:+.2f}); intercept {b[0]:+.3f} ± {s[0]:.3f}; tau2 {t2:.4f}")
@@ -98,12 +115,14 @@ for cp in D1s.index:
     D1s.loc[cp, "pre_slope_lo"] = 3 * (ww * (wk - xm) * cf).sum() / (ww * (wk - xm) ** 2).sum() / D1s.loc[cp, "k"]
 Xs = np.column_stack([np.ones(len(D1s)), D1s.x, D1s.pre_slope_lo])
 bs, cs, ts_, *_ = fit(D1s.beta_lo, D1s.se_lo, Xs)
+model("effect ~ x + 3 x pre-slope (weeks -5..-1)", "first", bs, cs, len(D1s), ts_)
 print(f"sensitivity, pre = 3 x weighted slope over weeks -5..-1 (ref cell at 0): slope on x "
       f"{bs[1]:.3f} ± {np.sqrt(cs[1, 1]):.3f}; pre coefficient {bs[2]:+.3f} ± {np.sqrt(cs[2, 2]):.3f}")
 # leave out the largest |pre|
 o = D1.pre_lo.abs().idxmax()
 m = D1.index != o
 bl, cl, *_ = fit(D1.beta_lo[m], D1.se_lo[m], X[m])
+model(f"declared, without {D1.loc[o, 'card_id']} (largest |pre|)", "first", bl, cl, int(m.sum()))
 print(f"without the largest |pre| ({D1.loc[o, 'card_id']}): slope on x {bl[1]:.3f} ± {np.sqrt(cl[1, 1]):.3f}; "
       f"pre {bl[2]:+.3f} ± {np.sqrt(cl[2, 2]):.3f}")
 
@@ -145,6 +164,16 @@ print(f"weeks 0-5: weighted trend of the weekly slope {tr:+.3f} per week (weekly
 D2 = premove("second", -3)
 report_pre(D2, "J4: patch 2, movement week -3 -> -1 (log-odds), next to the weeks 0-3 effect")
 X2 = np.column_stack([np.ones(len(D2)), D2.x, D2.pre_lo])
-b2, c2, *_ = fit(D2.beta_lo, D2.se_lo, X2)
+b2, c2, t22, *_ = fit(D2.beta_lo, D2.se_lo, X2)
+model("effect ~ x + pre (comparison only)", "second", b2, c2, len(D2), t22)
 print(f"for comparison only (14 points): beta_lo ~ 1 + x + pre: slope on x {b2[1]:+.3f} ± "
       f"{np.sqrt(c2[1, 1]):.3f}; pre {b2[2]:+.3f} ± {np.sqrt(c2[2, 2]):.3f}")
+
+os.makedirs(OUT, exist_ok=True)
+cols = ["card_id", "patch", "x", "pre_lo", "pre_se_lo", "pre_pp", "pre_se_pp", "pre_n", "beta_lo",
+        "se_lo", "eff_pp", "opposes"]
+pd.concat([D1[cols], D2[cols]]).rename_axis("card_patch_id").reset_index().to_csv(
+    f"{OUT}/j_premove.csv", index=False)
+pd.DataFrame(MODELS).to_csv(f"{OUT}/j_models.csv", index=False)
+J3.to_csv(f"{OUT}/j_weekly.csv", index=False)
+print(f"-> {OUT}/j_premove.csv, j_models.csv, j_weekly.csv")

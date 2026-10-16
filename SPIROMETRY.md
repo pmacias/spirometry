@@ -79,7 +79,9 @@ affiliated with Mega Crit.
   - **Snapshot complete (2026-10-04).** The export reached its end on 2026-10-04 12:22 PDT:
     2,071 pages (files 0–2,070; `snapshot.log` numbers pages from 1, so its last line says
     "page 2071", a short page of 668 runs). `--count-only` (same log): 2,069,493 records,
-    including the 75,996 repeats below; 1,525,369 distinct by (seed, start_time); 345,006
+    including the 75,996 repeats below; 1,525,369 distinct by (seed, start_time) counted within
+    each build and summed (40 runs carry two build ids and count twice; distinct over all
+    builds: 1,525,329, the count the field guide prints); 345,006
     with a `player_token`. Run tables: built on 2026-10-02 from 1,873 pages (0–1,872,
     1,871,830 records; the fits in `data/analysis_p1873/`), and on 2026-10-09 21:18 UTC from all 2,071
     pages (2,069,493 records read, 75,996 repeats dropped, 0 pages failed). Size on disk not
@@ -1420,8 +1422,9 @@ v0.103.2's ten only), so this is mainly selection, possibly
 larger after June (different builds and upload timing, so not a clean comparison). A
 typical gap of 4–6 points (3.8 and 5.6 on the 2,071 pages) is as large as many patch effects: pick-rate estimates are made
 within uploader group or with it as a covariate, pooled as a robustness check. Tagged
-players also win about 8 points more (v0.103.2, finished runs: 0.27 against 0.20; 1,513 pages,
-not printed by the notebook, so not rechecked).
+players also win about 7–8 points more (finished primary runs, 2,071 pages, notebook 01's saved
+summary: v0.103.2 0.267 against 0.198, 26,093 and 79,962 runs; all builds 0.277 against 0.197;
+1,513 pages: 0.27 against 0.20).
 
 **Win rates drift within a build.** In v0.103.2 alone (same card versions throughout), the
 win rate of finished primary runs fell from April to May in both groups (2,071 pages, weeks
@@ -1455,7 +1458,7 @@ the drift either way.
   pages had 4,641 records and 4,279 distinct (seed, start_time): about 8% co-op
   duplicates. On the first 1,513 pages: 1,435,841 records (after the repeated pages),
   1,100,090 distinct runs; solo runs are 79% of distinct runs (869,780). On all 2,071 pages:
-  1,993,497 records, 1,525,329 distinct runs, 79% solo (1,204,223). `scripts/snapshot_export.py` reports a `dedup` column on this key; raw `runs` counts
+  1,993,497 records, 1,525,329 distinct runs, 79% solo (1,204,223). `scripts/snapshot_export.py` reports a `dedup` column on this key, counted within each build (its total, 1,525,369, counts the 40 runs recorded under two build ids twice; per-build counts agree with the audit's for every released build); raw `runs` counts
   are upper bounds. Whether the unit of analysis is the run or the player-run gets decided
   at parsing (a co-op run has one outcome but several players' choices).
 - **Player IDs.** Solo runs use `player_id: 1` (checked 2026-10-07 on every block of 100
@@ -1523,7 +1526,7 @@ the drift either way.
   `submitted_at` — players often upload their whole history folder at once (the
   SlayTheStats mod does exactly that). This also means early builds can keep gaining runs
   late in the export.
-- **Runs dated before their build's release.** 9,829 runs (~0.6% of distinct runs, 2,071 pages; 1,513 pages: 8,046, ~0.7%) start before
+- **Runs dated before their build's release.** 9,829 records (~0.6% of distinct runs; 6,896 distinct runs, 0.45%, in notebook 01's saved summary; 2,071 pages; 1,513 pages: 8,046, ~0.7%) start before
   their build's `release_date`, by 1 day up to ~4.5 months (median a few days). Most likely saved on the old
   build and finished after an update, so their early floors may be on the old card
   versions. Filter: start date (UTC) ≥ release date (`runs.before_release`). Runs that

@@ -296,6 +296,7 @@ controls, Reflect informative for anticipation) are listed there.*
 3. **Dose-response on pick rate:** effect against change size.
 4. **Win effects within a build:** intent-to-treat (offered → win), then IV (effect of
    picking, with the offer as instrument).
+   *Future work, not planned (Phil, 2026-10-16): the power check (item 15 task 9) is not run.*
 5. **Strength change across a patch:** IV estimates pre vs. post, net of unchanged cards.
    *Future work, not planned for field guide v2: run only if step 4's power check shows
    per-card IV errors far smaller than predicted (decision log 2026-10-09).*
@@ -328,6 +329,15 @@ provisional.
 `writeup/OUTLINE.md` (15 chapters and four appendices, glossary, readiness), `writeup/main.typ`,
 `style.typ` and stub chapters; `python -m spirometry.writeup build` compiles a 21-page stub
 PDF on the final numbers.json (typst 0.15.0, the `writeup` extra). Chapters next (task 12).*
+*Scope (Phil, 2026-10-16): the project ends with field guide v2; win effects (task 9), the
+release step and publishing are future work. Task A (CC, 2026-10-16), the code side of the
+whole guide: notebook 01 saves its aggregates; the export copies build_info's dedup counts;
+distinct runs settled (1,525,329); weeks 0–3 placebo tooling; the triage's design checks
+rerunnable on the final tables (`triage/out_final/`) and summarised by `spirometry.checks`;
+numbers keys for every chapter (123 → about 6,050 on the final outputs); one run script
+(`scripts/writeup/phil_runs.sh`, not yet run) and the figure script
+(`scripts/writeup/figures.py`, 25 figures, tested on synthetic outputs only). Task B writes
+the whole guide.*
 
 ## Next up
 1. ~~Review and merge the card-decisions + mod-entity PR; rerun the full build and read
@@ -344,8 +354,8 @@ PDF on the final numbers.json (typst 0.15.0, the `writeup` extra). Chapters next
    Phase 3) ~~and copy `data/analysis/` to `data/analysis_p1873/`~~ (done 2026-10-09)
    ~~and rerun notebooks 01–05, the placebo calibration, the export and the sensitivity
    tables on the final tables~~ (done 2026-10-10, item 15 task 8; numbers in SPIROMETRY.md,
-   nothing moved by more than one SE from the 1,873-page fits). Left: task 7's scripts, once
-   built. The audit notebook still reads the interim `data/audit/` tables (rebuilt on all
+   nothing moved by more than one SE from the 1,873-page fits). Task 7 is replaced by the
+   triage reruns in `scripts/writeup/phil_runs.sh` (2026-10-16; not yet run). The audit notebook still reads the interim `data/audit/` tables (rebuilt on all
    2,071 pages in the rerun); moving it onto the run tables is not planned.
 6. Phase 4: review the treatment tables (`notes/treatment_table.md`). (The rebuild with
    `offers_with_version` and the deduplicated `primary_offers` is done.)
@@ -451,9 +461,16 @@ PDF on the final numbers.json (typst 0.15.0, the `writeup` extra). Chapters next
       before-block variants at weeks 0–3 go to `second_patch_checks_h3.parquet`
       (`second_patch_checks` takes `max_week_after`). Cells 27 and 41 print uploader run
       counts only, no hashed IDs; their outputs are cleared. No other cell changed.*
-   7. Scripts for the run-level pieces: fake patch, control scope at weeks 0–3, token subset
+   7. ~~Scripts for the run-level pieces: fake patch, control scope at weeks 0–3, token subset
       and stayers, slope by week, the pre-declared aggregates, per-group dose lines; each
-      states its spec and prediction before it runs (CC).
+      states its spec and prediction before it runs (CC).~~ *Replaced (Phil, 2026-10-16) by
+      rerunning the triage's own scripts on the final tables (task A, part 6): fake patch
+      (I), regression to the mean and slope by week (J), token subset (G3/G4), control scope
+      at weeks 0–3 (L), all into `triage/out_final/` by `scripts/writeup/phil_runs.sh`; the
+      per-group dose lines come from notebook 02's saved tagged / untagged fits
+      (`sensitivity.group_line_table`, already on the final tables). Not rerun: stayers (no
+      script exists) and the pre-declared aggregates (H; not among the five checks; printed
+      in TRIAGE.md on the 1,873-page tables only). Not yet run (Phil).*
    8. Copy `data/analysis/` to `data/analysis_p1873/`; final rerun of notebooks 01–05,
       placebo, export and the scripts of 5 and 7 (Phil). *`scripts/final_rerun.sh` (CC,
       2026-10-09, not run): audit extract, notebooks 01–05, placebo calibration and
@@ -464,8 +481,10 @@ PDF on the final numbers.json (typst 0.15.0, the `writeup` extra). Chapters next
       *Run by Phil 2026-10-09/10 (log `logs/final_rerun.log`): 5,852 s, every step
       finished, no fit errors; notebook 02 2,642 s, placebo 2,569 s. Done except the
       scripts of 7, which follow when built.*
-   9. Win effects: power check on a few cards of one build with a stop rule; continue to all
-      cards of v0.107.1 only if it passes (CC script; Phil runs and decides).
+   9. ~~Win effects: power check on a few cards of one build with a stop rule; continue to all
+      cards of v0.107.1 only if it passes (CC script; Phil runs and decides).~~ *Future work,
+      not planned (Phil, 2026-10-16). Chapter 13 teaches instruments with the IV simulation
+      only.*
    10. spirometry.numbers: the generated numbers table, with staleness and privacy checks (CC).
        Built (CC, 2026-10-14): python -m spirometry.numbers --analysis data/analysis --results 
        results --out writeup/numbers.json writes numbers.json and numbers.csv (git-ignored). 
@@ -487,6 +506,19 @@ PDF on the final numbers.json (typst 0.15.0, the `writeup` extra). Chapters next
        (did.placebo_all, max_week_after=3, about 45 min). Uncalibrated keys renamed
        did.<h>.<patch>.uncalibrated.*. Phil reruns the export (--db), sensitivity and
        numbers before numbers.json has the new keys.
+       *Task A (CC, 2026-10-16): distinct runs settled: the guide prints 1,525,329 (the
+       audit's distinct (seed, start_time)); `--count-only`'s 1,525,369 sums distinct runs
+       within each build, and 40 runs carry two build ids (per-build counts identical in both
+       sources for all 26 released builds). Keys `snapshot.distinct_runs`,
+       `snapshot.distinct_runs_per_build_sum`, `snapshot.runs_in_several_builds`, with a
+       guard that the audit's per-build sum equals the log's total. Weeks 0–3 placebos:
+       `did.placebo_run` saves `placebo_h3.parquet` beside `placebo_main.parquet`, and
+       `sensitivity.load_placebo_fits` reads both, so the weeks 0–3 calibrated counts and
+       `placebo.h3.*` appear after Phil's run (synthetic test passes). Keys for every chapter
+       the saved outputs supply: on the final outputs (sensitivity and checks written to a
+       scratch copy) 6,024 keys, 5,901 new; the families are in the module docstring.
+       Missing until the run: the weeks 0–3 calibrated counts and placebo spread, the
+       dedup counts.*
    11. ~~Write-up skeleton: Typst, boxes, chapter stubs, generated numbers appendix, lint for
       hand-typed numbers, one build command (CC).~~ *Done (CC, 2026-10-14).*
       - *`writeup/OUTLINE.md`: for each chapter, its question, terms in order, analogies,
@@ -509,16 +541,20 @@ PDF on the final numbers.json (typst 0.15.0, the `writeup` extra). Chapters next
         21 pages on the final numbers.json.*
       - *Tests: `tests/test_writeup.py`.*
    12. Chapters 0–3 draft, for a voice check before the rest (CC drafts; Phil reads).
-   13. Figure script for every figure (CC; Phil runs it and looks).
+   13. Figure script for every figure (CC; Phil runs it and looks). *Built (CC, 2026-10-16):
+       `scripts/writeup/figures.py`, the 25 figures of OUTLINE.md that saved outputs supply
+       (all but `fig_power_check`, task 9), tested on synthetic outputs; not run on real data.*
    14. Remaining chapters in four PRs; Phil writes the "what was found" passages and the
-      conclusion (CC drafts).
+      conclusion (CC drafts). *Replaced (Phil, 2026-10-16): task B, CC writes the whole guide,
+      "what was found" passages and conclusion included; Phil's review is reading the PDF.*
    15. Docs: final numbers into SPIROMETRY.md, README and PLAN (CC). *Pick-rate,
       anticipation, placebo and audit numbers updated 2026-10-10 from the final rerun; redo
       for anything the later tasks add.*
       Tests: 210 passed, 5 skipped (smoke tests need real data), run locally 2026-10-14. 
       The cloud sandbox can’t read reference/raw/, so the parser, patch-history and treatment 
       tests only run locally.
-   16. Only if Phil decides to publish: release checklist (item 12), then publish (Phil).
+   16. ~~Only if Phil decides to publish: release checklist (item 12), then publish (Phil).~~
+      *Future work, not planned (Phil, 2026-10-16).*
 
 ## Decision log
 - Spire Codex export is the primary source; sts2runs.com only for cross-checks.
@@ -1222,3 +1258,59 @@ PDF on the final numbers.json (typst 0.15.0, the `writeup` extra). Chapters next
     (`#check(([q], [a]), ...)`), and Appendix A collects them, so they can't drift apart.
   - Chapters are numbered from 0, as in v1; sections are unnumbered.
   - typst from PyPI, pinned at 0.15.0 in the `writeup` extra.
+- Field guide v2 scope (Phil, 2026-10-16):
+  - The project ends with field guide v2. Item 15 task 9 (win-effect power check), the release
+    step and publishing are future work, not planned. Task 7 is replaced by rerunning the
+    triage's scripts on the final tables (task A, part 6).
+  - CC writes the whole guide, "what was found" passages and the conclusion included; Phil's
+    review is reading the PDF. Replaces the task 14 split of 2026-10-09.
+  - Chapter 12: the triage checks never rerun on the final tables (fake patch, regression to
+    the mean, token subset, control scope at weeks 0–3, per-group dose lines) are rerun by
+    their existing scripts where that is cheap; any that can't be are printed from
+    `triage/out/` with numbers labelled "1,873-page tables".
+  - Chapter 13 teaches instruments with the IV simulation; real win effects are future work.
+  - The weeks 0–3 placebo run stays: it supplies the calibrated "clearly nonzero" counts at
+    the primary horizon.
+- Field guide task A (CC's choices, open to review, 2026-10-16):
+  - Distinct runs: the guide prints the audit's 1,525,329 (a run counted once whatever its
+    build); `--count-only`'s 1,525,369 counts distinct (seed, start_time) within each build
+    and sums, so the 40 runs recorded under two build ids count twice. Shown from the code
+    (`snapshot_export.count`'s per-build sets) and the logs (per-build counts equal in
+    `snapshot.log` and notebook 01's output for all 26 released builds); notebook 01's saved
+    summary confirms it (40 keys in several builds). The run tables' own distinct count
+    (`run_key` with characters and ascension, parser 1.6.0) is not in `build_info` and is not
+    used.
+  - Notebook 01 saves `audit_summary.csv` (one row per number: key, label, value, unit,
+    population, definition), `audit_runs_per_build.csv` and `audit_upload_lag.csv` (the two
+    chapter 1 figures). Run counts use distinct runs (the funnel's `d`); upload lag, thin
+    builds and fast wins use records, as the cells that print them. Tagged against untagged
+    win rate: finished primary runs, all builds and v0.103.2.
+  - The CSVs were first written by running the notebook's code cells as a script (this
+    sandbox can't start a Jupyter kernel); the run script reruns the notebook (18 s) so its
+    outputs match.
+  - Export: `meta.json` gets `dedup` (records read, exact repeats and how many differed, solo
+    multi-record keys, primary offers removed by dedup, retried solo and primary keys) from
+    `build_info` with `--db`; missing fields are listed in `blank_reasons`.
+  - Weeks 0–3 placebos: one file per horizon (`placebo_main.parquet`, `placebo_h3.parquet`,
+    named by `did.placebo_file`); `sensitivity.load_placebo_fits` refuses a file whose rows
+    are another horizon. The se-inflation and spread tables keep using the all-weeks fits.
+  - Triage scripts: paths by environment variable (`TRIAGE_AN`, `TRIAGE_OUT`, `TRIAGE_DB`,
+    `TRIAGE_COLORS=reference` for `reference/raw/cards.json`'s colors, as the saved fits);
+    defaults unchanged, so the triage record still reruns as it was. `j_reversion.py` now
+    also saves its tables; `i_fake_patch.py` reads the second patch's placebo robust sd from
+    the same tables' summary (2.07) instead of the 1,873-page 2.09. The run script checks
+    `triage/out/` is unchanged. Printout-only scripts (`g3_analysis.py`, `l_compare.py`) don't
+    stop the run.
+  - `spirometry.checks` summarises the checks for the numbers table (the triage's
+    definitions); a check comes from `triage/out_final/` when all its files are there and
+    newer than the tables, else `triage/out/` (1,873 pages), and each row says which; the
+    1,873-page comparisons use `data/analysis_p1873/`. The fake patch's expected count uses
+    the summary's share of |z| > 2 (5.5 of 14 on 1,873 pages, where TRIAGE.md's 6.1 used a
+    different pair set).
+  - Numbers keys: one family per tweak (`tweak.<card>.<stable build>.*`, about 60 keys each)
+    rather than only the cards OUTLINE.md names, so a chapter can use any tweak; a field
+    blank in its source gets no key. Placebo fits are read for `min_offers` only.
+  - Figures: matplotlib, the dashboard's colors and shapes; card examples default to Parry
+    and Corrosive Wave; `fig_event_study`'s second card is the steepest pre-trend
+    (|slope / se|); `fig_forest` draws the placebo-scaled interval with the weeks 0–3 factor
+    when it exists, else the all-weeks one, and says which.

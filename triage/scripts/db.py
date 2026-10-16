@@ -11,15 +11,20 @@ did.card_colors at it (a monkeypatch in this process only; src/ is not edited). 
 checked by reproducing saved did_h3 fits to the last digit (i_fake_patch.py --check).
 
 Nothing here prints or writes run-level IDs.
+
+For the final-table rerun (scripts/writeup/phil_runs.sh, outside the triage's sandbox):
+TRIAGE_COLORS=reference makes use_derived_colors() a no-op, so did.card_colors reads
+reference/raw/cards.json as the saved fits did; TRIAGE_DB overrides the database path.
 """
 import functools
+import os
 
 import duckdb
 import pandas as pd
 
 from spirometry import did
 
-DB = "data/runs/runs.duckdb"
+DB = os.environ.get("TRIAGE_DB", "data/runs/runs.duckdb")
 CHARS = {f"CHARACTER.{c.upper()}": c for c in did.CHARACTER_COLORS}
 
 
@@ -57,6 +62,8 @@ def derived_colors(ref=None):
 
 
 def use_derived_colors():
+    if os.environ.get("TRIAGE_COLORS") == "reference":
+        return did.card_colors()
     did.card_colors = derived_colors
     return derived_colors()
 

@@ -2,13 +2,21 @@
 dose rulers, and a meta-regression wrapper that also returns the coefficient covariance.
 
 Read-only: data/analysis/did_*.parquet and reference/tweak_sizes.csv. No run-level data.
+
+Paths (added for the final-table rerun, scripts/writeup/phil_runs.sh; defaults are the
+triage's): TRIAGE_AN = the saved fits read (default data/analysis), TRIAGE_OUT = where the
+scripts write and the analysis scripts read their CSVs (default triage/out, the 1,873-page
+record; the rerun uses triage/out_final).
 """
+import os
+
 import numpy as np
 import pandas as pd
 
 from spirometry.meta import meta_regression
 
-AN = "data/analysis"
+AN = os.environ.get("TRIAGE_AN", "data/analysis")
+OUT = os.environ.get("TRIAGE_OUT", "triage/out")
 REF = "reference"
 SECOND_BEFORE = "v0.103.3"
 C_DIFF = np.array([0.0, 0.0, -1.0, 1.0])     # slope_second - slope_first in "slope per patch"

@@ -21,6 +21,9 @@ the real treated card left out (did._subset(pseudo=...)), weeks 0-3, both cluste
     python triage/scripts/g3_token_subset.py --all                (38 tweaks + placebo)
 Writes triage/out/g3_token_fits.csv and triage/out/g4_token_placebo.csv (card-level
 estimates and counts; no token or run IDs).
+
+Final-table rerun (scripts/writeup/phil_runs.sh): TRIAGE_OUT sets the output folder
+(triage/out_final); see common.py and db.py.
 """
 import argparse
 import os
@@ -35,7 +38,7 @@ import pyfixest as pf
 
 sys.path.insert(0, "triage/scripts")
 import db  # noqa: E402
-from common import all_tweaks, on_line  # noqa: E402
+from common import OUT, all_tweaks, on_line  # noqa: E402
 from spirometry import did  # noqa: E402
 
 N_PSEUDO, SEED, MIN_PSEUDO = 5, 20261008, 200
@@ -112,7 +115,7 @@ print(f"total {time.time() - t0:.0f} s; mean fit {R.fit_s.mean():.1f} s; errors 
 pd.set_option("display.width", 220)
 print(R.drop(columns=["fit_s"]).round(4).to_string(index=False))
 if args.all:
-    os.makedirs("triage/out", exist_ok=True)
-    R.drop(columns="fit_s").to_csv("triage/out/g3_token_fits.csv", index=False)
+    os.makedirs(OUT, exist_ok=True)
+    R.drop(columns="fit_s").to_csv(f"{OUT}/g3_token_fits.csv", index=False)
     if prow:
-        pd.DataFrame(prow).to_csv("triage/out/g4_token_placebo.csv", index=False)
+        pd.DataFrame(prow).to_csv(f"{OUT}/g4_token_placebo.csv", index=False)

@@ -899,6 +899,28 @@ def placebo_all(con, *, tweaks=None, max_cards_per_window=20, seed=0, min_offers
     return pd.DataFrame(rows).reindex(columns=PLACEBO_COLUMNS)
 
 
+def placebo_file(max_week_after=None):
+    """The saved placebo fits' file name for a horizon: all weeks (the 2026-10-02 run) is
+    placebo_main.parquet, weeks 0-k is placebo_h<k>.parquet (as did_main / did_h3)."""
+    return ("placebo_main.parquet" if max_week_after is None
+            else f"placebo_h{int(max_week_after)}.parquet")
+
+
+def placebo_run(con, analysis, max_week_after=None, **kwargs):
+    """placebo_all with the 2026-10-02 settings (same-color controls, 20 pseudo cards per
+    tweak, seed 0; kwargs override them) at one horizon, saved in `analysis` under
+    placebo_file(max_week_after), beside the other horizon's file, so
+    spirometry.sensitivity's calibrated counts read both. Returns the rows."""
+    kw = dict(max_cards_per_window=20, seed=0, **kwargs)
+    if max_week_after is not None:
+        kw["max_week_after"] = max_week_after
+    out = placebo_all(con, **kw)
+    path = pathlib.Path(analysis) / placebo_file(max_week_after)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    out.to_parquet(path)
+    return out
+
+
 MIN_PLACEBO_CARDS = 5     # placebo_vs_real: fewer placebo pairs in a window -> blank
 PAIR_KEY = ["color", "before_builds", "after_builds", "fit_on", "pseudo_card"]
 PAIR_MEAN = ["beta", "se", "z", "se_hc", "se_iid", "n_runs", "n_offers", "n_treated_offers",

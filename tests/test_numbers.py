@@ -21,7 +21,7 @@ def dirs(tmp_path):
 
 def build(dirs, **kw):
     return N.build(*dirs, allow_sample=True, snapshot_log=dirs[1].parent / "snapshot.log",
-                   **kw)
+                   ref=dirs[0].parent / "ref", **kw)
 
 
 def test_formatting():
@@ -97,7 +97,7 @@ def test_expected_keys_and_values(dirs):
     assert not any(key.startswith("did.h3.first.calibrated") for key in k.index)
     assert {m["keys"] for m in header["missing"]} == {
         f"did.h3.{pt}.{s}.*" for pt in ["first", "second"]
-        for s in ["calibrated", "calibrated_plain_sd"]}
+        for s in ["calibrated", "calibrated_plain_sd"]} | {"placebo.h3.*"}
     assert all("weeks 0-3" in m["reason"] for m in header["missing"])
 
 
@@ -128,7 +128,8 @@ def test_writes_json_and_csv(dirs, tmp_path):
 def test_cli(dirs, tmp_path, capsys):
     out = tmp_path / "w" / "numbers.json"
     N.main(["--analysis", str(dirs[0]), "--results", str(dirs[1]), "--out", str(out),
-            "--snapshot-log", str(dirs[1].parent / "snapshot.log"), "--allow-sample"])
+            "--snapshot-log", str(dirs[1].parent / "snapshot.log"), "--allow-sample",
+            "--ref", str(dirs[0].parent / "ref")])
     assert out.exists() and out.with_suffix(".csv").exists()
     assert "numbers" in capsys.readouterr().out
 
@@ -214,7 +215,7 @@ def test_snapshot_log_guards(dirs):
 
 def test_read_snapshot_log(tmp_path):
     log = sample_results.write_snapshot_log(tmp_path / "s.log", pages=7)
-    assert N.read_snapshot_log(log) == (7, sample_results.SAMPLE_LOG_TOTAL[0])
+    assert N.read_snapshot_log(log) == (7, *sample_results.SAMPLE_LOG_TOTAL)
 
 
 def test_uncalibrated_rows_must_match_pick_rate(dirs):
@@ -226,21 +227,111 @@ def test_uncalibrated_rows_must_match_pick_rate(dirs):
         build(dirs)
 
 
-def test_weeks_0_3_calibrated_keys_when_placebos_exist(dirs):
+def test_weeks_0_3_keys_once_the_placebo_run_exists(dirs):
+    # Part 4 end to end: weeks 0-3 placebo fits saved as placebo_h3.parquet (beside
+    # placebo_main), sensitivity rerun, numbers rebuilt: the weeks 0-3 calibrated counts,
+    # the weeks 0-3 placebo spread and each tweak's weeks 0-3 calibrated z appear, and
+    # nothing is missing but the dedup counts (the sample meta.json has them: none).
     from spirometry import sensitivity as S
     a, r = dirs
     ref = a.parent / "ref"
-    D = {}
-    for name in ["h3", "main"]:
-        f = pd.read_parquet(a / f"did_{name}.parquet")
-        for col in ["log_ratio", "upgraded_log_ratio", "direction"]:
-            f[col] = pd.to_numeric(f[col], errors="coerce")
-        D[name] = S.prepare(f)
+    f = pd.read_parquet(a / "did_h3.parquet")
+    D = S.prepare(f)
     rng = np.random.default_rng(0)
-    placebo = sample_results.placebo_fits(D["h3"], rng, horizons=(None, 3))
-    S.calibrated_counts({"weeks 0-3": D["h3"], "all weeks": D["main"]},
-                        S.placebo_factors_by_horizon(placebo, ref=ref)).to_csv(
-        a / "writeup" / "calibrated_counts.csv", index=False)
+    h3 = sample_results.placebo_fits(D, rng, sd={"first": 3.0, "second": 1.5}, horizons=(3,))
+    h3.to_parquet(a / "placebo_h3.parquet")
+    S.run(a, a / "writeup", n_sim=20, ref=ref)
     df, header = build(dirs)
     assert header["missing"] == []
-    assert "did.h3.second.calibrated.clearly_nonzero_toward" in set(df.key)
+    k = df.set_index("key")
+    assert "did.h3.second.calibrated.clearly_nonzero_toward" in k.index
+    assert k.loc["placebo.h3.pairs.second.n", "horizon"] == "weeks 0-3"
+    c = pd.read_csv(a / "writeup" / "calibrated_counts.csv")
+    fac = c[(c.horizon == "weeks 0-3") & (c.spread == "robust sd") & (c.patch == "first")]
+    p = pd.read_csv(r / "pick_rate_did.csv")
+    t = p[(p.patch == "first") & p.beta_h.notna()].iloc[0]
+    key = N.tweak_prefix(t.card_patch_id) + ".h3.z_calibrated"
+    assert k.loc[key, "value"] == pytest.approx(t.beta_h / t.se_h / fac.factor.iloc[0])
+    # the all-weeks counts are unchanged by the weeks 0-3 file
+    allw = c[(c.horizon == "all weeks") & (c.spread == "robust sd") & (c.patch == "first")]
+    assert k.loc["did.all.first.calibrated.clearly_nonzero", "value"] == \
+        allw.n_clearly_nonzero.iloc[0]
+
+
+def test_task_a_key_families(dirs):
+    df, header = build(dirs)
+    k = df.set_index("key")
+    a, r = dirs
+    # distinct runs: the audit's count, with the log's per-build sum and the gap's cause
+    assert k.loc["snapshot.distinct_runs", "value"] == 10980
+    assert k.loc["snapshot.distinct_runs_per_build_sum", "value"] == \
+        sample_results.SAMPLE_LOG_TOTAL[1]
+    assert k.loc["snapshot.runs_in_several_builds", "value"] == 7
+    # dedup counts from meta.json (spirometry.export --db)
+    assert k.loc["dedup.exact_repeats_dropped", "text"] == "321"
+    # notebook 01's audit summary, by unit
+    assert k.loc["audit.primary_share", "text"] == "72.9%"
+    assert k.loc["audit.win_rate_v0_103_2_gap", "text"] == "+0.070"
+    assert k.loc["audit.win_rate_v0_103_2_tagged_pct", "text"] == "27.0%"
+    assert k.loc["audit.thin_builds_list", "text"] == "v0.99.0"
+    # reference tables
+    assert k.loc["tweaks.numeric", "value"] == 24 and k.loc["changes.rework", "value"] == 1
+    # one tweak's family agrees with pick_rate_did.csv
+    p = pd.read_csv(r / "pick_rate_did.csv")
+    t = p[p.upgrade_only == "no"].iloc[0]
+    pre = N.tweak_prefix(t.card_patch_id)
+    assert pre == f"tweak.{t.card_id.lower()}.{t.stable_build.replace('.', '_')}"
+    assert k.loc[f"{pre}.all.beta_pp", "value"] == pytest.approx(100 * t.beta)
+    assert k.loc[f"{pre}.h3.beta_pp_se", "value"] == pytest.approx(100 * t.se_h)
+    raw = 100 * ((t.treated_rate_after - t.treated_rate_before)
+                 - (t.control_rate_after - t.control_rate_before))
+    assert k.loc[f"{pre}.did_raw_pp", "value"] == pytest.approx(raw)
+    assert k.loc[f"{pre}.n_control_cards", "value"] > 0
+    up = p[p.upgrade_only == "yes"].iloc[0]
+    assert N.tweak_prefix(up.card_patch_id) + ".placebo_beta_pp_pm" in k.index
+    assert N.tweak_prefix(t.card_patch_id) + ".placebo_beta_pp" not in k.index   # blank: no key
+    # design checks: labelled with their tables
+    ch = k[k.index.str.startswith("checks.")]
+    assert len(ch) > 50 and set(ch.spec) == {"12-page tables"}
+    assert k.loc["checks.fake_patch.tables", "text"] == "12-page tables"
+    assert "checks.control_scope.other.triage.slope_first_pm" in k.index
+    assert "checks.group_lines.tagged.all.primary.z_diff" in k.index
+    # constants, simulation, every family present
+    assert k.loc["const.honest.share_abs_z_gt2", "text"] == "4.6%"
+    assert k.loc["iv.single.iv_pm", "spec"] == "simulation"
+    for fam in ["se.", "flags.", "anticipation.", "robustness.", "second_patch.",
+                "placebo.vs_real.", "placebo.spread.", "placebo.min_offers", "dose.example.",
+                "dose.same_size.", "dose.triage.h3.buff_nerf.", "rulers.primary.hybrid.",
+                "review.", "mixed.", "leave_out.primary.", "character.", "power.", "spread.",
+                "iv.weak.", "iv.broken.", "iv.het.", "iv.confounding."]:
+        assert k.index.str.startswith(fam).any(), fam
+    assert df.key.is_unique and (df.text.astype(str) != "").all()
+
+
+def test_distinct_runs_guard(dirs):
+    a, r = dirs
+    s = pd.read_csv(a / "audit_summary.csv")
+    s.loc[s.key == "distinct_runs_per_build_sum", "value"] += 1
+    s.to_csv(a / "audit_summary.csv", index=False)
+    with pytest.raises(N.NumbersError, match="differs from .*dedup total"):
+        build(dirs)
+
+
+def test_dedup_missing_is_listed_not_fatal(dirs):
+    a, r = dirs
+    m = json.loads((r / "meta.json").read_text())
+    m.pop("dedup")
+    (r / "meta.json").write_text(json.dumps(m))
+    df, header = build(dirs)
+    assert not df.key.str.startswith("dedup.").any()
+    assert any(x["keys"].startswith("dedup.") for x in header["missing"])
+
+
+def test_missing_design_check_is_listed(dirs):
+    a, r = dirs
+    p = a / "writeup" / "design_checks.csv"
+    d = pd.read_csv(p)
+    d[d.check != "token"].to_csv(p, index=False)
+    df, header = build(dirs)
+    assert not df.key.str.startswith("checks.token.").any()
+    assert "checks.token.*" in {m["keys"] for m in header["missing"]}

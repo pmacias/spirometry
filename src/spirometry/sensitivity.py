@@ -11,8 +11,14 @@ Calibrated "clearly nonzero" (`calibrated_counts.csv`, Phil's rule of 2026-10-14
 tweak's z = beta / se divided by its patch's robust placebo sd (did.placebo_summary's
 robust_sd_z, 1.4826 x MAD, on the deduplicated (window, pseudo card) pairs, the same factors
 as se_inflation's "robust sd by patch"), from placebo fits at the estimate's own horizon;
-clearly nonzero = |calibrated z| > 2; the plain placebo sd is the sensitivity row. Written
-only when placebo_main.parquet exists; a horizon without placebo fits gets blank rows.
+clearly nonzero = |calibrated z| > 2; the plain placebo sd is the sensitivity row. The
+placebo fits are every saved run (load_placebo_fits: placebo_main.parquet = all weeks,
+placebo_h3.parquet = weeks 0-3, written by did.placebo_run); a horizon without placebo fits
+gets blank rows. placebo_by_horizon.csv is did.placebo_summary per horizon.
+
+Per-group dose lines (`group_lines.csv`): the slope per patch on notebook 02's tagged-only and
+untagged-only fits (did_h3_tagged, did_h3_untagged and the all-weeks did_tagged,
+did_untagged), triage and primary specs.
 
 The model throughout is the notebook's "slope per patch":
     y = a + c [second] + b1 x [first] + b2 x [second],   weights 1 / (se^2 + tau^2)
@@ -38,6 +44,7 @@ after notebook 04's results were known, so every table marks it `post_hoc`.
 """
 import argparse
 import pathlib
+import re
 
 import numpy as np
 import pandas as pd
@@ -105,6 +112,9 @@ def prepare(fits):
     kept, flagged). `fits` is indexed by card_patch_id or has that column."""
     d = fits.set_index("card_patch_id") if "card_patch_id" in fits.columns else fits
     d = d[d.error.fillna("") == ""].copy()
+    for c in ["direction", "log_ratio", "upgraded_log_ratio"]:   # text in some saved tables
+        if c in d:
+            d[c] = pd.to_numeric(d[c], errors="coerce")
     d["second"] = (d.before_builds == SECOND_BEFORE).astype(float)
     d["patch"] = np.where(d.second == 1, "second", "first")
     d["x"] = d.direction * d.log_ratio
@@ -454,6 +464,29 @@ def horizon_label(max_week_after):
     return f"weeks 0-{int(v[0])}"
 
 
+PLACEBO_FILES = re.compile(r"^placebo_(main|h\d+)\.parquet$")
+
+
+def load_placebo_fits(analysis):
+    """Every saved placebo run in `analysis` (did.placebo_file: placebo_main.parquet = all
+    weeks, placebo_h<k>.parquet = weeks 0-k), one frame. Each file must hold its own horizon
+    only (max_week_after missing for main, k for h<k>), so a file saved under the wrong
+    name can't count twice. None when there is no placebo file."""
+    parts = []
+    for p in sorted(pathlib.Path(analysis).glob("placebo_*.parquet")):
+        m = PLACEBO_FILES.match(p.name)
+        if not m:
+            continue
+        df = pd.read_parquet(p)
+        mwa = df["max_week_after"] if "max_week_after" in df else pd.Series(np.nan, df.index)
+        got = horizon_label(mwa)
+        want = "all weeks" if m.group(1) == "main" else f"weeks 0-{m.group(1)[1:]}"
+        if got != want:
+            raise ValueError(f"{p.name} holds {got} placebo fits, its name says {want}")
+        parts.append(df)
+    return pd.concat(parts, ignore_index=True) if parts else None
+
+
 def placebo_factors_by_horizon(placebo, ref="reference"):
     """{(horizon, patch): dict(robust_sd=..., sd=..., n_placebo=...)} from placebo_main
     (did.placebo_all's rows): the fits are split by their own horizon (max_week_after;
@@ -473,6 +506,46 @@ def placebo_factors_by_horizon(placebo, ref="reference"):
             out[(h, r.level)] = dict(robust_sd=float(r.robust_sd_z), sd=float(r.sd_z),
                                      n_placebo=int(r.n_fits))
     return out
+
+
+def placebo_summary_by_horizon(placebo, ref="reference"):
+    """did.placebo_summary (every fit, and one row per (window, pseudo card) pair) for each
+    horizon among the saved placebo fits, with a horizon column: the placebo z spread at
+    weeks 0-3 next to all weeks."""
+    from spirometry import did
+    mwa = placebo["max_week_after"] if "max_week_after" in placebo else pd.Series(
+        np.nan, index=placebo.index)
+    labels = pd.to_numeric(mwa, errors="coerce").map(
+        lambda v: "all weeks" if pd.isna(v) else f"weeks 0-{int(v)}")
+    out = []
+    for h, g in placebo.groupby(labels):
+        for dedupe in (False, True):
+            out.append(did.placebo_summary(g, dedupe=dedupe, ref=ref).assign(horizon=h))
+    return pd.concat(out, ignore_index=True)
+
+
+# ------------------------------------------------------------------- per-group dose lines
+
+GROUP_FITS = {  # saved fit -> (uploader group, horizon); notebook 02 section 7
+    "did_h3_tagged": ("tagged", "weeks 0-3"), "did_h3_untagged": ("untagged", "weeks 0-3"),
+    "did_tagged": ("tagged", "all weeks"), "did_untagged": ("untagged", "all weeks")}
+
+
+def group_line_table(analysis, specs=("triage", PRIMARY)):
+    """The dose line fit within each uploader group (PLAN.md Next up 7(g), the tooltip
+    check): slope per patch, ln ruler, on notebook 02's tagged-only and untagged-only fits,
+    under each spec. Skips a fit that isn't saved."""
+    an = pathlib.Path(analysis)
+    rows = []
+    for name, (group, horizon) in GROUP_FITS.items():
+        p = an / f"{name}.parquet"
+        if not p.exists():
+            continue
+        d = prepare(pd.read_parquet(p))
+        for spec in specs:
+            rows.append(dict(fits=name, group=group, horizon=horizon, spec=spec,
+                             **_row(slopes_by_patch(dose_line(d, spec)))))
+    return pd.DataFrame(rows)
 
 
 def calibrated_counts(fits, factors):
@@ -624,7 +697,8 @@ def run(analysis="data/analysis", out=None, fits="h3", all_weeks="main",
     if pairs is not None:
         t["spread"] = pd.concat([spread_table(dose_line(D, s), pairs).assign(spec=s)
                                  for s in specs], ignore_index=True)
-    if pp.exists():
+    placebo_all_h = load_placebo_fits(an)
+    if placebo_all_h is not None:
         fits_by_h = {horizon_label(D.get("max_week_after")): D}
         if Dw is not None:
             hw = horizon_label(Dw.get("max_week_after"))
@@ -632,12 +706,20 @@ def run(analysis="data/analysis", out=None, fits="h3", all_weeks="main",
                 raise ValueError(f"did_{fits} and did_{all_weeks} are both {hw}")
             fits_by_h[hw] = Dw
         t["calibrated_counts"] = calibrated_counts(
-            fits_by_h, placebo_factors_by_horizon(pd.read_parquet(pp), ref=ref))
+            fits_by_h, placebo_factors_by_horizon(placebo_all_h, ref=ref))
+        t["placebo_by_horizon"] = placebo_summary_by_horizon(placebo_all_h, ref=ref)
     t["power"] = pd.concat(
         [power_simulation(dose_line(D, s), factors["robust sd by patch"], n_sim=n_sim)
          .assign(spec=s) for s in ("triage", PRIMARY)], ignore_index=True)
-    for v in t.values():
-        v.insert(0, "fits", f"did_{fits}")
+    groups = group_line_table(an)
+    if len(groups):
+        t["group_lines"] = groups
+    own = {"group_lines": None, "placebo_by_horizon": "placebo fits"}   # not did_<fits>
+    for name, v in t.items():
+        if name not in own:
+            v.insert(0, "fits", f"did_{fits}")
+        elif own[name]:
+            v.insert(0, "fits", own[name])
     if out:
         o = pathlib.Path(out)
         o.mkdir(parents=True, exist_ok=True)

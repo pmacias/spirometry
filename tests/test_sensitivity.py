@@ -220,6 +220,45 @@ def test_run_writes_tables(tmp_path):
     # the synthetic placebo fits (placebo_inputs) carry no horizon: all weeks only
     assert (c[(c.horizon == "weeks 0-3") & (c.spread != "none")].status != "ok").all()
     assert "seed" not in t["power"].columns
+    assert "group_lines" not in t                      # no tagged / untagged fits saved
+
+    # weeks 0-3 placebo fits saved beside the all-weeks ones (did.placebo_run's file name):
+    # the calibrated counts pick them up, the all-weeks rows don't change
+    placebo.assign(max_week_after=3.0, beta=placebo.beta * 0.5,
+                   z=placebo.z * 0.5).to_parquet(an / "placebo_h3.parquet")
+    t3 = S.run(an, out, n_sim=20, ref=ref)
+    c3 = t3["calibrated_counts"]
+    assert (c3.status == "ok").all()
+    h3 = c3[(c3.horizon == "weeks 0-3") & (c3.spread == "robust sd")].set_index("patch")
+    allw = c3[(c3.horizon == "all weeks") & (c3.spread == "robust sd")].set_index("patch")
+    pd.testing.assert_frame_equal(
+        allw, c[(c.horizon == "all weeks") & (c.spread == "robust sd")].set_index("patch"),
+        check_dtype=False)          # the earlier run's blank weeks 0-3 rows made counts float
+    assert (h3.factor < allw.factor).all()             # half the z spread at weeks 0-3
+    pb = t3["placebo_by_horizon"]
+    assert set(pb.horizon) == {"all weeks", "weeks 0-3"} and set(pb.dedupe) == {False, True}
+    assert (out / "placebo_by_horizon.csv").exists()
+    # the per-group dose lines once notebook 02's tagged / untagged fits exist
+    for name in ["did_h3_tagged", "did_h3_untagged"]:
+        fits.assign(max_week_after=3.0).to_parquet(an / f"{name}.parquet")
+    g = S.run(an, out, n_sim=20, ref=ref)["group_lines"]
+    assert set(g.group) == {"tagged", "untagged"} and set(g.horizon) == {"weeks 0-3"}
+    assert set(g.spec) == {"triage", "primary"} and (g.n1 > 0).all()
+    base = t3["rulers"].set_index(["spec", "ruler"]).loc[("triage", "ln(new/old)")]
+    assert g[(g.spec == "triage")].slope1.to_numpy() == pytest.approx(base.slope1)
+
+
+def test_load_placebo_fits_checks_file_horizons(tmp_path):
+    assert S.load_placebo_fits(tmp_path) is None
+    a = pd.DataFrame({"z": [1.0, 2.0], "max_week_after": [np.nan, np.nan]})
+    a.to_parquet(tmp_path / "placebo_main.parquet")
+    a.assign(max_week_after=3.0).to_parquet(tmp_path / "placebo_h3.parquet")
+    pd.DataFrame({"z": [9.0]}).to_parquet(tmp_path / "placebo_diagnostics_x.parquet")  # ignored
+    both = S.load_placebo_fits(tmp_path)
+    assert len(both) == 4 and both.max_week_after.isna().sum() == 2
+    a.to_parquet(tmp_path / "placebo_h3.parquet")       # all-weeks rows under the h3 name
+    with pytest.raises(ValueError, match="placebo_h3.parquet holds all weeks"):
+        S.load_placebo_fits(tmp_path)
 
 
 # ------------------------------------------------------------------- calibrated counts

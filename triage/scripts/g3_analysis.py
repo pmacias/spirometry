@@ -6,6 +6,8 @@ with and without token fixed effects, SEs clustered by run_key (primary) and by 
 G4: placebo z under the two clusterings; se_token / se_run on the real tweaks.
 
     python triage/scripts/g3_analysis.py
+
+Reads TRIAGE_OUT's CSVs (default triage/out) and TRIAGE_AN's did_h3 (common.py).
 """
 import sys
 
@@ -13,10 +15,10 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, "triage/scripts")
-from common import all_tweaks, on_line, slopes_by_patch  # noqa: E402
+from common import OUT, all_tweaks, on_line, slopes_by_patch  # noqa: E402
 
 pd.set_option("display.width", 220)
-R = pd.read_csv("triage/out/g3_token_fits.csv")
+R = pd.read_csv(f"{OUT}/g3_token_fits.csv")
 H = on_line(all_tweaks("h3"))
 est = (R.n_treated_before >= 200) & (R.n_treated_after >= 200)
 
@@ -48,7 +50,7 @@ d = R[~R.token_fe]
 print(f"real tweaks: se_token / se_run median {(d.se_tok / d.se_run).median():.2f} "
       f"(range {(d.se_tok / d.se_run).min():.2f}-{(d.se_tok / d.se_run).max():.2f}); by patch "
       + str(d.groupby("patch").apply(lambda g: round((g.se_tok / g.se_run).median(), 2)).to_dict()))
-P = pd.read_csv("triage/out/g4_token_placebo.csv")
+P = pd.read_csv(f"{OUT}/g4_token_placebo.csv")
 P = P[P.error.fillna("") == ""]
 P["z_run"], P["z_tok"] = P.beta / P.se_run, P.beta / P.se_tok
 rsd = lambda z: 1.4826 * (z - z.median()).abs().median()

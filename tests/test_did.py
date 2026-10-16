@@ -852,6 +852,31 @@ def test_placebo_all_sampling_threshold_and_options(placebo_ref):
     assert s.share_abs_z_gt2[0] == (out.z.abs() > 2).mean()
 
 
+def test_placebo_run_saves_each_horizon_for_the_calibrated_counts(placebo_ref, tmp_path):
+    # The weeks 0-3 placebo run (2026-10-02 settings otherwise) lands beside the all-weeks
+    # file, and sensitivity's calibrated counts find a factor at both horizons.
+    from spirometry import sensitivity as S
+    con = fake_db(synth(n_runs=300, cards=P_CARDS, seed=62))
+    allw = did.placebo_run(con, tmp_path, ref=placebo_ref, min_offers=1)
+    h3 = did.placebo_run(con, tmp_path, max_week_after=3, ref=placebo_ref, min_offers=1)
+    assert did.placebo_file() == "placebo_main.parquet" and did.placebo_file(3) == "placebo_h3.parquet"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["placebo_h3.parquet",
+                                                         "placebo_main.parquet"]
+    assert allw.max_week_after.isna().all() and (h3.max_week_after == 3).all()
+    for df in (allw, h3):                     # the 2026-10-02 settings
+        assert (df.max_cards_per_window == 20).all() and (df.seed == 0).all()
+        assert (df.control_scope == "color").all() and (df.error == "").all()
+    # same pseudo cards (same seed), fewer after-block offers at weeks 0-3
+    assert set(allw.pseudo_card) == set(h3.pseudo_card)
+    assert (h3.n_treated_offers.to_numpy() <= allw.n_treated_offers.to_numpy()).all()
+    saved = pd.read_parquet(tmp_path / "placebo_h3.parquet")
+    pd.testing.assert_frame_equal(saved, h3)
+    both = S.load_placebo_fits(tmp_path)
+    fac = S.placebo_factors_by_horizon(both, ref=placebo_ref)
+    assert set(fac) == {("all weeks", "first"), ("weeks 0-3", "first")}
+    assert fac[("weeks 0-3", "first")]["n_placebo"] == h3.pseudo_card.nunique()
+
+
 D_TWEAKS = [  # (card_patch_id, card_id, color, before, after, stable, upgrade_only, dir, lr)
     ("A@v2/patch", "A", "ironclad", "v1", "v2", "v2", "no", "1", "0.2"),
     ("B@v2/patch", "B", "ironclad", "v1", "v2", "v2", "no", "1", "-0.3"),

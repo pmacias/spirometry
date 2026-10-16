@@ -177,13 +177,35 @@ def test_hash_like_values_and_repeated_keys_stop_the_export(inputs, tmp_path):
 def test_meta_from_build_info(inputs, tmp_path):
     pytest.importorskip("duckdb")
     db = sample_results.write_sample_db(tmp_path / "runs.duckdb", build_info={
-        "parser_version": "1.7.0", "pages_parsed": "12", "last_page": "11",
-        "built_at_utc": "2026-09-29T10:00:00+00:00"})
+        **sample_results.SAMPLE_BUILD_INFO, "parser_version": "1.7.0", "pages_parsed": "12",
+        "last_page": "11", "built_at_utc": "2026-09-29T10:00:00+00:00"})
     t, out = run(inputs, tmp_path, db=db, snapshot_end="2026-08-30")
     m = t["meta"]
     assert (m["parser_version"], m["snapshot_pages"]) == ("1.7.0", "12")
     assert m["snapshot_end_date"] == "2026-08-30" and m["blank_reasons"] == {}
     assert m["snapshot_end_date_source"] == "--snapshot-end"
+
+
+def test_meta_dedup_fields_from_build_info(inputs, tmp_path):
+    pytest.importorskip("duckdb")
+    db = sample_results.write_sample_db(tmp_path / "runs.duckdb")
+    t, out = run(inputs, tmp_path, db=db)
+    d = json.loads((out / "meta.json").read_text())["dedup"]
+    info = sample_results.SAMPLE_BUILD_INFO
+    assert set(d) == set(export.DEDUP_FIELDS)
+    for name, key in export.DEDUP_FIELDS.items():
+        assert d[name] == int(info[key]) and isinstance(d[name], int)
+    assert d["exact_repeats_dropped"] == 321 and d["primary_run_keys_retried"] == 2
+    # a build_info without them (an older parser): left out, with the reason
+    db2 = sample_results.write_sample_db(tmp_path / "old.duckdb", build_info={
+        "parser_version": "1.4.0", "pages_parsed": "12", "last_page": "11",
+        "built_at_utc": "2026-09-29T10:00:00+00:00"})
+    m = run(inputs, tmp_path, db=db2)[0]["meta"]
+    assert m["dedup"] == {}
+    assert m["blank_reasons"]["dedup.solo_run_keys_retried"] == "not in build_info"
+    # without --db: blank, reason "no --db given"
+    m = run(inputs, tmp_path)[0]["meta"]
+    assert m["dedup"] == {} and m["blank_reasons"]["dedup.records_read"] == "no --db given"
 
 
 def test_meta_play_dates_from_run_tables(inputs, tmp_path):

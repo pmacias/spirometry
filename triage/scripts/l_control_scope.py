@@ -11,6 +11,9 @@ horizon); only control_scope changes. Uses did.run_all with the derived card col
 
 Output: triage/out/did_h3_ctrl_<scope>.csv, one row per tweak (card_patch_id-level
 estimates and counts; no run IDs). One scope per process, so peak memory is per scope.
+
+Final-table rerun (scripts/writeup/phil_runs.sh): TRIAGE_OUT sets the output folder
+(triage/out_final); see common.py and db.py.
 """
 import argparse
 import os
@@ -22,6 +25,7 @@ import pandas as pd
 
 sys.path.insert(0, "triage/scripts")
 import db  # noqa: E402
+from common import OUT  # noqa: E402
 from spirometry import did  # noqa: E402
 
 ap = argparse.ArgumentParser()
@@ -54,6 +58,6 @@ cols = ["card_patch_id", "beta", "se", "beta_lo", "se_lo", "n_offers", "n_contro
         "n_treated_offers", "treated_rate_before", "control_rate_before", "error"]
 print(R[cols].to_string(index=False))
 if not args.tweaks:
-    os.makedirs("triage/out", exist_ok=True)
+    os.makedirs(OUT, exist_ok=True)
     keep = [c for c in R.columns if c not in ("formula", "ci95")]
-    R[keep].to_csv(f"triage/out/did_h3_ctrl_{args.scope}.csv", index=False)
+    R[keep].to_csv(f"{OUT}/did_h3_ctrl_{args.scope}.csv", index=False)

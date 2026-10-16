@@ -5,6 +5,8 @@
 table needs no further fitting.
 
     python triage/scripts/l_compare.py
+
+Reads TRIAGE_OUT's CSVs (default triage/out) and TRIAGE_AN's did_h3 (common.py).
 """
 import sys
 
@@ -12,13 +14,13 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, "triage/scripts")
-from common import RULERS, add_rulers, all_tweaks, on_line, slopes_by_patch  # noqa: E402
+from common import OUT, RULERS, add_rulers, all_tweaks, on_line, slopes_by_patch  # noqa: E402
 
 pd.set_option("display.width", 220)
 H3 = all_tweaks("h3")
 S = {"color": H3}
 for sc in ["other", "all"]:
-    c = pd.read_csv(f"triage/out/did_h3_ctrl_{sc}.csv").set_index("card_patch_id")
+    c = pd.read_csv(f"{OUT}/did_h3_ctrl_{sc}.csv").set_index("card_patch_id")
     d = H3.copy()
     for col in ["beta", "se", "beta_lo", "se_lo", "treated_rate_before", "control_rate_before",
                 "n_control_cards", "n_offers"]:

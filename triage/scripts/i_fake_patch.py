@@ -24,6 +24,11 @@ colors (triage/scripts/db.py) and prints timing and peak memory; --tweaks limits
     python triage/scripts/i_fake_patch.py --check
     python triage/scripts/i_fake_patch.py [--tweaks A B ...]
 Writes triage/out/i_fake_patch.csv (card_patch_id-level estimates, no run IDs).
+
+Final-table rerun (scripts/writeup/phil_runs.sh): TRIAGE_OUT sets the output folder
+(triage/out_final), and the printed z / factor uses the second patch's placebo robust sd
+from the same tables' placebo_diagnostics_summary.csv (deduplicated pairs) instead of the
+1,873-page 2.09, when that file exists.
 """
 import argparse
 import os
@@ -36,10 +41,15 @@ import pandas as pd
 
 sys.path.insert(0, "triage/scripts")
 import db  # noqa: E402
-from common import all_tweaks, fit, on_line  # noqa: E402
+from common import AN, OUT, all_tweaks, fit, on_line  # noqa: E402
 from spirometry import did  # noqa: E402
 
-PLACEBO_F2 = 2.09
+PLACEBO_F2 = 2.09                     # 1,873-page tables; replaced below when the summary exists
+_summ = f"{AN}/placebo_diagnostics_summary.csv"
+if os.path.exists(_summ):
+    _s = pd.read_csv(_summ)
+    _s = _s[(_s.dedupe.astype(str).str.lower() == "true") & (_s.level == "second")]
+    PLACEBO_F2 = float(_s.robust_sd_z.iloc[0])
 DROP = ["STARDUST", "SUMMON_FORTH"]
 
 
@@ -98,9 +108,9 @@ for color, g in todo.groupby("color"):
     print(f"{color}: load {tl:.1f} s, {len(g)} tweaks, peak RSS {peak_mb():.0f} MB", flush=True)
     del df
 R = pd.DataFrame(rows)
-os.makedirs("triage/out", exist_ok=True)
+os.makedirs(OUT, exist_ok=True)
 if not args.tweaks:
-    R.drop(columns="fit_s").to_csv("triage/out/i_fake_patch.csv", index=False)
+    R.drop(columns="fit_s").to_csv(f"{OUT}/i_fake_patch.csv", index=False)
 print(f"total {time.time() - t0:.0f} s; mean fit {R.fit_s.mean():.1f} s")
 
 pd.set_option("display.width", 220)
@@ -118,7 +128,7 @@ for horizon, d in R.groupby("horizon", sort=False):
     s = np.sqrt(np.diag(cov))
     print(f"fake slope {b[1]:+.3f} ± {s[1]:.3f} (z {b[1] / s[1]:+.2f}); intercept {b[0]:+.3f} ± "
           f"{s[0]:.3f}; tau2 {tau2:.4f}, Q {Q:.1f} on {dof}")
-    for f, lab in [(1.0, "honest"), (PLACEBO_F2, "z / 2.09")]:
+    for f, lab in [(1.0, "honest"), (PLACEBO_F2, f"z / {PLACEBO_F2:.2f}")]:
         bf, covf, t2f, *_ = fit(d.beta_lo, d.se_lo * f, X)
         print(f"  {lab}: |z| > 2 in {int((d.z.abs() / f > 2).sum())} of {len(d)} "
               f"(|z| > 3: {int((d.z.abs() / f > 3).sum())}); slope with se x {f}: "

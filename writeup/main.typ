@@ -32,3 +32,4 @@
 #include "chapters/b_glossary.typ"
 #include "chapters/c_numbers.typ"
 #include "chapters/d_open.typ"
+#include "chapters/e_talking.typ"

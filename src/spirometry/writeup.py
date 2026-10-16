@@ -36,7 +36,7 @@ PDF_NAME = "field_guide_v2.pdf"
 # Fixed terms whose digits are part of a name, not a measured number. Keep this short: a
 # number that comes from data goes through #n("key").
 ALLOW = [
-    (r"weeks? 0[–-]3", "the fixed horizon's name (decision log 2026-10-09)"),
+    (r"[Ww]eeks? 0[–-]3", "the fixed horizon's name (decision log 2026-10-09)"),
     (r"\bv\d+\.\d+\.\d+\b", "build names (v0.103.2)"),
     (r"\b(19|20)\d\d\b", "years"),
     (r"p ?\( ?1 ?[−-] ?p ?\)", "the variance of a 0/1 outcome, p(1 - p)"),
@@ -46,6 +46,7 @@ ALLOW = [
     (r"\b2 ?× ?2\b", "the 2x2 table"),
     (r"\b(step|task|item|notebook|section) \d+[a-z]?\b", "PLAN.md / notebook numbering"),
     (r"\b0\d_[a-z_]+\b", "notebook and chapter file names (02_pick_rate_did)"),
+    (r"Slay the Spire 2\b", "the game's name"),
 ]
 _ALLOW = [re.compile(p) for p, _ in ALLOW]
 _N_CALL = re.compile(r'#n\(\s*"[^"]*"\s*\)')

@@ -574,6 +574,10 @@ def constant_keys(T):
             T.add(key, v, fmt_pct(v, d), "normal distribution", what)
         else:
             T.add(key, v, fmt_num(v, d), "normal distribution", what)
+    # The tables the triage ran on, for labelling numbers measured there (field guide task B)
+    from spirometry.checks import TRIAGE_PAGES
+    T.count("const.earlier_tables.pages", TRIAGE_PAGES, "spirometry.checks",
+            "TRIAGE_PAGES: pages of the run tables of 2026-10-02 (triage/TRIAGE.md)")
 
 
 def snapshot_extra_keys(T, audit, log, src_audit, src_log, meta, src_meta, missing):

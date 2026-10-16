@@ -1043,7 +1043,14 @@ unchanged cards of the same character; "clearly nonzero" = |β| > 2 SE):
 first patch's Leading Strike is clearly nonzero but mixed).
 Caveat: "clearly nonzero" uses the clustered SE, and the placebo check (see "Placebo
 calibration of the DiD errors") found |z| > 2 in 72% of first-patch and 36% of second-patch
-placebo fits, so these counts are not calibrated.
+placebo fits, so these counts are not calibrated. Calibrated counts (z divided by the patch's
+placebo robust sd at the same horizon; decision log 2026-10-14), weeks 0–3, the primary
+horizon: first patch 13 of 26 (factor 4.10), all 12 with a direction toward the change;
+second patch 2 of 17 (factor 2.67; Unrelenting and Uproar, both toward the change; Patter
+v0.107.1 just misses at −1.98), 0 with the plain-sd factor (2.94). All weeks: 13 of 26 and
+4 of 17. The first patch's against-the-change estimates (Memento Mori, Grand Finale, Solar
+Strike) and the second patch's (Bulwark, Debilitate v0.107.1) all fall within calibrated
+|z| 2 (`data/analysis/writeup/calibrated_counts.csv`; field guide v2, chapters 8–9).
 
 - Largest: Corrosive Wave −15.9 (pick rate 42% → 29%), Parry +14.5 (13% → 27%), Leading
   Strike +10.0 (mixed: damage 7 → 3, Shivs 1 → 2), Untouchable (v0.103.2) −9.4, Fight Me
@@ -1334,6 +1341,13 @@ the by-feature table is `placebo_diagnostics_spread_by_feature.csv` now,
   and 0.022), so the slopes' SEs barely move. The rerun's table also has one shared factor
   for both patches (robust sd 3.01: 1.41 ± 0.20 and 0.30 ± 0.32; sd 3.76: 1.36 ± 0.19 and
   0.31 ± 0.32).
+
+**Weeks 0–3 placebos** (`data/analysis/placebo_h3.parquet`, Phil's run of
+`scripts/writeup/phil_runs.sh`, 2026-10-16; same design with `max_week_after=3`): 860 fits,
+463 pairs; one row per pair, sd z 3.73, robust sd 3.31, |z| > 2 in 54%; by patch robust sd
+4.10 (first) and 2.67 (second), sd 4.46 and 2.94. These are the factors of the calibrated
+weeks 0–3 counts ("Phase 5 results"). The se-inflation and spread tables still use the
+all-weeks factors (4.52, 2.07).
 
 **Status: "the clustered standard errors are calibrated" is NOT met.** Why the placebo spread
 is so large is not yet verified (open question below). The results above use clustered
@@ -1662,4 +1676,13 @@ close to randomized. That supports:
    with Debilitate at its table dose −4.01 ("Phase 5 results", dose-response). The ruler
    dependence is in `rulers.csv` (e.g. absolute change: z −0.60, primary spec).
 10. Triage of the flat second patch (2026-10-07/08): done, `triage/TRIAGE.md` (Parts 1 and 2,
-   final synthesis). Nothing in it is a result until rerun on the final tables.
+   final synthesis). Rerun on the final tables (2026-10-16, `triage/out_final/`,
+   `spirometry.checks`): fake patch v0.103.2 → v0.103.3 slope −0.01 ± 0.18 (14 tweaks), fake
+   effects' sd 0.133 log-odds against 0.132 for the real second-patch effects; regression to
+   the mean: pre-movement coefficient +0.74 ± 0.48 (continuation, not reversion), first slope
+   1.35–1.68 over weeks 0–5; control scope "other" / "all": first slope 1.23 / 1.26, z diff
+   −2.70 / −2.76 (primary spec); token subset z diff −2.77 (−2.78 with token fixed effects);
+   per-group lines z diff −2.43 (tagged) and −2.95 (untagged). The pre-declared aggregates
+   (H) and the stayers fit were not rerun; H's numbers stay on the 1,873-page tables. The
+   field guide (chapter 12) states what these rule out and that why the second patch did
+   less is open.

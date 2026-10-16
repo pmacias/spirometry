@@ -33,7 +33,7 @@
   inset: (left: 12pt, right: 10pt, y: 9pt),
   fill: colour.lighten(92%),
   stroke: (left: 2.5pt + colour),
-  breakable: true,
+  breakable: false,
   above: 1.1em,
   below: 1.1em,
   {
@@ -51,6 +51,9 @@
 #let watch(body) = _box("Watch out", c-watch, body)
 // New in v2: the general data-science skill a section exercises.
 #let skill(body) = _box("Skill", c-skill, body)
+
+// The one-line subtitle under a chapter title (v1's style).
+#let lead(body) = block(above: -0.6em, below: 1.3em, text(size: 12pt, fill: muted, body))
 
 // Inline labels for what SPIROMETRY.md / PLAN.md mark as open.
 #let unverified(body) = text(fill: c-watch)[#body #super[(unverified)]]
@@ -112,12 +115,24 @@
 
 // ------------------------------------------------------------------------- tables
 
+// A flexible column width for ftable, so chapter files carry no digits.
+#let rest = 1fr
+
 #let ftable(..args) = table(
   stroke: (x, y) => if y == 0 { (bottom: 0.6pt + ink) } else { (bottom: 0.3pt + luma(205)) },
   inset: (x: 6pt, y: 5pt),
   align: left,
   ..args,
 )
+
+// A table in slightly smaller type (glossary, numbers on one page).
+#let small-table(..args) = {
+  set text(size: 9.5pt)
+  ftable(..args)
+}
+
+// Appendix E: one interview question and its short answer.
+#let qa(q, a) = block(above: 1em, below: 0.4em, breakable: false)[*#q* \ #a]
 
 // ---------------------------------------------------------------------- page setup
 

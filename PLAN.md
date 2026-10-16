@@ -338,6 +338,18 @@ numbers keys for every chapter (123 → about 6,050 on the final outputs); one r
 (`scripts/writeup/phil_runs.sh`, not yet run) and the figure script
 (`scripts/writeup/figures.py`, 25 figures, tested on synthetic outputs only). Task B writes
 the whole guide.*
+*Done (task B, CC, 2026-10-16): chapters 0–14 and appendices A–E written
+(`writeup/chapters/`, new `e_talking.typ`: a one-minute and a five-minute version and ten
+interview questions), on Phil's run of `phil_runs.sh` and `figures.py` (all 25 figures, no
+placeholders). `python -m spirometry.writeup build` gives a 96-page
+`writeup/build/field_guide_v2.pdf`; lint and privacy pass; 469 keys used, all in
+numbers.json. The guide leads with the calibrated weeks 0–3 counts (13 of 26, 2 of 17), labels
+the pre-declared aggregates as measured on the 1,873-page tables, and states once (chapter 12)
+that no main estimate moved by more than one SE between those tables and the final ones.
+Future work (not planned): win effects and the power check (task 9), the strength change
+(step 5), perception against strength (step 6), partial pooling (step 7), the staggered
+rollout (step 8), reworks (step 9), the stayers-only token fit, the pre-declared aggregates on
+the final tables, the dashboard, the release checklist and publishing.*
 
 ## Next up
 1. ~~Review and merge the card-decisions + mod-entity PR; rerun the full build and read
@@ -540,17 +552,23 @@ the whole guide.*
         lint, privacy, figure freshness, typst compile to `writeup/build/field_guide_v2.pdf`.
         21 pages on the final numbers.json.*
       - *Tests: `tests/test_writeup.py`.*
-   12. Chapters 0–3 draft, for a voice check before the rest (CC drafts; Phil reads).
+   12. ~~Chapters 0–3 draft, for a voice check before the rest (CC drafts; Phil reads).~~
+       *Folded into task B (CC, 2026-10-16): every chapter written in one pass.*
    13. Figure script for every figure (CC; Phil runs it and looks). *Built (CC, 2026-10-16):
        `scripts/writeup/figures.py`, the 25 figures of OUTLINE.md that saved outputs supply
        (all but `fig_power_check`, task 9), tested on synthetic outputs; not run on real data.*
    14. Remaining chapters in four PRs; Phil writes the "what was found" passages and the
       conclusion (CC drafts). *Replaced (Phil, 2026-10-16): task B, CC writes the whole guide,
       "what was found" passages and conclusion included; Phil's review is reading the PDF.*
-   15. Docs: final numbers into SPIROMETRY.md, README and PLAN (CC). *Pick-rate,
-      anticipation, placebo and audit numbers updated 2026-10-10 from the final rerun; redo
-      for anything the later tasks add.*
-      Tests: 210 passed, 5 skipped (smoke tests need real data), run locally 2026-10-14. 
+   15. ~~Docs: final numbers into SPIROMETRY.md, README and PLAN (CC).~~ *Pick-rate,
+      anticipation, placebo and audit numbers updated 2026-10-10 from the final rerun. Task B
+      (2026-10-16): SPIROMETRY.md gets the calibrated weeks 0–3 counts, the weeks 0–3 placebo
+      factors and the triage checks rerun on the final tables; README the status, the
+      calibrated counts and the build order; this file the item 15 status. Item 15 is done.*
+      Tests: 210 passed, 5 skipped (smoke tests need real data), run locally 2026-10-14.
+      Task B (2026-10-16, in the sandbox): 218 passed, 5 skipped; the 47 tests that read
+      `reference/raw/` fail there on permission (the sandbox can't read it), as before; Phil
+      reruns them locally. 
       The cloud sandbox can’t read reference/raw/, so the parser, patch-history and treatment 
       tests only run locally.
    16. ~~Only if Phil decides to publish: release checklist (item 12), then publish (Phil).~~
@@ -1314,3 +1332,29 @@ the whole guide.*
     and Corrosive Wave; `fig_event_study`'s second card is the steepest pre-trend
     (|slope / se|); `fig_forest` draws the placebo-scaled interval with the weeks 0–3 factor
     when it exists, else the all-weeks one, and says which.
+- Field guide task B (CC's choices, open to review, 2026-10-16):
+  - One new key, `const.earlier_tables.pages` (1,873, from `spirometry.checks.TRIAGE_PAGES`),
+    so the guide can label numbers measured on the triage's tables without a hand-typed digit.
+    No other key added; numbers.json otherwise unchanged (6,123 keys).
+  - Digit lint: two allowlist entries, the game's name ("Slay the Spire 2") and a capitalised
+    "Weeks 0–3" in table headers. Illustrative numbers in pictures and questions ("ten coin
+    flips") are spelled out; every data number goes through `#n`.
+  - `style.typ`: `lead` (chapter subtitle), `rest` (a flexible column width, so tables carry
+    no digits), `small-table`, `qa` (Appendix E); boxes no longer break across pages (labels
+    were stranded at page bottoms). Typst swallows a `;` written right after `#n(...)`, so
+    chapters write `\;` there.
+  - Cross-references use heading labels (`@ch-did` prints "Chapter 5"), because chapter
+    numbers in the text would fail the lint.
+  - `tests/test_writeup.py`: the synthetic-build fixture cuts every chapter to its title (the
+    written chapters name real cards the synthetic outputs don't have); new tests check that
+    every figure the chapters use is one `figures.py` draws and that every key the chapters
+    use is in the real numbers.json (skipped where it is missing or a sample).
+  - Interpretation stated in the guide, for review: the second patch's tweaks moved choices
+    much less than the first's ("indistinguishable, as a group, from no change"), not "none";
+    the patch difference depends on the ruler and on Regent's cards and the Debilitate and
+    Reflect calls; the first patch's slope is trimmed, not explained away, by other
+    characters' controls; tooltips can be at most part of the explanation.
+  - Toward-the-change counts follow the export's rule (Reflect has no direction), while the
+    dose line follows the 2026-10-09 mixed-tweak rule (Reflect on as a nerf); chapter 9 says
+    so. The forest figure colours Leading Strike as a nerf by its main field; its caption says
+    so.

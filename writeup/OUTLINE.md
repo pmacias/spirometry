@@ -1,5 +1,9 @@
 # Field guide v2: learning map
 
+*Status (2026-10-16): the chapters are written (task B; PLAN.md item 15). This map predates
+them and is kept as the plan; where the two differ, the chapters and PLAN.md's decision log
+win.*
+
 "What Did the Patch Do?" (Spirometry), Phil's study guide and the project's final deliverable
 (PLAN.md decision log, 2026-10-09). This file is the map: what each chapter teaches, in what
 order, from which saved outputs. It is for review before any chapter is written. No chapter text

@@ -2,8 +2,11 @@
 lint -> privacy -> figures -> typst), the digit lint, a missing key failing the compile, figure
 placeholders and staleness. No run data. Compile tests need the "writeup" extra (typst)."""
 import base64
+import importlib.util
+import json
 import os
 import pathlib
+import re
 import shutil
 
 import pytest
@@ -11,6 +14,7 @@ import pytest
 from spirometry import numbers as N, sample_results, writeup as W
 
 REPO_WRITEUP = pathlib.Path(__file__).resolve().parents[1] / "writeup"
+FIGURE_SCRIPT = pathlib.Path(__file__).resolve().parents[1] / "scripts" / "writeup" / "figures.py"
 # A 1x1 PNG, for a figure file that exists.
 PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8Dw"
                        "HwAFBQIAX8jx0gAAAABJRU5ErkJggg==")
@@ -37,13 +41,23 @@ Parry moved by #n("dose.triage.h3.slope_first_pm") over weeks 0–3 on v0.103.2.
 '''
 
 
+def _stub(text):
+    """A chapter reduced to its title line (label kept, so cross-references resolve)."""
+    title = re.search(r"^= .*$", text, re.M).group(0)
+    return f'#import "../style.typ": *\n\n{title}\n'
+
+
 @pytest.fixture()
 def wu(tmp_path):
-    """A copy of writeup/ (typ files only) with a synthetic numbers.json and one example
-    chapter that uses every helper."""
+    """A copy of writeup/ (typ files only) with a synthetic numbers.json, every chapter cut to
+    its title (the written chapters name real cards the synthetic outputs don't have), and
+    one example chapter that uses every helper."""
     w = tmp_path / "writeup"
     shutil.copytree(REPO_WRITEUP, w, ignore=shutil.ignore_patterns(
         "numbers.json", "numbers.csv", "build", "figures", "OUTLINE.md", "REVIEW.md"))
+    for f in (w / "chapters").glob("*.typ"):
+        if f.name != "a_answers.typ":
+            f.write_text(_stub(f.read_text()))
     a, r = tmp_path / "analysis", tmp_path / "results"
     sample_results.write_numbers_inputs(a, r, tmp_path / "ref", seed=4)
     df, header = N.build(a, r, allow_sample=True, snapshot_log=tmp_path / "snapshot.log")
@@ -75,7 +89,30 @@ def test_lint_reads_captions_and_check_text():
 
 def test_repo_chapters_pass_the_lint():
     assert W.lint(REPO_WRITEUP) == []
-    assert W.figure_names(REPO_WRITEUP) == []          # stubs: no figures yet
+
+
+def test_repo_figures_are_drawn_by_the_figure_script():
+    spec = importlib.util.spec_from_file_location("figures", FIGURE_SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    drawn = {f.__name__ for f in mod.FIGURES}
+    names = W.figure_names(REPO_WRITEUP)
+    assert names and set(names) <= drawn
+
+
+def test_repo_keys_exist_in_the_real_numbers_table():
+    """Every #n key in the chapters is in writeup/numbers.json (git-ignored: skipped where it
+    is missing or built from sample outputs)."""
+    path = REPO_WRITEUP / "numbers.json"
+    if not path.exists():
+        pytest.skip("writeup/numbers.json not built here")
+    table = json.loads(path.read_text())
+    if table["build"].get("sample"):
+        pytest.skip("writeup/numbers.json is from sample outputs")
+    used = set()
+    for f in W.chapter_files(REPO_WRITEUP):
+        used |= set(re.findall(r'#n\(\s*"([^"]+)"\s*\)', f.read_text()))
+    assert used and not used - set(table["numbers"])
 
 
 def test_build_on_synthetic_outputs(wu):

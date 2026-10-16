@@ -1,7 +1,5 @@
 #import "../style.typ": *
 
-// Stub: headings from writeup/OUTLINE.md only. No prose yet.
-
-= Answer key
+= Answer key <app-answers>
 
 #answer-key()

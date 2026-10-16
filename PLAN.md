@@ -324,7 +324,10 @@ guide on the 1,393-page tables). Publishing undecided. Built from `writeup/` (Ty
 `scripts/writeup/figures.py`, so a rebuild never leaves stale numbers. The build runs a privacy
 check either way. README results section: drafted on the 1,513-page numbers, marked
 provisional.
-*Status: planned (tasks in Next up 15).*
+*Status: learning map and build skeleton done (CC, 2026-10-14; Next up 15, task 11):
+`writeup/OUTLINE.md` (15 chapters and four appendices, glossary, readiness), `writeup/main.typ`,
+`style.typ` and stub chapters; `python -m spirometry.writeup build` compiles a 21-page stub
+PDF on the final numbers.json (typst 0.15.0, the `writeup` extra). Chapters next (task 12).*
 
 ## Next up
 1. ~~Review and merge the card-decisions + mod-entity PR; rerun the full build and read
@@ -484,8 +487,27 @@ provisional.
        (did.placebo_all, max_week_after=3, about 45 min). Uncalibrated keys renamed
        did.<h>.<patch>.uncalibrated.*. Phil reruns the export (--db), sensitivity and
        numbers before numbers.json has the new keys.
-   11. Write-up skeleton: Typst, boxes, chapter stubs, generated numbers appendix, lint for
-      hand-typed numbers, one build command (CC).
+   11. ~~Write-up skeleton: Typst, boxes, chapter stubs, generated numbers appendix, lint for
+      hand-typed numbers, one build command (CC).~~ *Done (CC, 2026-10-14).*
+      - *`writeup/OUTLINE.md`: for each chapter, its question, terms in order, analogies,
+        numbers (keys that exist; missing ones by what would supply them) and figures with
+        their inputs. Also the decision-log entries each chapter explains, what it must label
+        unverified or pending, and what it waits on; a glossary; v1 changes; readiness.*
+      - *Ready (numbers in saved final-rerun outputs, keys to add): chapters 0 and 3–7,
+        10, 11.*
+      - *Partly ready:*
+        - *1: audit aggregates and `build_info` fields in `meta.json`.*
+        - *2: audit, or the primer example.*
+        - *8, 9: the weeks 0–3 placebo run.*
+        - *13: task 9.*
+      - *Waits: 12 (task 7).*
+      - *Skeleton: `writeup/main.typ`, `style.typ` (#n, v1's boxes plus a skill box,
+        stop-and-check with a generated answer key, figure placeholders, table style),
+        `chapters/NN_slug.typ` stubs (headings only).*
+      - *`python -m spirometry.writeup build`: numbers (reused; `--refresh-numbers`), digit
+        lint, privacy, figure freshness, typst compile to `writeup/build/field_guide_v2.pdf`.
+        21 pages on the final numbers.json.*
+      - *Tests: `tests/test_writeup.py`.*
    12. Chapters 0–3 draft, for a voice check before the rest (CC drafts; Phil reads).
    13. Figure script for every figure (CC; Phil runs it and looks).
    14. Remaining chapters in four PRs; Phil writes the "what was found" passages and the
@@ -1172,3 +1194,31 @@ provisional.
   "total" line and its last page line, numbered from 1), checked against `meta.json`'s page
   count. Distinct runs stays out while 1,525,369 (`--count-only`) and 1,525,329 (audit)
   disagree.
+- Field guide skeleton (CC's choices, open to review, 2026-10-14):
+  - Chapter plan in `writeup/OUTLINE.md`: 15 chapters (0–14) and appendices A–D. Changes from
+    v1:
+    - A data chapter.
+    - The placebo calibration as its own chapter.
+    - Results split from dose-response.
+    - Two chapters for the second-patch puzzle.
+    - Instruments after the pick-rate story.
+    - v1's "next PR" checklist dropped.
+    - A skill box in every section.
+  - Departures from the Phase 7 / item 11 design:
+    - No "generated numbers appendix" listing every key. The decision of 2026-10-09 (no
+      reproducibility appendix) wins. The build stamp is on the title page, and Appendix C
+      is a one-page recap built from keys.
+    - The build reuses `writeup/numbers.json` and rebuilds it only with `--refresh-numbers`.
+  - Digit lint:
+    - It applies to every chapter file, headings and captions included, after removing
+      comments, `#n(...)` calls, `#fig` names and `#import`/`#include` lines.
+    - The allowlist is a short list of fixed-term patterns in `spirometry.writeup.ALLOW`,
+      each with a comment: weeks 0–3, build names, years, p(1 − p), |z| > 2, 95%, F < 10,
+      2×2, step/task/item/notebook/section numbers, and notebook file names. It does not
+      exempt whole lines.
+  - Figures: `writeup/figures/<name>.png`. A missing file prints a labelled placeholder. A
+    file older than the build stamp stops the build.
+  - Answers: each stop-and-check question carries its answer in the source
+    (`#check(([q], [a]), ...)`), and Appendix A collects them, so they can't drift apart.
+  - Chapters are numbered from 0, as in v1; sections are unnumbered.
+  - typst from PyPI, pinned at 0.15.0 in the `writeup` extra.

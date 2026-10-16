@@ -1602,7 +1602,8 @@ close to randomized. That supports:
   started with the old path keeps running; resume it with the new path.
 - Environment: dependencies live only in `pyproject.toml` (core: `requests`, and `duckdb`
   and `pyarrow` for the run tables; an `analysis` extra — pandas, numpy, matplotlib,
-  jupyter, scipy, pyfixest — for the notebooks and Phase 5). Locally a mamba env with `pip install -e .`; plain `pip install -e .` in
+  jupyter, scipy, pyfixest — for the notebooks and Phase 5; a `writeup` extra — typst,
+  pinned — for the field guide PDF). Locally a mamba env with `pip install -e .`; plain `pip install -e .` in
   cloud sessions and CI. No separate environment.yml / requirements.txt. `src/` layout
   (`[tool.setuptools.packages.find] where = ["src"]`).
 - Cloud session check passed: spire-codex.com reachable, `pip install -e .` works,

@@ -12,7 +12,7 @@ writeup/numbers.json
 writeup/numbers.csv
 # HMAC key for player-ID hashes (spirometry.runs); never commit
 .spirometry_salt
-
+writeup/build/
 
 
 # Python

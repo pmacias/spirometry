@@ -32,6 +32,9 @@ dashboard = [
 dev = [
     "pytest",
 ]
+writeup = [
+    "typst==0.15.0", # field guide v2 PDF (python -m spirometry.writeup build); pinned so a rebuild typesets the same
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

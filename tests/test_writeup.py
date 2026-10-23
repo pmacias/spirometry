@@ -54,7 +54,8 @@ def wu(tmp_path):
     one example chapter that uses every helper."""
     w = tmp_path / "writeup"
     shutil.copytree(REPO_WRITEUP, w, ignore=shutil.ignore_patterns(
-        "numbers.json", "numbers.csv", "build", "figures", "OUTLINE.md", "REVIEW.md"))
+        "numbers.json", "numbers.csv", "build", "figures", "listings", "OUTLINE.md",
+        "REVIEW.md", "REWORK.md"))
     for f in (w / "chapters").glob("*.typ"):
         if f.name != "a_answers.typ":
             f.write_text(_stub(f.read_text()))
@@ -85,6 +86,64 @@ def test_lint_allows_keys_comments_and_fixed_terms():
 def test_lint_reads_captions_and_check_text():
     bad = W.lint_text('#fig("fig_a", [Slope 1.4 here.])\n#check(([Q with 3?], [A.]))\n')
     assert [i for _, i, _ in bad] == [1, 2]
+
+
+def test_lint_math_flags_data_but_not_structure():
+    assert W.lint_text("$beta = 0.14$\n") == [("<text>", 1, "$beta = 0.14$")]
+    assert [i for _, i, _ in W.lint_text("Picks: $n = 1600$ offers.\n")] == [1]
+    ok = ("Variance $p(1 - p)$, OLS $hat(beta) = (X^T X)^(-1) X^T y$, coding $x in {0, 1}$.\n"
+          '$ hat(beta) = #n("dose.primary.h3.slope_first") $\n'
+          'An interval $hat(p) plus.minus 1.96 dot "SE"$; inline code `x[3, 3]`.\n')
+    assert W.lint_text(ok) == []
+
+
+def test_lint_multiline_equation_reports_the_right_line():
+    text = ("= Title\n\n$ y_i = alpha + beta x_i\n  + gamma z_i\n  + 0.25 w_i $ <eq-x>\n"
+            "After the equation, a stray 12.\n")
+    assert [i for _, i, _ in W.lint_text(text)] == [5, 6]
+
+
+def test_lint_code_and_escaped_dollars():
+    assert [i for _, i, _ in W.lint_text("A `beta = 0.05` slip.\n")] == [1]
+    # an escaped dollar opens no math, and the digit after it is plain text
+    assert [i for _, i, _ in W.lint_text("It costs \\$5 here.\n")] == [1]
+
+
+def test_listing_extracts_a_function_with_source_lines():
+    import inspect
+    from spirometry import teaching_sims
+    code, e = W.extract_listing("teaching_sims.two_columns")
+    src, start = inspect.getsourcelines(teaching_sims.two_columns)
+    assert code == "".join(src) and e["first"] == start
+    assert e["numbers"] == [str(start + i) for i in range(len(src))]
+    assert e["path"] == "spirometry/teaching_sims.py" and e["functions"] == "two_columns"
+
+
+def test_listing_excerpt_and_several_functions():
+    code, e = W.extract_listing("did.subset_columns")
+    assert '# ...' in code and 'd["is_treated"]' in code and "drop_shared_screens:" not in code
+    assert "" in e["numbers"]                       # the cut has no line number
+    code, e = W.extract_listing("did.fit_did")
+    assert "def _fixed_effects" in code and "def _fit_did" in code
+    assert len(code.splitlines()) == len(e["numbers"])
+
+
+def test_unknown_listing_stops(monkeypatch):
+    with pytest.raises(W.WriteupError, match="no_such_function"):
+        W.extract_listing("did.no_such_function")
+    with pytest.raises(W.WriteupError, match="no module"):
+        W.extract_listing("no_module.f")
+    monkeypatch.setitem(W.LISTINGS, "bad", dict(source="did:_subset", start="NOT THERE"))
+    with pytest.raises(W.WriteupError, match="start pattern"):
+        W.extract_listing("bad")
+    monkeypatch.setattr(W, "MAX_LISTING_LINES", 5)
+    with pytest.raises(W.WriteupError, match="lines"):
+        W.extract_listing("teaching_sims.two_columns")
+
+
+def test_repo_listings_resolve():
+    for name in W.listing_names(REPO_WRITEUP):
+        W.extract_listing(name)
 
 
 def test_repo_chapters_pass_the_lint():
@@ -149,6 +208,44 @@ def test_missing_key_fails_the_compile(wu):
     p = wu / "chapters" / "05_did.typ"
     p.write_text(p.read_text() + '\nThe slope is #n("dose.no_such.key").\n')
     with pytest.raises(W.WriteupError, match="no key 'dose.no_such.key'"):
+        W.build(wu, allow_sample=True)
+
+
+def test_listing_equation_and_boxes_compile(wu):
+    pytest.importorskip("typst")
+    p = wu / "chapters" / "06_regression.typ"
+    p.write_text(p.read_text() + """
+$ hat(beta) = (X^T X)^(-1) X^T y $ <eq-ols>
+
+See @eq-ols and @eq-var; the slope is $#n("dose.triage.h3.slope_first")$.
+#mixup[You might read this as a date flag.]
+#mathfull[$a = b$.]
+#incode("teaching_sims.two_columns", [Two columns.])[It returns the slope.]
+""")
+    q = wu / "chapters" / "03_counting.typ"
+    q.write_text(q.read_text() + "\n$ p(1 - p) $ <eq-var>\n")
+    r = W.build(wu, allow_sample=True)
+    assert r["listings"] == ["teaching_sims.two_columns"]
+    assert (wu / "listings" / "teaching_sims.two_columns.py").exists()
+    text = _pdf_text(r["pdf"])
+    if text is not None:                            # pdftotext available
+        assert "Equation (6.1)" in text and "Equation (3.1)" in text
+        assert "Listing 6.1" in text
+
+
+def _pdf_text(pdf):
+    import subprocess
+    try:
+        return subprocess.run(["pdftotext", pdf, "-"], capture_output=True, text=True,
+                              check=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def test_missing_listing_stops_the_build(wu):
+    p = wu / "chapters" / "06_regression.typ"
+    p.write_text(p.read_text() + '\n#listing("did.no_such_function", [Gone.])\n')
+    with pytest.raises(W.WriteupError, match="no_such_function"):
         W.build(wu, allow_sample=True)
 
 

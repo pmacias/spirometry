@@ -88,7 +88,7 @@ unverified item with where it comes from.
 - *Why Patter and Sculpting Strike were offered more after the first patch.* Not a rarity
   pool change; something specific to the two cards.
 - *The negative upgrade-only placebos* (Royalties, Untouchable v0.107.1). Drift in the second
-  patch's thin before block is the first candidate.
+  patch's short, smaller before block is the first candidate.
 - *Which informative tweaks show a step, a ramp or a drift at their first-beta date.* Not yet
   recorded.
 - *Ascension as one baseline per level or in bands*, and whether any estimate depends on it.

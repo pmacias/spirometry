@@ -350,6 +350,15 @@ Future work (not planned): win effects and the power check (task 9), the strengt
 (step 5), perception against strength (step 6), partial pooling (step 7), the staggered
 rollout (step 8), reworks (step 9), the stayers-only token fit, the pre-declared aggregates on
 the final tables, the dashboard, the release checklist and publishing.*
+*Rework (Phil, 2026-10-22; `writeup/REWORK.md` tracks it): typeset math, code listings from
+the source and the reading notes ported in, in four phases, one PR each. Phase 1 (CC,
+2026-10-22): infrastructure and chapter 6 as the pilot. `spirometry.teaching_sims` (19 toys,
+tested), `toy.*` keys in `spirometry.numbers`, 15 toy figures in `figures.py`, the digit lint
+extended to math and inline code, code listings extracted at build time
+(`python -m spirometry.writeup listings`), equations numbered by chapter, the COMMON MIX-UP /
+THE MATH, IN FULL / IN CODE boxes, a notation table in Appendix B; chapter 6 rewritten
+(additions 6A–6D, teaching notes §5, §16, §18, §19, 18 equations, 7 listings). The real build
+is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (chapters 0–5).*
 
 ## Next up
 1. ~~Review and merge the card-decisions + mod-entity PR; rerun the full build and read
@@ -399,7 +408,7 @@ the final tables, the dashboard, the release checklist and publishing.*
    planned.* (l) the upgrade-only placebos on
    Royalties and Untouchable (v0.107.1), 2.6σ and 3.2σ below zero on the 1,513-page rerun,
    2.1σ and 5.0σ on the final one (drift in the
-   thin second-patch before block is the first candidate). *On the placebo scale they are
+   short, smaller second-patch before block is the first candidate). *On the placebo scale they are
    within or at the edge of what unchanged cards show (triage, Part 1 side results).* (m)
    recheck "When in the run" at fixed floors on the new tables. *Only if the field guide uses
    the figure.* Win effects (steps 4–5): tooling in
@@ -573,6 +582,10 @@ the final tables, the dashboard, the release checklist and publishing.*
       tests only run locally.
    16. ~~Only if Phil decides to publish: release checklist (item 12), then publish (Phil).~~
       *Future work, not planned (Phil, 2026-10-16).*
+   17. Rework of field guide v2: math, code listings and the reading notes (Phil, 2026-10-22;
+      tracker `writeup/REWORK.md`), four CC phases, one PR each. *Phase 1 (infrastructure and
+      chapter 6) done (CC, 2026-10-22); Phil reviews the pilot before phase 2 (chapters 0–5),
+      then phase 3 (7–10) and phase 4 (11–14, appendices, read-through).*
 
 ## Decision log
 - Spire Codex export is the primary source; sts2runs.com only for cross-checks.
@@ -947,9 +960,10 @@ the final tables, the dashboard, the release checklist and publishing.*
     and counted (`n_controls_skipped_weak`); ITT and first-stage changes stay. Fewer than
     `min_offered` (500) offered runs in a block: every change blank, counted
     (`n_controls_skipped_few`). Fit errors counted as `n_controls_error`.
-  - Thin before blocks (the second patch's v0.103.3): no special handling; `n_runs_*`,
-    `n_offered_*` and `n_picked_*` per block are in the summary, and the se's carry the
-    thinness. No pooling with v0.103.2 (Phase 5 first-pass decision: v0.103.3 alone).
+  - Short, smaller before blocks (the second patch's v0.103.3: about three weeks and about
+    half the runs of v0.99.1 or v0.103.2; not a thin build, which means under 2,000 primary
+    runs): no special handling; `n_runs_*`, `n_offered_*` and `n_picked_*` per block are in
+    the summary, and the se's carry the smaller counts. No pooling with v0.103.2 (Phase 5 first-pass decision: v0.103.3 alone).
   - Multiple comparisons: nothing adjusted in the tooling; the summary has one row per
     tweak (43, 3 of them skipped as upgrade-only), so the notebook can count. Partial
     pooling (step 7) is the planned answer.
@@ -1358,3 +1372,47 @@ the final tables, the dashboard, the release checklist and publishing.*
     dose line follows the 2026-10-09 mixed-tweak rule (Reflect on as a nerf); chapter 9 says
     so. The forest figure colours Leading Strike as a nerf by its main field; its caption says
     so.
+- Field guide v2 rework (Phil, 2026-10-22): typeset math throughout, code listings from the
+  source, the reading notes ported in, COMMON MIX-UP / THE MATH, IN FULL / IN CODE boxes, no
+  page target (supersedes "about 46 pages"). Four phases, one PR each: infrastructure and
+  chapter 6 (Phil reviews before the rest), chapters 0–5, chapters 7–10, chapters 11–14 and the
+  appendices. `writeup/REWORK.md` is the tracker every rework session reads first.
+- Field guide rework, phase 1 (CC's choices, open to review, 2026-10-22):
+  - Digit lint in math and code: inside `$...$` (display equations over several lines
+    included) and inline code, single-digit integers are structure; a decimal or a
+    multi-digit integer is an error unless `ALLOW` names it. The error gives the line of the
+    offending token. `ALLOW` entries added: 1.96 and 1.4826 as constants of the normal
+    distribution (not keys: they are not measured), and the estimator names HC1, CR1 and
+    CRV1.
+  - Listings: chapters name a listing (`#listing("name", [caption])`, or `#incode(...)` with a
+    walk-through); the build extracts it with `ast` into `writeup/listings/<name>.py`
+    (git-ignored) with an index of source file, functions and line numbers, which reaches
+    Typst as `sys.inputs.listings` (so a compile outside the build fails on a listing, where
+    figures print placeholders). A name is `<module>.<function>` under `spirometry`, or a
+    `writeup.LISTINGS` entry for several functions in one listing or an excerpt (start and end
+    patterns on the code; `# ...` marks the cut and has no line number). A name or pattern
+    that no longer resolves, or a listing over 60 lines, stops the build. The gutter shows the
+    source file's own line numbers. Listings of 45 lines or fewer never break across pages.
+  - Equations: every display equation is numbered by chapter, (6.3), and by letter in the
+    appendices. References go through a show rule, so a reference from another chapter gets
+    the equation's own chapter (a numbering function alone took the referencing chapter's).
+  - Box labels stick to the box's next block, so a label is never alone at a page's foot.
+    Figure widths by name (`small`, `medium`), so chapter files carry no digits.
+  - `spirometry.teaching_sims`: one function per toy, the notes' code with its seeds (the
+    regression toy's second part has its own seed, 161, instead of continuing the first
+    part's generator). Numbers go out as one long table (`teaching_sims.csv`: toy, quantity,
+    value, kind, decimals) that `spirometry.numbers` formats; the figures read
+    `toy_<toy>_<part>.csv`. Worked examples that are arithmetic, not simulation (one offer's
+    SD, the SE of a difference, a log-odds push, false alarms), are titled "Worked example,
+    not your data". The synthetic build runs the real toys with `--quick`.
+  - `phil_runs.sh` gets a `toys` step before `numbers`, which now needs `teaching_sims.csv`.
+  - New key family `did.hand_vs_model.*` (median and largest |model − hand 2×2| in SEs over the
+    43 tweaks, all weeks): a summary of two existing columns, like the SE ratios, so chapter 6
+    can say the model and the hand calculation agree for every tweak (median 0.10 SE, at most
+    0.42), not only Parry. Flagged for Phil: it is a new statement about real data.
+  - Chapter 6's model uses named subscripts (card, upg, grp, blk, act, asc), the columns of
+    `fit_did`'s formula, so they don't clash with the 2×2 regression's a, b, c, d; the
+    formula's `card_id^group` term is φ, beside the brief's α, γ, δ, η and β.
+  - Corrections item 6 applied wherever the term appeared: "short, smaller before block" for
+    v0.103.3 (here, chapter 7's answer, chapter 14's open list, SPIROMETRY.md), not "thin",
+    the term for builds under 2,000 primary runs.

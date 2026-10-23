@@ -36,6 +36,9 @@ notebooks/scratch*.ipynb
 
 # Notes
 notes/spirometry_stats_field_guide_v1.pdf
+notes/field_guide_review/
 
 # Claude settings
 .claude/*.bak
+writeup/listings/
+notes/stats_learning_log.ipynb

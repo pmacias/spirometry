@@ -277,7 +277,8 @@ def write_numbers_inputs(analysis_dir, results_dir, ref_dir, seed=0, triage_dir=
     results_dir with a synthetic runs.duckdb (write_sample_db, beside results_dir), so
     meta.json has a build stamp, play dates and dedup counts (and sample: true); the placebo
     fits (all weeks) and diagnostics; spirometry.sensitivity's tables (sensitivity.run) in
-    analysis_dir/writeup; IV-primer-shaped tables; notebook 01's audit summary; synthetic
+    analysis_dir/writeup; IV-primer-shaped tables; the toy simulations (spirometry.
+    teaching_sims, quick); notebook 01's audit summary; synthetic
     triage outputs (in triage_dir, default beside results_dir, under out_final/) and
     spirometry.checks' design_checks.csv; and a snapshot.log beside results_dir. Returns the
     tweak table."""
@@ -321,6 +322,8 @@ def write_numbers_inputs(analysis_dir, results_dir, ref_dir, seed=0, triage_dir=
     second.to_parquet(analysis_dir / "second_patch_checks_h3.parquet")
     S.run(analysis_dir, analysis_dir / "writeup", n_sim=20, ref=ref_dir)
     write_iv_tables(analysis_dir / "writeup")
+    from spirometry import teaching_sims        # simulations already: run them, few draws
+    teaching_sims.run(analysis_dir / "writeup", quick=True)
     write_audit_summary(analysis_dir)
     triage_dir = pathlib.Path(triage_dir or results_dir.parent / "triage")
     write_triage_outputs(triage_dir / "out_final", D, rng)

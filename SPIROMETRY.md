@@ -1220,7 +1220,7 @@ all-weeks estimates (same model) gives the same picture.
   for the same size of change (median 1.9 against 4.1 points; the 1,513-page tables gave 1.5
   against 4.2, "about a third"). Candidates: the SlayTheStats mod's community-stats tooltips
   (from 2026-06-19, the same UTC day the stable population switched to v0.107.1, about 01:00
-  UTC; triage G1), drift in the thin before block (v0.103.3, stable for about three weeks; the
+  UTC; triage G1), drift in the short, smaller before block (v0.103.3, stable for about three weeks; the
   upgrade-only placebos below point that way), more experienced players and a settled meta,
   the kind of number changed (several second-patch mains are power amounts or Forge).
   Anticipation (above) gives no support for most of the tweaks it can test.

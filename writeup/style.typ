@@ -1,7 +1,9 @@
-// Field guide v2: page style, the number function, v1's boxes, figures and tables.
+// Field guide v2: page style, the number function, v1's boxes, the rework's boxes (common
+// mix-up, the math in full, in code), code listings, equations, figures and tables.
 // Every number in the text comes from numbers.json (python -m spirometry.numbers) through
 // #n("key"); a key that isn't there stops the compile. The build (python -m spirometry.writeup
-// build) also lints the chapters for hand-typed digits.
+// build) also lints the chapters for hand-typed digits (math included) and extracts the code
+// listings from the package source.
 
 #let data = json("numbers.json")
 #let numbers = data.numbers
@@ -15,6 +17,30 @@
   numbers.at(key).text
 }
 
+// main.typ sets this before the appendices, so their equations and listings read (B.1).
+#let in-appendix = state("in-appendix", false)
+
+// "(6.3)": chapter, then the equation's (or listing's) number within the chapter.
+#let _chapter-at(loc) = {
+  let h = counter(heading).at(loc).first()
+  if in-appendix.at(loc) { numbering("A", h) } else { str(h - 1) }
+}
+#let by-chapter(..num) = context _chapter-at(here()) + "." + str(num.pos().first())
+
+// A reference is numbered where the equation or listing is, not where the reference is
+// (a numbering function alone would take the referencing chapter's number).
+#let _ref-by-chapter(it) = {
+  let el = it.element
+  if el == none { return it }
+  let (word, c) = if el.func() == math.equation {
+    ("Equation", counter(math.equation))
+  } else if el.func() == figure and el.kind == "listing" {
+    ("Listing", counter(figure.where(kind: "listing")))
+  } else { return it }
+  let num = _chapter-at(el.location()) + "." + str(c.at(el.location()).first())
+  link(el.location(), if word == "Equation" [#word (#num)] else [#word #num])
+}
+
 // ---------------------------------------------------------------------------- colours
 
 #let ink = luma(25)
@@ -25,20 +51,24 @@
 #let c-watch = rgb("#a33b3b")    // watch out
 #let c-skill = rgb("#6b4f9a")    // skill
 #let c-picture = rgb("#8a6d1f")  // a picture to hold on to
+#let c-mixup = rgb("#9a3b74")    // common mix-up
+#let c-math = rgb("#3d5a80")     // the math, in full
+#let c-code = rgb("#2a7a72")     // in code
 
 // ---------------------------------------------------------------------------- boxes
 
-#let _box(label, colour, body) = block(
+#let _box(label, colour, body, breakable: false) = block(
   width: 100%,
   inset: (left: 12pt, right: 10pt, y: 9pt),
   fill: colour.lighten(92%),
   stroke: (left: 2.5pt + colour),
-  breakable: false,
+  breakable: breakable,
   above: 1.1em,
   below: 1.1em,
   {
-    text(size: 7.5pt, weight: "bold", tracking: 0.08em, fill: colour, upper(label))
-    v(0.35em, weak: true)
+    // the label sticks to what follows, so it is never alone at a page's foot
+    block(sticky: true, below: 0.35em,
+      text(size: 7.5pt, weight: "bold", tracking: 0.08em, fill: colour, upper(label)))
     body
   },
 )
@@ -51,6 +81,54 @@
 #let watch(body) = _box("Watch out", c-watch, body)
 // New in v2: the general data-science skill a section exercises.
 #let skill(body) = _box("Skill", c-skill, body)
+
+// New in the rework (2026-10-22). A first reading that goes wrong, and its fix: "You might
+// read this as ...", why not, then the right reading.
+#let mixup(body) = _box("Common mix-up", c-mixup, body)
+// A derivation the reader can skip. Long ones may break across pages.
+#let mathfull(body) = _box("The math, in full (skip if you like)", c-math, body,
+  breakable: true)
+
+// ------------------------------------------------------------------------ listings
+
+// The build extracts each listing the chapters name from the package source into
+// writeup/listings/<name>.py and passes the index (source file, functions, line numbers) as
+// sys.inputs.listings. A name not in the index stops the compile.
+#let _listings = json(bytes(sys.inputs.at("listings", default: "{}")))
+
+#let listing(name, caption) = {
+  if name not in _listings {
+    panic("no listing '" + name + "' (python -m spirometry.writeup build extracts it)")
+  }
+  let L = _listings.at(name)
+  let code = read("listings/" + name + ".py")
+  // a short listing stays whole (caption with code); only a long one may break
+  show figure: set block(breakable: L.numbers.len() > 45)
+  figure(
+    kind: "listing",
+    supplement: [Listing],
+    numbering: by-chapter,
+    caption: [#caption #text(fill: muted)[(#raw(L.path): #raw(L.functions), lines
+      #str(L.first)–#str(L.last))]],
+    block(width: 100%, fill: luma(248), inset: (x: 6pt, y: 6pt), radius: 2pt, {
+      set text(size: 7.4pt)
+      set par(leading: 0.5em)
+      show raw.line: it => {
+        box(width: 2.6em, align(right, text(fill: luma(140), L.numbers.at(it.number - 1, default: ""))))
+        h(0.9em)
+        it.body
+      }
+      align(left, raw(code, lang: "python", block: true))
+    }),
+  )
+}
+
+// A listing and its walk-through: what goes in, what comes out, the lines that matter and
+// which equation they implement.
+#let incode(name, caption, body) = _box("In code", c-code, {
+  listing(name, caption)
+  body
+}, breakable: true)
 
 // The one-line subtitle under a chapter title (v1's style).
 #let lead(body) = block(above: -0.6em, below: 1.3em, text(size: 12pt, fill: muted, body))
@@ -93,9 +171,13 @@
 // before scripts/writeup/figures.py has been run.
 #let _available = sys.inputs.at("figures", default: "").split(",").filter(s => s != "")
 
-#let fig(name, caption) = {
+// Figure widths by name, so chapter files carry no digits.
+#let small = 70%
+#let medium = 85%
+
+#let fig(name, caption, width: 100%) = {
   if name in _available {
-    figure(image("figures/" + name + ".png", width: 100%), caption: caption)
+    figure(image("figures/" + name + ".png", width: width), caption: caption)
   } else {
     figure(
       block(
@@ -157,9 +239,14 @@
   set text(size: 10.5pt, fill: ink)
   set par(leading: 0.68em, spacing: 1.05em)
   set heading(numbering: chapter-numbering, supplement: [Chapter])
+  set math.equation(numbering: (..n) => [(#by-chapter(..n))], supplement: [Equation])
+  show ref: it => context _ref-by-chapter(it)
+  show figure.where(kind: "listing"): set figure.caption(position: top)
   show heading.where(level: 1): it => {
     pagebreak(weak: true)
     _qcount.update(0)
+    counter(math.equation).update(0)
+    counter(figure.where(kind: "listing")).update(0)
     block(below: 1.4em, {
       if it.numbering != none {
         context text(size: 8.5pt, weight: "bold", tracking: 0.1em, fill: accent,

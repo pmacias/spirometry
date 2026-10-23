@@ -648,11 +648,321 @@ def fig_iv_weak(I, out):
     save(fig, out, "fig_iv_weak")
 
 
+# ------------------------------------------------------------------ toy simulations
+# spirometry.teaching_sims (rework, 2026-10-22): every title says "simulation", because
+# nothing here is your data.
+
+SIM = "Simulation with known truth"
+CALC = "Worked example, not your data"
+
+
+def _toy(I, toy, part):
+    return I.csv("w", f"toy_{toy}_{part}.csv")
+
+
+def _toy_value(I, toy, quantity):
+    s = I.csv("w", "teaching_sims.csv")
+    v = s.loc[(s.toy == toy) & (s.quantity == quantity), "value"]
+    if v.empty:
+        raise Missing(f"teaching_sims.csv: {toy} {quantity}")
+    return float(v.iloc[0])
+
+
+def fig_toy_bernoulli_sd(I, out):
+    """§1: the spread of one yes/no offer, sqrt(p(1 - p))."""
+    c = _toy(I, "bernoulli_spread", "curve")
+    fig, ax = plt.subplots(figsize=(5.5, 3))
+    ax.plot(c.p, c.sd, color=INK)
+    for p in (0.2, 0.5):
+        sd = np.sqrt(p * (1 - p))
+        ax.plot(p, sd, "o", color=BUFF, markersize=7)
+        ax.annotate(f"p = {p:g}: SD = {sd:.2f}", (p, sd), textcoords="offset points",
+                    xytext=(8, -14), fontsize=8)
+    ax.set(xlabel="pick rate p", ylabel="SD of one offer", ylim=(0, 0.55),
+           title=f"{CALC}: the spread of one yes/no offer, √(p(1 − p))")
+    save(fig, out, "fig_toy_bernoulli_sd")
+
+
+def fig_toy_sd_vs_se(I, out):
+    """§2: the data (two bars) against the estimate over imagined reruns."""
+    r = _toy(I, "sd_vs_se", "reruns")
+    p, n = _toy_value(I, "sd_vs_se", "p_true"), int(_toy_value(I, "sd_vs_se", "n"))
+    share = _toy_value(I, "sd_vs_se", "share_picked")
+    sd, se = _toy_value(I, "sd_vs_se", "sd_data"), _toy_value(I, "sd_vs_se", "se_formula")
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(7.5, 3))
+    a1.bar([0, 1], [1 - share, share], width=0.35, color=MUTED)
+    a1.set_xticks([0, 1], ["skip (0)", "pick (1)"])
+    a1.set(ylabel="share of offers", title=f"The data: one dataset of {n:,} offers\n"
+           f"SD = {sd:.2f}")
+    a2.hist(r.estimate, bins=40, density=True, color=BUFF, alpha=0.5)
+    x = np.linspace(r.estimate.min(), r.estimate.max(), 200)
+    a2.plot(x, np.exp(-0.5 * ((x - p) / se) ** 2) / (se * np.sqrt(2 * np.pi)), color=INK, lw=1)
+    a2.set(xlabel="estimated pick rate", ylabel="density",
+           title=f"The estimate over {len(r):,} reruns\nSE = SD / √n = {se:.3f}")
+    fig.suptitle(SIM, fontsize=8, color=MUTED)
+    save(fig, out, "fig_toy_sd_vs_se")
+
+
+def fig_toy_lln_clt(I, out):
+    """§3: Picture B (CLT) at growing n on top; Picture A (LLN) below."""
+    c, r = _toy(I, "lln_clt", "clt"), _toy(I, "lln_clt", "running")
+    p = _toy_value(I, "lln_clt", "p")
+    ns = sorted(c.n.unique())
+    fig = plt.figure(figsize=(8, 5))
+    for i, n in enumerate(ns):
+        ax = fig.add_subplot(2, len(ns), i + 1)
+        e = c.estimate[c.n == n]
+        if n <= 10:
+            vals, counts = np.unique(e, return_counts=True)
+            ax.bar(vals, counts / len(e), width=0.8 / n, color=BUFF, alpha=0.7)
+        else:
+            ax.hist(e, bins=30, density=True, color=BUFF, alpha=0.6)
+            se = np.sqrt(p * (1 - p) / n)
+            x = np.linspace(e.min(), e.max(), 200)
+            ax.plot(x, np.exp(-0.5 * ((x - p) / se) ** 2) / (se * np.sqrt(2 * np.pi)),
+                    color=INK, lw=1)
+        ax.axvline(p, color=NERF, ls="--", lw=1)
+        ax.set_title(f"n = {n:,}", fontsize=8)
+        ax.tick_params(labelsize=6)
+        ax.set_yticks([])
+    ax = fig.add_subplot(2, 1, 2)
+    k = r.offers.to_numpy()
+    se_k = np.sqrt(p * (1 - p) / k)
+    ax.plot(k, r.estimate, color=INK, lw=1, label="running estimate, one dataset")
+    ax.fill_between(k, p - se_k, p + se_k, color=BUFF, alpha=0.2, lw=0, label="true p ± 1 SE")
+    ax.axhline(p, color=NERF, ls="--", lw=1, label="true p")
+    ax.set(xscale="log", ylim=(0, 1), xlabel="offers so far (log scale)",
+           ylabel="estimated pick rate")
+    ax.legend(fontsize=7, loc="upper right")
+    fig.suptitle(f"{SIM}. Top: the estimate over many reruns at fixed n (central limit "
+                 "theorem). Bottom: one dataset growing (law of large numbers).",
+                 fontsize=8, color=MUTED)
+    save(fig, out, "fig_toy_lln_clt")
+
+
+def fig_toy_posterior(I, out):
+    """§4: a flat prior updated offer by offer."""
+    d = _toy(I, "small_samples", "posterior")
+    p = _toy_value(I, "small_samples", "p_true")
+    fig, ax = plt.subplots(figsize=(6, 3.4))
+    ns = sorted(d.n.unique())
+    shades = np.linspace(0.75, 0.0, len(ns))
+    for n, g in zip(ns, shades):
+        s = d[d.n == n]
+        ax.plot(s.p, s.density, color=str(g) if n else MUTED, lw=1.5,
+                ls="--" if n == 0 else "-", label=f"n = {n:,}, picks = {int(s.k.iloc[0])}")
+    ax.axvline(p, color=NERF, ls=":", lw=1.5, label="true p")
+    ax.set(xlabel="pick rate p", ylabel="posterior density", ylim=(0, 20),
+           title=f"{SIM}: a flat prior updated offer by offer")
+    ax.legend(fontsize=7, ncol=2)
+    save(fig, out, "fig_toy_posterior")
+
+
+def fig_toy_log_odds(I, out):
+    """§5: the same log-odds push at every baseline, in points."""
+    c, pts = _toy(I, "log_odds_push", "curve"), _toy(I, "log_odds_push", "points")
+    delta = _toy_value(I, "log_odds_push", "delta")
+    fig, ax = plt.subplots(figsize=(5.8, 3.2))
+    ax.plot(100 * c.p0, 100 * c.exact, color=INK, label="exact")
+    ax.plot(100 * c.p0, 100 * c.approx, color=BUFF, ls="--", lw=1.5,
+            label="rule of thumb: Δ · p(1 − p)")
+    for r in pts.itertuples():
+        ax.plot(100 * r.p0, 100 * r.exact, "o", color=INK, markersize=6)
+        ax.annotate(f"{100 * r.p0:.0f}% card: +{100 * r.exact:.1f} points",
+                    (100 * r.p0, 100 * r.exact), textcoords="offset points",
+                    xytext=(8, 6) if r.p0 >= 0.45 else (6, -12), fontsize=7)
+    ax.set(xlabel="pick rate before (%)", ylabel="change in pick rate (points)",
+           ylim=(0, 1.15 * 100 * c.exact.max()),
+           title=f"{CALC}: a +{delta:g} log-odds push at different baselines")
+    ax.legend(fontsize=7, loc="lower center")
+    save(fig, out, "fig_toy_log_odds")
+
+
+def fig_toy_fixed_bias(I, out):
+    """§6: a fixed bias at growing n: precise and wrong."""
+    e = _toy(I, "fixed_bias", "estimates")
+    p = _toy_value(I, "fixed_bias", "p_true")
+    bias = _toy_value(I, "fixed_bias", "bias_pp")
+    ns = sorted(e.n.unique())
+    fig, axes = plt.subplots(1, len(ns), figsize=(8, 2.6), sharey=False)
+    for ax, n in zip(axes, ns):
+        s = e.estimate[e.n == n]
+        se = np.sqrt(p * (1 - p) / n)
+        lo, hi = min(s.min(), p) - 0.002, max(s.max(), p) + 0.002
+        ax.hist(s, bins=np.linspace(lo, hi, 35), color=MUTED, alpha=0.7)
+        ax.axvline(p, color=NERF, ls="--", lw=1.5, label="truth")
+        ax.axvline(p + bias, color=INK, lw=1, label="where it centres")
+        ax.set_title(f"n = {n:,}\nbias / SE = {bias / se:.1f}", fontsize=8)
+        ax.set_yticks([])
+        ax.tick_params(labelsize=6)
+        ax.xaxis.set_major_locator(plt.MaxNLocator(3))
+    axes[0].legend(fontsize=6, loc="upper left")
+    fig.supxlabel("estimated pick rate", fontsize=8)
+    fig.suptitle(f"{SIM}: an estimate one point too high, at growing sample size",
+                 fontsize=9)
+    save(fig, out, "fig_toy_fixed_bias")
+
+
+def fig_toy_se_difference(I, out):
+    """§7: the SE of a difference floors at its smaller side."""
+    c = _toy(I, "se_difference", "curve")
+    nb = int(_toy_value(I, "se_difference", "n_before"))
+    se_b = _toy_value(I, "se_difference", "se_before_pp")
+    fig, ax = plt.subplots(figsize=(5.8, 3.2))
+    ax.plot(c.n_after, 100 * c.se_diff, color=INK, label="SE of the difference")
+    ax.axhline(100 * se_b, color=BUFF, ls="--", lw=1.5,
+               label="before block's SE alone (the floor)")
+    ax.axvline(nb, color=MUTED, ls=":", lw=1)
+    ax.set(xscale="log", xlabel="offers in the after block (log scale; dotted: equal sizes)",
+           ylabel="SE (points)", ylim=(0, None),
+           title=f"{CALC}: a difference is limited by its smaller side\n"
+                 f"(before block fixed at {nb:,} offers)")
+    ax.legend(fontsize=7)
+    save(fig, out, "fig_toy_se_difference")
+
+
+def fig_toy_buffs_nerfs(I, out):
+    """§8: buffs and nerfs on one line."""
+    d = _toy(I, "buffs_nerfs", "points")
+    slope = _toy_value(I, "buffs_nerfs", "slope")
+    fig, ax = plt.subplots(figsize=(5, 3.4))
+    for ch, col, mk in (("buff", BUFF, "o"), ("nerf", NERF, "s")):
+        s = d[d.change == ch]
+        ax.scatter(s.dose, s.effect, color=col, marker=mk, s=40, label=f"{ch}s", zorder=3)
+    b, a = np.polyfit(d.dose, d.effect, 1)
+    xx = np.array([-0.4, 0.4])
+    ax.plot(xx, a + b * xx, color=INK, lw=1, label=f"fitted slope {slope:.2f}")
+    zero_line(ax)
+    zero_line(ax, "x")
+    ax.set(xlabel="dose = ln(new / old)", ylabel="effect on picks (log-odds)",
+           title=f"{SIM}: the mean effect cancels, the slope doesn't")
+    ax.legend(fontsize=7)
+    save(fig, out, "fig_toy_buffs_nerfs")
+
+
+def fig_toy_type_shock(I, out):
+    """§9: a type-wide shock leaks through mixed controls."""
+    names = [("truth_pp", "truth"), ("naive_pp", "naive before/after"),
+             ("did_mixed_pp", "DiD, same-character controls"),
+             ("did_skill_only_pp", "DiD, skill-only controls")]
+    v = [_toy_value(I, "type_shock", q) for q, _ in names]
+    fig, ax = plt.subplots(figsize=(5.8, 2.4))
+    y = np.arange(len(v))[::-1]
+    ax.barh(y, [100 * x for x in v], color=[INK, MUTED, NERF, BUFF], height=0.55)
+    ax.set_yticks(y, [lab for _, lab in names], fontsize=8)
+    ax.axvline(100 * v[0], color=INK, ls="--", lw=1)
+    zero_line(ax, "x")
+    ax.set(xlabel="estimated effect of the nerf (points)",
+           title=f"{SIM}: a shock to one card type leaks through mixed controls")
+    save(fig, out, "fig_toy_type_shock")
+
+
+def fig_toy_power(I, out):
+    """§10: a toy power curve."""
+    t = _toy(I, "toy_power", "curve")
+    fig, ax = plt.subplots(figsize=(5, 3))
+    ax.plot(t.planted, 100 * t.detected, color=INK, marker="o", markersize=7)
+    ax.axhline(5, color=MUTED, ls=":", lw=1)
+    ax.set(xlabel="planted slope", ylabel="detected (% of simulations)", ylim=(0, 100),
+           title=f"{SIM}: a toy power curve (dotted: 5%)")
+    save(fig, out, "fig_toy_power")
+
+
+def fig_toy_false_alarms(I, out):
+    """§11: understated error bars inflate the share of null fits flagged."""
+    c = _toy(I, "false_alarms", "curve")
+    fig, ax = plt.subplots(figsize=(5.5, 3.2))
+    ax.plot(c.f, 100 * c.share, color=INK)
+    ax.set(xlabel="true scatter ÷ reported SE", ylabel="null fits flagged |z| > 2 (%)",
+           ylim=(0, 100), title=f"{CALC} (normal scatter assumed):\n"
+                                 "how understated error bars inflate false alarms")
+    save(fig, out, "fig_toy_false_alarms")
+
+
+def fig_toy_spillover(I, out):
+    """§13: spillover with one card nerfed against eight buffed."""
+    e = _toy(I, "spillover", "estimates").set_index("scenario")
+    rows = [("did_other", "other characters"), ("did_same", "same character"),
+            ("did_drop_screens", "same char., drop treated's screens")]
+    fig, axes = plt.subplots(1, 2, figsize=(8, 2.6), sharey=True)
+    for ax, s, title in zip(axes, ("a", "b"), ("A: one card nerfed", "B: eight cards buffed")):
+        v = [100 * e.loc[s, q] for q, _ in rows]
+        y = np.arange(len(v))[::-1]
+        ax.barh(y, v, color=MUTED, height=0.55)
+        ax.axvline(100 * e.loc[s, "truth"], color=INK, ls="--", lw=1.2)
+        ax.set_yticks(y, [lab for _, lab in rows], fontsize=8)
+        zero_line(ax, "x")
+        ax.set(title=title, xlabel="estimated effect on card 0 (points)")
+    fig.suptitle(SIM + ": DiD with the controls named on the left; dashed line: the truth "
+                 "(card 0's own change)", fontsize=8, color=MUTED)
+    save(fig, out, "fig_toy_spillover")
+
+
+def fig_toy_drift(I, out):
+    """§15: skips and one card's discovery trend with no patch."""
+    w = _toy(I, "drift", "weeks")
+    wk = _toy_value(I, "drift", "fake_patch_week")
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(8, 2.9))
+    a1.plot(w.week, 100 * w.skip, color=NERF, marker="s", label="skip rate")
+    a1.plot(w.week, 100 * w.controls, color=MUTED, marker="o", label="controls' pick rate")
+    a1.set(xlabel="week", ylabel="%", title="The total isn't fixed: skips can trend")
+    a1.legend(fontsize=7)
+    a2.plot(w.week, 100 * (w.card0 - w.controls), color=INK, marker="o")
+    a2.axvline(wk - 0.5, color=MUTED, ls="--", lw=1)
+    a2.text(wk - 0.4, a2.get_ylim()[0], " fake patch date", va="bottom", fontsize=7,
+            color=MUTED)
+    a2.set(xlabel="week", ylabel="card 0 minus controls (points)",
+           title="One card can trend against the rest")
+    fig.suptitle(SIM + ": no patch at all", fontsize=8, color=MUTED)
+    save(fig, out, "fig_toy_drift")
+
+
+def fig_toy_two_columns(I, out):
+    """§16: the best line through two columns joins their averages."""
+    d = _toy(I, "two_columns", "points")
+    rng = np.random.default_rng(0)                       # jitter only, so the dots show
+    fig, ax = plt.subplots(figsize=(4.6, 3.4))
+    ax.scatter(d.x + rng.uniform(-0.06, 0.06, len(d)), d.height, s=9, color=MUTED, alpha=0.6,
+               lw=0)
+    m = d.groupby("x").height.mean()
+    ax.plot([0, 1], [m[0], m[1]], color=INK, lw=1.5, zorder=3, label="fitted line")
+    ax.plot([0, 1], [m[0], m[1]], "D", color=BUFF, markersize=8, zorder=4,
+            label="column averages")
+    ax.set_xticks([0, 1], ["age 7 (x = 0)", "age 8 (x = 1)"])
+    ax.set(xlim=(-0.4, 1.4), ylabel="height (cm)",
+           title=f"{SIM}:\nthe best line through two columns joins their averages")
+    ax.legend(fontsize=7, loc="upper left")
+    save(fig, out, "fig_toy_two_columns")
+
+
+def fig_toy_se_layers(I, out):
+    """§18: four SEs from one dataset against the true wobble over reruns."""
+    s = _toy(I, "se_layers", "se")
+    n_reruns = int(_toy_value(I, "se_layers", "n_reruns"))
+    label = {"hand": "hand rule (cells in quadrature)", "iid": "classical (iid)",
+             "hc1": "robust (HC1, sandwich)", "clustered": "clustered by run"}
+    fig, ax = plt.subplots(figsize=(5.8, 2.6))
+    y = np.arange(len(s))[::-1]
+    ax.barh(y, s.se, color=[MUTED, MUTED, MUTED, BUFF], height=0.55)
+    truth = s.true_wobble.iloc[0]
+    ax.axvline(truth, color=INK, ls="--", lw=1.2)
+    ax.text(truth, y.max() + 0.45, f" true wobble:\n sd over {n_reruns} reruns", fontsize=7,
+            va="top", ha="left")
+    ax.set_yticks(y, [label[e] for e in s.estimator], fontsize=8)
+    ax.set(xlabel="standard error of the DiD", xlim=(0, 1.45 * truth),
+           title=f"{SIM}: each player has a taste for the treated card")
+    save(fig, out, "fig_toy_se_layers")
+
+
 FIGURES = [fig_timeline, fig_runs_per_build, fig_upload_lag, fig_confounding_dag,
            fig_before_after, fig_se_curve, fig_parry_did, fig_parry_weekly, fig_se_ratio,
            fig_offer_rate, fig_event_study, fig_robustness, fig_anticipation, fig_placebo_z,
            fig_real_vs_placebo, fig_forest, fig_dose, fig_rulers, fig_leave_out, fig_power,
-           fig_fake_patch, fig_slope_by_week, fig_iv_three, fig_iv_draws, fig_iv_weak]
+           fig_fake_patch, fig_slope_by_week, fig_iv_three, fig_iv_draws, fig_iv_weak,
+           fig_toy_bernoulli_sd, fig_toy_sd_vs_se, fig_toy_lln_clt, fig_toy_posterior,
+           fig_toy_log_odds, fig_toy_fixed_bias, fig_toy_se_difference, fig_toy_buffs_nerfs,
+           fig_toy_type_shock, fig_toy_power, fig_toy_false_alarms, fig_toy_spillover,
+           fig_toy_drift, fig_toy_two_columns, fig_toy_se_layers]
 
 
 def draw(analysis="data/analysis", results="results", ref="reference", triage="triage",

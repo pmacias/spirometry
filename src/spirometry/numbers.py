@@ -32,7 +32,8 @@ Inputs (nothing else is read; the run database is never opened):
                                                  spread, placebo_by_horizon; spirometry.iv_sim:
                                                  iv_sim_single, _draws_summary, _weak, _broken,
                                                  _het, _confounding; spirometry.checks:
-                                                 design_checks
+                                                 design_checks; spirometry.teaching_sims:
+                                                 teaching_sims
     <analysis>/placebo_diagnostics_summary.csv, _vs_real.csv, _vs_real_by_patch.csv,
         _spread_by_feature.csv                   placebo calibration (final rerun)
     <analysis>/placebo_main.parquet              min_offers only (columns read: COLUMNS_READ)
@@ -95,6 +96,12 @@ Key families added for the field guide (task A, 2026-10-16; writeup/OUTLINE.md):
 - checks.<check>.*: chapter 12's design checks (spirometry.checks); each row's spec column
   names its tables ("2,071-page tables" or "1,873-page tables"), as do checks.<check>.pages
   and checks.<check>.tables.
+
+Added for the field guide rework (2026-10-22):
+- toy.<toy>.<quantity>: every number of spirometry.teaching_sims' toy simulations, spec
+  "simulation", formatted by the row's kind and decimals (toy_keys).
+- did.hand_vs_model.*: how far the model's estimate is from the hand 2x2 DiD, in SEs, over
+  the solo-estimable tweaks (all weeks; chapter 6).
 """
 import argparse, datetime, json, math, pathlib, re, sys
 
@@ -211,6 +218,7 @@ def _paths(analysis, results):
             "spread": w / "spread.csv",
             "placebo_by_horizon": w / "placebo_by_horizon.csv",
             "design_checks": w / "design_checks.csv",
+            "teaching_sims": w / "teaching_sims.csv",
             "iv_single": w / "iv_sim_single.csv",
             "iv_draws": w / "iv_sim_draws_summary.csv",
             "iv_weak": w / "iv_sim_weak.csv",
@@ -808,6 +816,16 @@ def se_keys(T, p, main, src_p, src_m):
             "max of n_singletons_dropped", horizon="all weeks")
     T.count("did.singletons_dropped.n_tweaks", (m.n_singletons_dropped > 0).sum(), src_m,
             "tweaks with n_singletons_dropped > 0", horizon="all weeks")
+    # field guide rework: the model against the hand 2x2 (chapter 6), in units of the SE
+    hand = ((p.treated_rate_after - p.treated_rate_before)
+            - (p.control_rate_after - p.control_rate_before))
+    gap = ((p.beta - hand).abs() / p.se).dropna()
+    col = "|beta - ((treated after - before) - (control after - before))| / se"
+    for nm, v in [("median_gap_se", gap.median()), ("max_gap_se", gap.max())]:
+        T.add(f"did.hand_vs_model.{nm}", float(v), fmt_num(v, 2), src_p, f"{nm[:3]} of {col}",
+              horizon="all weeks")
+    T.count("did.hand_vs_model.n_tweaks", len(gap), src_p, f"tweaks with {col}",
+            horizon="all weeks")
 
 
 def false_alarm_keys(T, p, src):
@@ -1189,6 +1207,27 @@ def iv_keys(T, t, src):
                   src["iv_confounding"], f"{c}, skill_on_win = {r.skill_on_win:g}", **kw)
 
 
+TOY_KINDS = {  # teaching_sims.csv kind -> (scale, sign, percent); count is separate
+    "number": (1, False, False), "signed": (1, True, False), "pp": (100, True, False),
+    "ppu": (100, False, False), "pct": (1, False, True)}
+
+
+def toy_keys(T, t, src):
+    """The toy simulations (spirometry.teaching_sims): toy.<toy>.<quantity>, "simulation"."""
+    for r in t.itertuples():
+        key, d = f"toy.{r.toy}.{r.quantity}", int(r.decimals)
+        col = f"value, toy = {r.toy}, quantity = {r.quantity} ({r.label})"
+        if r.kind == "count":
+            T.count(key, round(float(r.value)), src, col, spec="simulation")
+            continue
+        if r.kind not in TOY_KINDS:
+            raise NumbersError(f"{src}: unknown kind {r.kind!r} for {key}")
+        scale, sign, pct = TOY_KINDS[r.kind]
+        v = float(r.value) * scale
+        T.add(key, v, fmt_pct(v, d) if pct else fmt_num(v, d, sign), src,
+              col + (f" x {scale}" if scale != 1 else ""), spec="simulation")
+
+
 # ------------------------------------------------------------------------------- build
 
 def build(analysis="data/analysis", results="results", allow_sample=False,
@@ -1228,6 +1267,7 @@ def build(analysis="data/analysis", results="results", allow_sample=False,
     power_keys(T, t["power"], t["spread"], src["power"], src["spread"])
     check_keys(T, t["design_checks"], src["design_checks"], missing)
     iv_keys(T, t, src)
+    toy_keys(T, t["teaching_sims"], src["teaching_sims"])
     df = T.frame()
     # numeric values aren't text: 16 digits of a float would read as a hashed id
     private("numbers", df.assign(value=df.value.map(lambda v: v if isinstance(v, str)

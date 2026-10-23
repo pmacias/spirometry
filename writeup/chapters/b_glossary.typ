@@ -53,6 +53,14 @@ Terms in order of first appearance, with the chapter that defines them.
   [Fixed effects; singleton], [A separate baseline per group; a group with one observation], [@ch-regression],
   [iid, robust and clustered SE], [Error bars assuming independence; unequal noise; related offers within a run], [@ch-regression],
   [Odds; log-odds; delta method], [Picks per pass; their log; converting an SE between scales], [@ch-regression],
+  [Least squares (OLS); residual], [The line with the smallest sum of squared misses; one observation's miss], [@ch-regression],
+  [Saturated model], [One number per cell, so it reproduces every cell average], [@ch-regression],
+  [Design matrix; normal equations], [The inputs as a table, one column per coefficient; the equations least squares solves], [@ch-regression],
+  [Frisch–Waugh–Lovell], [The coefficient on one input is the slope of leftovers on leftovers, once the others are removed], [@ch-regression],
+  [Composition], [Which cards (or acts, levels) make up a group's offers], [@ch-regression],
+  [Sandwich: bread and meat], [The robust variance's shape: the inputs' inverse cross-products around the residuals' spread], [@ch-regression],
+  [Design effect (Moulton factor)], [How much related offers inflate a variance], [@ch-regression],
+  [Effect heterogeneity; interaction], [The effect differs between groups; a product of inputs that measures the difference], [@ch-regression],
   [Offer-rate check; rarity], [The patch shouldn't change how often a card is offered; the card's rarity tier], [@ch-checks],
   [Pre-trend; event study], [Drift before the patch; the gap week by week], [@ch-checks],
   [Placebo test], [A test where the true effect is zero], [@ch-checks],
@@ -95,4 +103,34 @@ Terms in order of first appearance, with the chapter that defines them.
   [Partial pooling (hierarchical Bayes)], [Pulling noisy estimates toward the group], [@ch-open],
   [Staggered rollout], [The same change starting at different dates on beta and stable], [@ch-open],
   [Perception against strength], [Whether picks follow real strength], [@ch-open],
+)
+
+== Notation <app-notation>
+
+Symbols in the order they first appear. The same letter means the same thing everywhere in the
+guide; a hat ($hat(beta)$) marks a number computed from data, a bar ($overline(y)$) an
+average.
+
+#small-table(
+  columns: (auto, rest, auto),
+  [*Symbol*], [*Meaning*], [*Where*],
+  [$i$; $n$], [One offer; the number of offers in a fit], [@ch-regression],
+  [$y_i$], [The outcome of offer $i$: one if picked, zero if not], [@ch-regression],
+  [$x_i$; $a$, $b$; $epsilon_i$], [An input; a line's intercept and slope; what the line leaves over], [@ch-regression],
+  [$e_i$], [Residual: outcome minus fitted value], [@ch-regression],
+  [$overline(y)_1$, $overline(y)_0$], [Average outcome where a yes-or-no input is one, zero], [@ch-regression],
+  [$T_i$; $A_i$; $D_i = T_i A_i$], [Offer of the treated card; in the after block; both (`treat_post`)], [@ch-regression],
+  [$overline(y)_(t, s)$], [Average outcome in the 2×2 cell with $T = t$, $A = s$], [@ch-regression],
+  [$a, b, c, d$], [The 2×2 regression's coefficients; $d$ is the DiD], [@ch-regression],
+  [$"card"_i, "upg"_i, "grp"_i, "blk"_i, "act"_i, "asc"_i$], [Offer $i$'s card, upgrade state, uploader group, block, act, ascension level], [@ch-regression],
+  [$alpha, phi, gamma, delta, eta$], [Fixed effects: card × upgrade, card × group, block × group, act, ascension], [@ch-regression],
+  [$beta$; $hat(beta)$], [The effect of the patch (coefficient on $D$); its estimate], [@ch-regression],
+  [$X$; $k$; $bold(beta)$], [Design matrix; its number of columns; the vector of all coefficients], [@ch-regression],
+  [$tilde(y)_i$, $tilde(D)_i$], [Outcome and $D$ with the fixed effects removed], [@ch-regression],
+  [$hat(V)$; $hat(sigma)^2$], [Estimated variance of the coefficients; shared noise level (iid)], [@ch-regression],
+  [$g$; $G$; $X_g$, $e_g$], [One run (cluster); the number of runs; one run's rows and residuals], [@ch-regression],
+  [$rho$; $m$], [Correlation within a run; offers per run], [@ch-regression],
+  [$H_i$; $theta$; $w$], [High-band indicator; the interaction coefficient; the high band's share], [@ch-regression],
+  [$p$; $p_0$], [A pick rate; the treated card's pick rate before the patch], [@ch-regression],
+  [$"logit"(p)$; $Delta$], [Log-odds, $ln(p slash (1 - p))$; a change in log-odds], [@ch-regression],
 )

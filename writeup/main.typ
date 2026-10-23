@@ -26,6 +26,7 @@
 
 // Appendices: lettered.
 #counter(heading).update(0)
+#in-appendix.update(true)
 #set heading(numbering: "A", supplement: [Appendix])
 
 #include "chapters/a_answers.typ"

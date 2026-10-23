@@ -108,17 +108,17 @@ cards, not proof of why players changed their picks.
 | [SPIROMETRY.md](SPIROMETRY.md) | Reference: data sources, record structure, known data issues |
 | [CLAUDE.md](CLAUDE.md) | Standing instructions for Claude Code sessions |
 | `notes/` | Investigation notes: patch history endpoints (`patch_history.md`), run file structure and table proposal (`run_schema.md`), patch notes vs. card tables (`patch_notes_crosscheck.md`), card versions and DiD windows (`treatment_table.md`); the Phase 5 design decks (`phase5_deck_v1.pdf`, `phase5_deck_v3.pdf`) and the statistics field guide v1 (`spirometry_stats_field_guide_v1.pdf`, a study guide on the 1,393-page tables; v2 is built from `writeup/`) |
-| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `exposure.py` builds the beta exposure table (first beta date and lead time per tweak); `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study, anticipation check, placebo calibration of the errors) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens); `strength.py` the strength change across a patch (IV before vs. after, net of unchanged cards) and the offer balance checks; `meta.py` the dose-response meta-regression (moved from notebook 02; optional per-patch SE inflation); `export.py` the results export (aggregate tables from the saved fits, for the dashboard); `sample_results.py` synthetic saved fits for the export's tests and the sample data; `sensitivity.py` the dose-response's sensitivity tables for the field guide (rulers, dose specs, review calls, mixed tweaks, leave-one-out, character terms, SE inflation, power by simulation); `iv_sim.py` the IV primer's simulated game as tables; `checks.py` the field guide's design checks (fake patch, regression to the mean, token subset, control scope, per-group dose lines) summarised from the triage scripts' outputs, each labelled with its tables; `numbers.py` the field guide's numbers table (every printed number by key, formatted, with source and build stamp); `writeup.py` the field guide build (lint, privacy, figure check, Typst compile) |
+| `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `exposure.py` builds the beta exposure table (first beta date and lead time per tweak); `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study, anticipation check, placebo calibration of the errors) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens); `strength.py` the strength change across a patch (IV before vs. after, net of unchanged cards) and the offer balance checks; `meta.py` the dose-response meta-regression (moved from notebook 02; optional per-patch SE inflation); `export.py` the results export (aggregate tables from the saved fits, for the dashboard); `sample_results.py` synthetic saved fits for the export's tests and the sample data; `sensitivity.py` the dose-response's sensitivity tables for the field guide (rulers, dose specs, review calls, mixed tweaks, leave-one-out, character terms, SE inflation, power by simulation); `iv_sim.py` the IV primer's simulated game as tables; `teaching_sims.py` the field guide's toy simulations (every toy from the reading notes, seeded, with known truth; their numbers become `toy.*` keys and their figures `fig_toy_*`); `checks.py` the field guide's design checks (fake patch, regression to the mean, token subset, control scope, per-group dose lines) summarised from the triage scripts' outputs, each labelled with its tables; `numbers.py` the field guide's numbers table (every printed number by key, formatted, with source and build stamp); `writeup.py` the field guide build (digit lint, math included; code listings extracted from this package; privacy, figure check, Typst compile) |
 | `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
 | `scripts/make_sample_results.py` | Writes `results_sample/` by running the export on synthetic saved fits |
-| `scripts/writeup/phil_runs.sh` | Everything the field guide needs that reads the run database, in order: notebook 01, the weeks 0–3 placebo run, the triage's design checks (into `triage/out_final/`), export with `--db`, sensitivity, checks, numbers; stops at the first error, logs to `logs/phil_runs.log`, ends with the numbers summary; `--from <step>` resumes. About 1 h 15 min (estimate) |
+| `scripts/writeup/phil_runs.sh` | Everything the field guide needs that reads the run database, in order: notebook 01, the weeks 0–3 placebo run, the triage's design checks (into `triage/out_final/`), export with `--db`, sensitivity, checks, the toy simulations, numbers; stops at the first error, logs to `logs/phil_runs.log`, ends with the numbers summary; `--from <step>` resumes. About 1 h 15 min (estimate) |
 | `scripts/writeup/figures.py` | Every field guide figure the saved outputs supply, one function per figure (matplotlib, the dashboard's Okabe-Ito colors), into `writeup/figures/<name>.png`; run after `phil_runs.sh` |
 | `scripts/audit_extract.py` | Interim: compact audit tables from the snapshot (runs, aggregated offer counts) into `data/audit/` |
 | `scripts/final_rerun.sh` | The final rerun, in order: audit extract, notebooks 01–05, placebo calibration and diagnostics, export, sensitivity tables, IV simulation; stops at the first error. Moves `data/analysis/` to `data/analysis_before_final_<time>/` first so nothing cached is reused; `--from <step>` resumes at a step (names in the script's header) and leaves `data/analysis/` in place; notebook logs in `logs/`. About 1 h 45 min (estimate) |
 | `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power. `02_pick_rate_did.ipynb`: offer-rate check, pick-rate DiD, event studies, robustness, dose-response. `03_anticipation.ipynb`: does the gap between a changed card and its controls already move at the first-beta date, on builds where players still have the old card? `iv_primer.ipynb`: a simulation showing why the naive win effect is biased and how the offer as an instrument fixes it. `04_dose_diagnostics.ipynb`: the dose-response under other rulers, leave-one-out and slopes by kind of number. `05_tweak_ledger.ipynb`: every derived dose next to the numbers it came from (writes `data/analysis/tweak_ledger.csv`) |
 | `triage/` | Record of a read-only investigation of the flat second patch (2026-10-07/08): `TRIAGE.md` (report and final synthesis), `scripts/` (each says how to run it), `out/` (card-level estimates, aggregates only), `figures/`. On the 1,873-page tables; not a result until rerun on the final tables. `out_final/`: the same scripts rerun on the final tables by `scripts/writeup/phil_runs.sh` (`TRIAGE_OUT`, `TRIAGE_AN`, `TRIAGE_COLORS`, `TRIAGE_DB` in `scripts/common.py` and `db.py`); `out/` is never written by the rerun |
 | `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes, change events, card-patch net fields, per-build card versions, DiD windows, numeric tweak sizes, beta exposure (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages) |
-| `writeup/` | Field guide v2 ("What Did the Patch Do?"): `OUTLINE.md` (the learning map written before the chapters), `main.typ` and `style.typ` (number function `#n`, boxes, figure placeholders, answer key), `chapters/` (chapters 0–14 and appendices A–E: answer key, glossary, numbers on one page, open items, "Talking about it"). `numbers.json`/`numbers.csv`, `figures/` and `build/` are generated and git-ignored |
+| `writeup/` | Field guide v2 ("What Did the Patch Do?"): `OUTLINE.md` (the learning map written before the chapters), `main.typ` and `style.typ` (number function `#n`, boxes including COMMON MIX-UP / THE MATH, IN FULL / IN CODE, code listings, equations numbered by chapter, figure placeholders, answer key), `chapters/` (chapters 0–14 and appendices A–E: answer key, glossary and notation, numbers on one page, open items, "Talking about it"), `REWORK.md` (tracker for the 2026-10-22 rework: math, code and the reading notes; read it first in any rework session). `numbers.json`/`numbers.csv`, `figures/`, `listings/` and `build/` are generated and git-ignored |
 | `data/runs/` | Run tables built locally by `spirometry.runs` (git-ignored, never committed) |
 | `data/audit/` | Audit tables built locally by `scripts/audit_extract.py` (git-ignored) |
 | `data/analysis/` | Saved fits from notebooks 02, 03 and 05 and the placebo calibration (`placebo_main.parquet` all weeks, `placebo_h3.parquet` weeks 0–3), notebook 01's aggregates (`audit_summary.csv`, `audit_runs_per_build.csv`, `audit_upload_lag.csv`) and the field guide's tables in `writeup/` (git-ignored). Earlier sets are kept beside it: `analysis_p949/` (first pass), `analysis_p1393/` (1,393-page tables), `analysis_p1873/` (1,873-page tables), `analysis_before_final_<time>/` (what `scripts/final_rerun.sh` moved aside), `analysis_prev/` (earlier fits; which tables they came from is not recorded here) |
@@ -265,7 +265,12 @@ Tables for the field guide, from the saved fits (no run tables needed; CSVs in
 ```bash
 python -m spirometry.sensitivity --analysis data/analysis --out data/analysis/writeup  # ~3 s
 python -m spirometry.iv_sim --out data/analysis/writeup                               # ~5 s
+python -m spirometry.teaching_sims --out data/analysis/writeup                        # ~7 s
 ```
+
+`teaching_sims` runs only simulations (no data): `teaching_sims.csv` (one row per number the
+guide may print, read by `spirometry.numbers` as `toy.<toy>.<quantity>`) and
+`toy_<toy>_<part>.csv` for the figures; `--quick` uses fewer draws (tests).
 
 `sensitivity` also writes `calibrated_counts.csv` (clearly nonzero on z scaled by the
 placebo spread, per patch and horizon) and `placebo_by_horizon.csv` from every saved placebo
@@ -299,14 +304,31 @@ identifying. Writes `writeup/numbers.json` and `writeup/numbers.csv`, git-ignore
 python -m spirometry.numbers --analysis data/analysis --results results --out writeup/numbers.json
 ```
 
-Build the field guide PDF (`writeup/build/field_guide_v2.pdf`, 96 pages on the final outputs).
-The full order on a fresh rerun: `scripts/writeup/phil_runs.sh`, then
-`scripts/writeup/figures.py`, then the build below. It reuses `writeup/numbers.json`
+Build the field guide PDF (`writeup/build/field_guide_v2.pdf`, 112 pages on the final outputs
+after the rework's phase 1). The full order on a fresh rerun: `scripts/writeup/phil_runs.sh`,
+then `scripts/writeup/figures.py`, then the build below. It reuses `writeup/numbers.json`
 (`--refresh-numbers` rebuilds it first). It stops on a hand-typed digit in a chapter (numbers go
-through `#n("key")`), a key missing from numbers.json, a hashed-id-looking string, or a figure
-in `writeup/figures/` older than the run tables. A figure not drawn yet prints a placeholder:
+through `#n("key")`; inside math and inline code a single digit is structure, but a decimal or a
+multi-digit number is an error), a key missing from numbers.json, a code listing that no longer
+resolves, a hashed-id-looking string, or a figure in `writeup/figures/` older than the run
+tables. A figure not drawn yet prints a placeholder. The build extracts each
+`#listing("name", ...)` / `#incode("name", ...)` from the package source into
+`writeup/listings/` (git-ignored) first; `listings` does only that step:
 
 ```bash
+python -m spirometry.writeup build
+python -m spirometry.writeup listings     # just extract the code listings
+```
+
+Rebuilding the real PDF from the saved outputs (no run database), as after a chapter edit or a
+change to the toys:
+
+```bash
+python -m spirometry.teaching_sims --out data/analysis/writeup
+python -m spirometry.sensitivity --analysis data/analysis --out data/analysis/writeup
+python -m spirometry.iv_sim --out data/analysis/writeup
+python -m spirometry.numbers --analysis data/analysis --results results --out writeup/numbers.json
+python scripts/writeup/figures.py
 python -m spirometry.writeup build
 ```
 

@@ -32,6 +32,8 @@
 #   sensitivity python -m spirometry.sensitivity (calibrated counts at both horizons, the
 #               placebo spread by horizon, the per-group dose lines, ...)
 #   checks      python -m spirometry.checks -> data/analysis/writeup/design_checks.csv
+#   toys        python -m spirometry.teaching_sims -> data/analysis/writeup/teaching_sims.csv
+#               and the toy figures' data (simulations only, a few seconds; added 2026-10-22)
 #   numbers     python -m spirometry.numbers -> writeup/numbers.json (rebuilt from scratch)
 #
 # Expected run time: about 1 h 15 min (an estimate from the 2026-10-09/10 rerun and the
@@ -39,7 +41,7 @@
 # rest a few minutes). Peak memory about 6 GB (control scope "all").
 set -Eeuo pipefail
 
-STEPS=(nb01 placebo_h3 triage export sensitivity checks numbers)
+STEPS=(nb01 placebo_h3 triage export sensitivity checks toys numbers)
 usage() { echo "usage: $0 [--from <step>]   steps: ${STEPS[*]}" >&2; exit 2; }
 
 FROM=""
@@ -85,7 +87,7 @@ run() {
 preflight() {
     command -v python >/dev/null || { echo "python not found (activate the env)" >&2; return 1; }
     command -v jupyter >/dev/null || { echo "jupyter not found (activate the env)" >&2; return 1; }
-    python -c "import spirometry.did, spirometry.export, spirometry.sensitivity, spirometry.checks, spirometry.numbers"
+    python -c "import spirometry.did, spirometry.export, spirometry.sensitivity, spirometry.checks, spirometry.teaching_sims, spirometry.numbers"
     [ -f "$DB" ] || { echo "$DB not found" >&2; return 1; }
     for f in did_main did_h3 did_h3_tagged did_h3_untagged event_studies placebo_main; do
         [ -f "$AN/$f.parquet" ] || { echo "$AN/$f.parquet not found (final rerun first)" >&2; return 1; }
@@ -193,6 +195,7 @@ main() {
     run sensitivity python -m spirometry.sensitivity --analysis "$AN" --out "$AN/writeup"
     run checks python -m spirometry.checks --triage triage --analysis "$AN" \
         --results results --out "$AN/writeup"
+    run toys python -m spirometry.teaching_sims --out "$AN/writeup"
     run numbers python -m spirometry.numbers --analysis "$AN" --results results \
         --out writeup/numbers.json
     CURRENT=summary

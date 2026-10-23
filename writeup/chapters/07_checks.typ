@@ -166,7 +166,8 @@ the design could fail. The results are reported whether they help or not.
    [The un-upgraded card did not change, so the true effect on its offers is zero.]),
   ([Two of the three placebos came out below zero. What is the first candidate explanation,
     and why?],
-   [Drift in the second patch's thin before block: both are second-patch cards, and the
+   [Drift in the second patch's before block, which is short and smaller than the others
+    (not a thin build: it has tens of thousands of runs): both are second-patch cards, and the
     treated cards are known to drift between the stable builds.]),
   ([Why are the upgrade-only tweaks' own estimates uninformative?],
    [They are measured on upgraded offers only, of which there were a few hundred, so their

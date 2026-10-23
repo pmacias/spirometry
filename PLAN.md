@@ -584,8 +584,10 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
       *Future work, not planned (Phil, 2026-10-16).*
    17. Rework of field guide v2: math, code listings and the reading notes (Phil, 2026-10-22;
       tracker `writeup/REWORK.md`), four CC phases, one PR each. *Phase 1 (infrastructure and
-      chapter 6) done (CC, 2026-10-22); Phil reviews the pilot before phase 2 (chapters 0–5),
-      then phase 3 (7–10) and phase 4 (11–14, appendices, read-through).*
+      chapter 6) done (CC, 2026-10-22); Phil approved chapter 6 as the template. Phase 2
+      (chapters 0–5, Appendix B's rows for them) done (CC, 2026-10-22): 152 pages on the real
+      outputs (112 after phase 1). Next: phase 3 (7–10), then phase 4 (11–14, appendices,
+      read-through).*
 
 ## Decision log
 - Spire Codex export is the primary source; sts2runs.com only for cross-checks.
@@ -1416,3 +1418,30 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
   - Corrections item 6 applied wherever the term appeared: "short, smaller before block" for
     v0.103.3 (here, chapter 7's answer, chapter 14's open list, SPIROMETRY.md), not "thin",
     the term for builds under 2,000 primary runs.
+- Field guide rework, phase 2 (CC's choices, open to review, 2026-10-22):
+  - Potential-outcomes notation set up in chapter 2 for the whole guide ($D_i$, $Y_i(1)$,
+    $Y_i(0)$, $τ_i$, $τ_ATE$, $τ_ATT$, $E[·]$), with the naive comparison written as $τ_ATT$ plus
+    selection bias. Chapter 5 writes each simpler comparison as the effect plus a named term
+    (baseline gap, time change) and the DiD as the effect plus the difference in untreated
+    trends; parallel trends is the statement that this term is zero.
+  - One meaning per letter (Appendix B's notation table says so): chapter 6's interaction
+    coefficient θ → λ and its number of columns k → K (k is picks); chapter 1's build is $B$, the
+    hashing key "salt", the hash function "hash"; spillover ψ, a week $u$, the Wilson half-width
+    "hw", bias written out. Chapter 1 now defines $y_i$ and chapter 5 the 2×2 cell notation and
+    the DiD; chapter 6 refers back to them.
+  - Corrections item 1's replacement goes in chapter 2's WATCH OUT (the box that held "Error
+    bars measure luck only"); chapter 4 gets §6 as a section (precision, accuracy, MSE, a fixed
+    bias growing in SEs). Item 6 is a chapter 1 mix-up (v0.103.3 is short and smaller, about half
+    the offers of v0.103.2; not thin). Item 3 is named in chapter 5 as not checked (red label),
+    with the type-level placebo pointed to chapter 14 for phase 4.
+  - Listings can name a module-level constant (`NAME = ...`, with the comment block above it),
+    so chapter 1 shows the primary-population filter and the deduplicating views as the SQL
+    strings `runs.py` actually runs. New `LISTINGS` entries: `numbers.build_start` (an excerpt),
+    `numbers.table_add`, `runs.keys`, `runs.primary_filter`, `runs.dedup_views`,
+    `teaching_sims.intervals`, `teaching_sims.spillover_all`.
+  - Digit lint: `ALLOW` gains the hash function's name (SHA-256, HMAC-SHA256,
+    `hashlib.sha256`, any case).
+  - Two toy figures redrawn for legibility: the Bernoulli SD curve's label at a half sat on the
+    curve; the fixed-bias legend covered the first histogram (now below the panels).
+  - No new keys. Statements in chapters 1–5 that summarise or read existing real-data keys are
+    listed under "For Phil to check" in `writeup/REWORK.md`.

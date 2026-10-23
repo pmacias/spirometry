@@ -128,6 +128,15 @@ def test_listing_excerpt_and_several_functions():
     assert len(code.splitlines()) == len(e["numbers"])
 
 
+def test_listing_of_a_module_constant_brings_its_comment():
+    code, e = W.extract_listing("runs.primary_filter")
+    lines = code.splitlines()
+    assert lines[0].startswith("# The primary population")
+    assert "PRIMARY_RUN_FILTER = " in code and "PRIMARY_FILTER = " in code
+    assert "def " not in code and len(lines) == len(e["numbers"])
+    assert e["functions"] == "PRIMARY_RUN_FILTER, PRIMARY_FILTER"
+
+
 def test_unknown_listing_stops(monkeypatch):
     with pytest.raises(W.WriteupError, match="no_such_function"):
         W.extract_listing("did.no_such_function")

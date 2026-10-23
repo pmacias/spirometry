@@ -677,8 +677,8 @@ def fig_toy_bernoulli_sd(I, out):
         sd = np.sqrt(p * (1 - p))
         ax.plot(p, sd, "o", color=BUFF, markersize=7)
         ax.annotate(f"p = {p:g}: SD = {sd:.2f}", (p, sd), textcoords="offset points",
-                    xytext=(8, -14), fontsize=8)
-    ax.set(xlabel="pick rate p", ylabel="SD of one offer", ylim=(0, 0.55),
+                    xytext=(8, -14) if p < 0.5 else (-30, 9), fontsize=8)
+    ax.set(xlabel="pick rate p", ylabel="SD of one offer", ylim=(0, 0.6),
            title=f"{CALC}: the spread of one yes/no offer, √(p(1 − p))")
     save(fig, out, "fig_toy_bernoulli_sd")
 
@@ -796,7 +796,8 @@ def fig_toy_fixed_bias(I, out):
         ax.set_yticks([])
         ax.tick_params(labelsize=6)
         ax.xaxis.set_major_locator(plt.MaxNLocator(3))
-    axes[0].legend(fontsize=6, loc="upper left")
+    fig.legend(*axes[0].get_legend_handles_labels(), loc="lower left", fontsize=7, ncol=2,
+               frameon=False)
     fig.supxlabel("estimated pick rate", fontsize=8)
     fig.suptitle(f"{SIM}: an estimate one point too high, at growing sample size",
                  fontsize=9)

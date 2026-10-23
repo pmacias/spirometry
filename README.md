@@ -2,8 +2,9 @@
 
 Measuring what Slay the Spire 2's early-access balance patches actually did.
 
-**Status:** the project ends with field guide v2, "What Did the Patch Do?" (a 96-page study
-guide built from `writeup/`, written 2026-10-16; how to build it is under "Running things").
+**Status:** the project ends with field guide v2, "What Did the Patch Do?" (a study guide built
+from `writeup/`, written 2026-10-16 and being reworked with math, code listings and the reading
+notes, PLAN item 17: 152 pages after phase 2; how to build it is under "Running things").
 Pick-rate results for the numeric tweaks and the design checks are below and in
 [SPIROMETRY.md](SPIROMETRY.md), from the final rerun on the complete run snapshot (2,071
 export pages, downloaded by 2026-10-04). Win effects (tooling built and tested in simulation),
@@ -304,16 +305,17 @@ identifying. Writes `writeup/numbers.json` and `writeup/numbers.csv`, git-ignore
 python -m spirometry.numbers --analysis data/analysis --results results --out writeup/numbers.json
 ```
 
-Build the field guide PDF (`writeup/build/field_guide_v2.pdf`, 112 pages on the final outputs
-after the rework's phase 1). The full order on a fresh rerun: `scripts/writeup/phil_runs.sh`,
+Build the field guide PDF (`writeup/build/field_guide_v2.pdf`, 152 pages on the final outputs
+after the rework's phase 2). The full order on a fresh rerun: `scripts/writeup/phil_runs.sh`,
 then `scripts/writeup/figures.py`, then the build below. It reuses `writeup/numbers.json`
 (`--refresh-numbers` rebuilds it first). It stops on a hand-typed digit in a chapter (numbers go
 through `#n("key")`; inside math and inline code a single digit is structure, but a decimal or a
 multi-digit number is an error), a key missing from numbers.json, a code listing that no longer
 resolves, a hashed-id-looking string, or a figure in `writeup/figures/` older than the run
 tables. A figure not drawn yet prints a placeholder. The build extracts each
-`#listing("name", ...)` / `#incode("name", ...)` from the package source into
-`writeup/listings/` (git-ignored) first; `listings` does only that step:
+`#listing("name", ...)` / `#incode("name", ...)` from the package source (a function, or a
+module-level constant such as `runs.PRIMARY_FILTER`) into `writeup/listings/` (git-ignored)
+first; `listings` does only that step:
 
 ```bash
 python -m spirometry.writeup build

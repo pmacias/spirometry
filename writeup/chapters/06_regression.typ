@@ -12,9 +12,10 @@ data were collected. This chapter explains what the model line means, when it mu
 the hand calculation and when it needn't, how each kind of standard error is computed, and
 what the model's adjustments do not tell you.
 
-Notation for the chapter. An offer is indexed by $i$, and $y_i$ is its outcome: $y_i = 1$ if
-the card was picked, $y_i = 0$ if not. $n$ is the number of offers in a fit. Everything else
-is defined where it first appears; the notation table in @app-glossary collects it.
+Notation for the chapter, as in @ch-data: an offer is indexed by $i$, and $y_i$ is its
+outcome, one if the card was picked and zero if not (@eq-offer). $n$ is the number of offers in
+a fit. Everything else is defined where it first appears; the notation table in @app-glossary
+collects it.
 
 == A line through points, or a difference of averages
 
@@ -99,17 +100,18 @@ columns' averages, and the intercept is the average of the column at zero.
   regression into a calculator for differences of averages.
 ]
 
-*The 2×2 table as a regression.* Write the DiD with three yes-or-no inputs: $T_i = 1$ if the
-offer is of the treated card (the changed card), $A_i = 1$ if it is in the after block, and
-their product $D_i = T_i A_i$, which is one only for the treated card after the patch:
+*The 2×2 table as a regression.* Write the DiD with three yes-or-no inputs: the labels of
+@ch-did, $T_i = 1$ if the offer is of the treated card and $A_i = 1$ if it is in the after
+block, and their product $D_i = T_i A_i$, which is one only for the treated card after the
+patch:
 
 $ y_i = a + b T_i + c A_i + d D_i + epsilon_i $ <eq-twobytwo>
 
 In words: an offer's chance of being picked is the controls' rate before ($a$), plus the gap
 between the treated card and the controls before ($b$) if it is the treated card, plus the
-controls' change over time ($c$) if it is after the patch, plus $d$ if it is both. Write
-$overline(y)_(t, s)$ for the average outcome in the cell with $T = t$ and $A = s$. The model's
-fitted value in each cell is the cell's average:
+controls' change over time ($c$) if it is after the patch, plus $d$ if it is both. With
+$overline(y)_(t, s)$ the average outcome in the cell with $T = t$ and $A = s$ (as in @eq-did),
+the model's fitted value in each cell is the cell's average:
 
 #align(center, ftable(
   columns: (auto, auto, auto),
@@ -125,7 +127,7 @@ cancels:
 $ hat(d) = (overline(y)_(1, 1) - overline(y)_(1, 0)) - (overline(y)_(0, 1) - overline(y)_(0, 0)) $ <eq-did-cells>
 
 In words: the coefficient on "treated and after" is the treated card's change minus the
-controls' change, which is the DiD of @ch-did. The model has four numbers for four cells, so it
+controls' change, which is the DiD of @eq-did. The model has four numbers for four cells, so it
 can match every cell exactly: it is saturated, and here the regression and the hand
 calculation agree by construction.
 
@@ -427,7 +429,7 @@ picked.
 #words[
   - *iid SE*: assumes every offer is independent and equally noisy.
   - *Robust (heteroskedasticity-robust) SE*: allows offers to be unequally noisy (a card
-    picked half the time is noisier per offer than one picked rarely, @ch-counting). Your
+    picked half the time is noisier per offer than one picked rarely, @eq-bern-var). Your
     notebooks use the most common small-sample version of it, called HC1.
   - *Clustered SE*: also allows offers in the same run to be related. The main errors in
     this guide are clustered by run.
@@ -443,8 +445,8 @@ picked.
 ]
 
 All three estimate the same thing: how far the coefficient would move on a fresh sample
-(@ch-noise). They estimate it from the model's residuals, $e_i = y_i - hat(y)_i$, each offer's
-outcome minus its fitted value. Below, $k$ is the number of columns in $X$ (numbers the model
+(@ch-noise; @eq-var-phat is the simplest case). They estimate it from the model's residuals, $e_i = y_i - hat(y)_i$, each offer's
+outcome minus its fitted value. Below, $K$ is the number of columns in $X$ (`k` in the code) (numbers the model
 estimates) and $hat(V)$ is the estimated variance of the coefficients; the SE of $hat(beta)$ is
 the square root of its entry in $hat(V)$.
 
@@ -452,21 +454,21 @@ the square root of its entry in $hat(V)$.
 estimated from all residuals together:
 
 $ hat(V)_"iid" = hat(sigma)^2 (X^top X)^(-1), quad
-  hat(sigma)^2 = 1 / (n - k) dot sum_i e_i^2 $ <eq-v-iid>
+  hat(sigma)^2 = 1 / (n - K) dot sum_i e_i^2 $ <eq-v-iid>
 
 In words: the variance of the coefficients is the average squared residual times the inverse
 of the inputs' cross-products. $(X^top X)^(-1)$ measures how little information the inputs
 carry about each coefficient; the shared noise level scales it. It is wrong for a zero-or-one
-outcome, whose variance is $p(1 - p)$ (@ch-counting) and differs from card to card.
+outcome, whose variance is $p(1 - p)$ (@eq-bern-var) and differs from card to card.
 
 *Robust: each offer keeps its own squared residual.*
 
-$ hat(V)_"HC1" = n / (n - k) dot (X^top X)^(-1) (sum_i e_i^2 x_i x_i^top) (X^top X)^(-1) $ <eq-v-hc>
+$ hat(V)_"HC1" = n / (n - K) dot (X^top X)^(-1) (sum_i e_i^2 x_i x_i^top) (X^top X)^(-1) $ <eq-v-hc>
 
 In words: the variance is the bread $(X^top X)^(-1)$ on both sides of a meat that adds up every
 offer's own squared residual (with $x_i$ its row of $X$), times a small-sample factor
-$n slash (n - k)$. Noisier offers count as noisier. For the 2×2 table it is the hand rule, each
-cell's squared SE added (the rule for a difference in @ch-noise, one cell at a time), up to the
+$n slash (n - K)$. Noisier offers count as noisier. For the 2×2 table it is the hand rule, each
+cell's squared SE added (@eq-se-diff, one cell at a time), up to the
 small-sample factors. Write $s_(t, s)^2$ for the variance of the outcome in a cell and
 $n_(t, s)$ for its number of offers:
 
@@ -479,7 +481,7 @@ in quadrature.
 *Clustered: sum within each run before squaring.* Let $g$ index runs (the clusters), $G$ be
 the number of runs, and $X_g$ and $e_g$ be one run's rows of $X$ and its residuals:
 
-$ hat(V)_"CR1" = G / (G - 1) dot (n - 1) / (n - k) dot (X^top X)^(-1)
+$ hat(V)_"CR1" = G / (G - 1) dot (n - 1) / (n - K) dot (X^top X)^(-1)
   (sum_g (X_g^top e_g) (X_g^top e_g)^top) (X^top X)^(-1) $ <eq-v-cr>
 
 In words: the same bread, but the meat first adds up each run's residual contributions and only
@@ -633,10 +635,10 @@ band's effect weighted by its share. It moves if either band's effect moves, or 
 simplification; the point stands.) To measure the difference instead of averaging it away, add
 an indicator $H_i$ for the high band and its product with $D_i$:
 
-$ y_i = dots.c + beta D_i + theta D_i H_i + epsilon_i $ <eq-interaction>
+$ y_i = dots.c + beta D_i + lambda D_i H_i + epsilon_i $ <eq-interaction>
 
-In words: the low band's effect is $beta$, the high band's is $beta + theta$, so the interaction
-coefficient $theta$ is the difference between the bands' effects. (The dots stand for the fixed
+In words: the low band's effect is $beta$, the high band's is $beta + lambda$, so the interaction
+coefficient $lambda$ is the difference between the bands' effects. (The dots stand for the fixed
 effects of @eq-model, which would then also get a version per band.)
 
 #project[
@@ -702,8 +704,8 @@ effects of @eq-model, which would then also get a version per band.)
    [Players at every level responded less, or the mix shifted toward players who always
     respond less (@eq-mix). Compare the patches within each group: the first shows the drop
     in every band, the second in none.]),
-  ([In @eq-interaction, what is the high band's effect, and what does $theta$ measure?],
-   [The high band's effect is $beta + theta$; $theta$ is the difference between the high and
+  ([In @eq-interaction, what is the high band's effect, and what does $lambda$ measure?],
+   [The high band's effect is $beta + lambda$; $lambda$ is the difference between the high and
     the low band's effects.]),
 )
 

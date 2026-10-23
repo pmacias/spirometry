@@ -22,7 +22,8 @@ Steps, each stopping the build on failure:
    #incode("name", ...) in the chapters is extracted from the package source with ast into
    writeup/listings/<name>.py (git-ignored), with writeup/listings/index.json (source file,
    function, line numbers). A name is a LISTINGS entry or "<module>.<function>" under
-   spirometry (e.g. "teaching_sims.se_layers"). A name that doesn't resolve, a start/end
+   spirometry (e.g. "teaching_sims.se_layers"); a module-level constant (NAME = ...) works
+   too and brings the comment block above it. A name that doesn't resolve, a start/end
    pattern that no longer matches, or an excerpt over MAX_LISTING_LINES stops the build.
    Chapter files never hold code text; the digit lint doesn't see listings, only captions.
 4. privacy: no chapter and no numbers.json value may hold a string that looks like a hashed
@@ -65,6 +66,8 @@ ALLOW = [
     (r"\b1\.96\b", "the normal quantile of a 95% interval, a constant (rework, 2026-10-22)"),
     (r"\b1\.4826\b", "MAD to SD under a normal distribution, 1 / Phi^-1(3/4), a constant"),
     (r"\b(HC|CR|CRV)1\b", "names of variance estimators (HC1, CR1, pyfixest's CRV1)"),
+    (r"(?i)\b(hmac-)?sha-?256\b",
+     "the hash function's name (SHA-256, HMAC-SHA256, hashlib.sha256; rework phase 2)"),
 ]
 _ALLOW = [re.compile(p) for p, _ in ALLOW]
 _N_CALL = re.compile(r'#n\(\s*"[^"]*"\s*\)')
@@ -149,6 +152,20 @@ LISTINGS = {
     "did.fit_did": dict(source=["did:_fixed_effects", "did:_feols", "did:_fit_did"]),
     "did.subset_columns": dict(source="did:_subset", start=r'd\["is_treated"\] =',
                                end=r'd\["asc"\] =', doc="first"),
+    # chapter 0: how the guide keeps its numbers honest
+    "numbers.build_start": dict(source="numbers:build", end=r"placebo_keys\(T", doc="first"),
+    "numbers.table_add": dict(source=["numbers:fmt_num", "numbers:Table.add"]),
+    # chapter 1: the run tables
+    "runs.keys": dict(source=["runs:keyed_hash", "runs:player_hash", "runs:run_key"]),
+    "runs.primary_filter": dict(source=["runs:PRIMARY_RUN_FILTER", "runs:PRIMARY_FILTER"]),
+    "runs.dedup_views": dict(source=["runs:RETRIED_SQL", "runs:VIEWS"]),
+    # chapter 4: three intervals for a pick rate
+    "teaching_sims.intervals": dict(source=["teaching_sims:plugin", "teaching_sims:wilson",
+                                            "teaching_sims:bayes"]),
+    # chapter 5: the spillover toy with its screen simulator
+    "teaching_sims.spillover_all": dict(source=["teaching_sims:simulate_screens",
+                                                "teaching_sims:pick_rate",
+                                                "teaching_sims:spillover"]),
 }
 
 
@@ -169,17 +186,31 @@ def _find(module, qualname):
     src = path.read_text().splitlines()
     node = ast.parse("\n".join(src))
     for part in qualname.split("."):
-        node = next((n for n in ast.iter_child_nodes(node) if n.__class__.__name__ in
-                     ("FunctionDef", "AsyncFunctionDef", "ClassDef") and n.name == part), None)
+        node = next((n for n in ast.iter_child_nodes(node) if _names(n) == part), None)
         if node is None:
             raise WriteupError(f"listing: spirometry.{module} has no {qualname}")
     return f"spirometry/{module}.py", src, node
+
+
+def _names(n):
+    """The name a function, class or module-level constant (NAME = ...) defines, else None."""
+    if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        return n.name
+    if isinstance(n, ast.Assign) and len(n.targets) == 1 and isinstance(n.targets[0], ast.Name):
+        return n.targets[0].id
+    return None
 
 
 def _excerpt(module, qualname, start=None, end=None, doc="full"):
     """[(source line number or None, text)] for one function, trimmed as asked."""
     path, src, node = _find(module, qualname)
     line = lambda i: (i, src[i - 1])
+    if isinstance(node, ast.Assign):
+        # a constant: the comment block right above it, then the assignment
+        first = node.lineno
+        while first > 1 and src[first - 2].lstrip().startswith("#"):
+            first -= 1
+        return path, [line(i) for i in range(first, node.end_lineno + 1)]
     first = min([node.lineno] + [d.lineno for d in node.decorator_list])
     out = [line(i) for i in range(first, node.body[0].lineno)]           # def and signature
     body = node.body

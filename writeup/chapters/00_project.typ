@@ -8,8 +8,11 @@
   *How the numbers in this guide are marked.* Numbers labelled *your data* come from the
   final rerun: the run tables built on #n("build.tables_built_at") from all
   #n("snapshot.pages") export pages (parser #n("build.parser_version")), through your
-  notebooks, the export and the sensitivity tables. Numbers labelled *simulation* come from
-  the IV primer's made-up game, where the true answer is known. A few checks were only ever
+  notebooks, the export and the sensitivity tables. Numbers labelled *simulation* come from a
+  made-up world where the true answer is known: the IV primer's game, or one of the small
+  teaching simulations ("a simulation with known truth"). Numbers labelled *a worked
+  example, not your data* are arithmetic on round inputs, to show how a formula behaves. A
+  few checks were only ever
   run on the earlier #n("const.earlier_tables.pages")-page tables; they say so where they
   appear. Anything SPIROMETRY.md or PLAN.md marks as open is printed in red with a small label
   after it, #unverified[like this], and parts of the project that were never run are called
@@ -170,13 +173,51 @@ not to the game.
     token cards come from other sources, and one card is multiplayer-only.]),
 )
 
-== How this guide is built
+== How to read this guide
 
 Each chapter takes one idea the analysis relies on. It starts with an everyday picture,
-then gives the words a statistician would use, then shows the same idea in your numbers.
-A *skill* box names the general data-science skill each section exercises, the part you
-would carry to any other project. *Watch out* boxes name the common mistake. Every section
-ends with questions to answer out loud; the answers are in Appendix A.
+then gives the words a statistician would use, then the formula, then shows the same idea in
+your numbers. A *skill* box names the general data-science skill each section exercises, the
+part you would carry to any other project. *Watch out* boxes name the common mistake. Every
+section ends with questions to answer out loud; the answers are in Appendix A.
+
+Three more kinds of box carry the parts that a first reading tends to need most.
+
+#mixup[
+  A first reading that goes wrong, and its fix. Each one starts from a misunderstanding a
+  careful reader actually had ("You might read this as..."), says why it doesn't hold, and
+  gives the right reading. They are worth reading even when the section felt clear.
+]
+
+#mathfull[
+  A derivation you can skip without losing the thread. The text around it states the result
+  and what it means; the box shows where it comes from.
+]
+
+The third, *in code*, shows a piece of the project's own source code, pulled from the package
+when the guide is built, with a walk-through: what goes in, what comes out, the two or three
+lines that matter, and which equation they implement. The first one is at the end of this
+chapter.
+
+*How the math is written.* Every quantity the guide uses has its formula. Display equations
+are numbered by chapter (the chapter's number, a dot, then the equation's place in the
+chapter), and every one is followed by a sentence starting "In words:" that reads it from the left-hand side. A few
+conventions hold everywhere:
+
+- A hat marks a number computed from data: $hat(p)$ is an estimated pick rate, $hat(beta)$
+  an estimated effect. The same letter without a hat is the true value the estimate is
+  aiming at.
+- A bar marks an average: $overline(y)$ is the average of the $y_i$.
+- Subscript $i$ counts offers, so $y_i$ is offer $i$'s outcome; $n$ is how many offers there
+  are.
+- $"E"[dot]$ is an expectation (the long-run average over imagined repeats of the same
+  process), $"Var"(dot)$ a variance and $"SE"$ a standard error. Each is defined where it
+  first appears.
+- Greek letters are the unknowns a model estimates ($beta$ for the patch's effect, $tau$ for
+  a causal effect in general).
+
+The notation table at the end of @app-glossary lists every symbol with the chapter that
+introduces it.
 
 #ftable(
   columns: (auto, rest),
@@ -210,9 +251,15 @@ is defined before it is used.
 ]
 
 #check(
-  ([What three things does each new idea in this guide come with, and in what order?],
-   [An everyday picture, then the words (the term and its meaning), then the project's own
-    example with the real number.]),
+  ([What does each new idea in this guide come with, and in what order?],
+   [An everyday picture, then the words (the term and its meaning), then the formula with its
+    reading in words, then the project's own example with the real number.]),
+  ([What does a hat on a letter mean, and what does a bar mean?],
+   [A hat marks a number computed from data, an estimate of the true value written without
+    the hat ($hat(p)$ estimates $p$). A bar marks an average ($overline(y)$).]),
+  ([What is a common mix-up box for?],
+   [It names a first reading that goes wrong, says why, and gives the right reading. The
+    mix-ups come from misreadings a careful reader actually had.]),
   ([Why is no number in this guide typed by hand?],
    [Every number is generated from the saved outputs and inserted by key, so rebuilding the
     guide after a rerun updates every number, and none can be stale or mistyped.]),
@@ -220,4 +267,107 @@ is defined before it is used.
    [In the first patch, pick rates moved in the direction of each change and in proportion to
     its size. In the second patch, tweaks of the same sizes showed no such pattern, and why is
     still open.]),
+)
+
+== How the guide keeps its numbers honest
+
+#picture[
+  A lab notebook in which no result is copied by hand. Each number on the page is a pointer
+  to the instrument's saved output, and printing the notebook looks every pointer up again.
+  If the instrument is rerun, the next printout carries the new numbers, and nobody has to
+  remember where the old ones were.
+]
+
+#words[
+  - *Key*: the name of one number in the guide's numbers table, such as
+    `snapshot.distinct_runs` (the number of distinct runs in the snapshot).
+  - *Numbers table*: `writeup/numbers.json`, built by `spirometry.numbers` from the saved
+    outputs. One row per key: the value, the text as printed, the file and column it came
+    from.
+  - *Digit lint*: a check, run before every build, that no digit was typed into a chapter.
+  - *Listing*: a piece of the package's source code, extracted when the guide is built.
+]
+
+The guide never types a result. A chapter calls a one-letter function, `n`, with a key's name, and the
+typesetter replaces it with that key's text from the numbers table. A key that isn't in the
+table stops the build, so a renamed or missing number can't slip through as a blank. The
+table itself is built in one place, by `spirometry.numbers`, which reads only saved outputs
+(the export's tables, the sensitivity tables, the simulations' summaries) and never the run
+database.
+
+#incode("numbers.build_start", [The start of `numbers.build`: read the saved outputs, check
+  them, and fill the table family by family.])[
+  *What goes in:* the folders of saved outputs and the snapshot's download log. *What comes
+  out:* one row per key, and a build header (when the run tables were built, how many pages,
+  which parser). The lines that matter: `load(...)` reads every input and runs the guards
+  (the build stamp must be complete, the download log must reach the end of the export, and
+  no input may be older than the run tables). `T = Table(stamp)` starts the table, and each
+  `..._keys(T, ...)` call adds one family of keys: the effects, the calibrated counts, the
+  dose-response slopes, the placebo spreads. About twenty more families follow the cut,
+  ending with the teaching simulations (`toy_keys`), a privacy check and the header.
+]
+
+#incode("numbers.table_add", [How a number becomes printed text, and what a key must pass
+  before it enters the table (`fmt_num` and `Table.add`).])[
+  *What goes in:* a value and how to print it. *What comes out:* a row of the table, or an
+  error. The lines that matter: `fmt_num` is the only place a number is rounded, so every
+  copy of a number in the guide has the same digits and the same minus sign. `Table.add`
+  refuses a malformed key, a key defined twice and a missing or infinite value: a blank can't
+  reach the text, because a missing input stops the build instead.
+]
+
+The second half of the guarantee is the digit lint. Before the guide is typeset, every
+chapter file is read with the allowed things removed: the key calls, comments, figure
+and listing names, and a short list of fixed terms whose digits are part of a name (build
+names such as v0.103.2, years, the 2×2 table, "weeks 0–3"). Any digit left over is an error
+that names the file and the line. Inside math the rule is looser, because a formula needs its
+structure: a single digit is allowed (the two in a square, the zero-or-one coding, the one in
+$1 - p$), but a decimal or a number with two or more digits must come from a key, or be one of
+the constants on the list (the 1.96 of a 95% interval is one). Code listings are not linted,
+because they are the source itself; their captions are.
+
+#incode("writeup.lint_text", [The digit lint: every line with a digit that isn't a key, a
+  name or an allowed term.])[
+  *What goes in:* a chapter's text. *What comes out:* the lines that break the rule. The lines
+  that matter: `_strip` blanks block comments without changing the line count, so the error
+  points at the right line. `_N_CALL.sub("", s)` removes the key calls. `_SPAN.sub`
+  finds math and inline code in one pass, and inside them only `_SPAN_BAD` (a decimal, or two
+  or more digits in a row) counts; each span is replaced by blank lines, so equations over
+  several lines keep their line numbers. Whatever is left is checked for any digit at all.
+]
+
+Code listings come from the same principle. A chapter names a function (for example
+`did.fit_did`), and the build extracts its current source into a file the typesetter reads,
+with the source file's own line numbers in the margin. If the function is renamed or removed,
+the build stops. The figures are drawn by one script, `scripts/writeup/figures.py`, from the
+same saved outputs; a figure older than the run tables also stops the build.
+
+#watch[
+  "Generated from the outputs" guarantees the guide matches the outputs. It says nothing
+  about whether the outputs are right: a mistake in a notebook travels faithfully into the
+  text. That is what the checks of @ch-checks and @ch-placebo are for.
+]
+
+#skill[
+  *Making a report reproducible.* Keep every number in one generated table with its source,
+  refer to numbers by name, and make a missing or stale input stop the build rather than
+  print something old. A reader can then trace any number back to the file and column it came
+  from (@app-numbers lists the main ones).
+]
+
+#check(
+  ([A rerun changes Parry's effect. What has to be edited in the chapters for the guide to
+    show the new number?],
+   [Nothing. The chapter refers to Parry's effect by key; rebuilding the numbers table and the
+    guide prints the new value.]),
+  ([Why does the digit lint allow a single digit inside math but not outside it?],
+   [Inside a formula, single digits are structure: exponents, the zero-or-one coding, the one
+    in $1 - p$. Outside math, any digit could be a hand-typed result. A decimal or a
+    multi-digit number inside math is still flagged, because that is what data looks like.]),
+  ([What happens if a function shown in a listing is renamed in the package?],
+   [The build stops: the listing's name no longer resolves, so the guide can't show code that
+    no longer exists.]),
+  ([Does "every number is generated" mean every number is correct?],
+   [No. It means every number matches the saved outputs. If an output is wrong, the guide is
+    faithfully wrong; the design checks and the placebo test are what test the outputs.]),
 )

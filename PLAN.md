@@ -588,6 +588,11 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
       (chapters 0–5, Appendix B's rows for them) done (CC, 2026-10-22): 152 pages on the real
       outputs (112 after phase 1). Next: phase 3 (7–10), then phase 4 (11–14, appendices,
       read-through).*
+   18. Website deliverables from notebook 02 (Phil, 2026-10-27): `notebooks/06_site_figures.ipynb`
+      with `src/spirometry/site_figures.py`, into `figures/site/`. *Selection and Parry figure
+      done (CC, 2026-10-27; from saved fits only; contrast card The Scythe). `spirometry_cards.json` not yet written: its
+      section 3 needs `reference/raw/cards.json` (the card list), which the CC session can't
+      read; Phil runs the notebook.*
 
 ## Decision log
 - Spire Codex export is the primary source; sts2runs.com only for cross-checks.
@@ -1445,3 +1450,19 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
     curve; the fixed-bias legend covered the first histogram (now below the panels).
   - No new keys. Statements in chapters 1–5 that summarise or read existing real-data keys are
     listed under "For Phil to check" in `writeup/REWORK.md`.
+- Website cards (Phil, 2026-10-27; notebook 06). Headline horizon weeks 0–3. Kept: Parry,
+  Debilitate (first patch), Leading Strike labelled a rework (11 → 11 total damage). Corrosive
+  Wave dropped (pre-trend screen p = 0.008) for the cleanest first-patch nerf by a rule fixed
+  before running it (first-patch, solo-estimable, nerf, |β_h3| > 2 se, pre-trend p > 0.05, no
+  offer-rate flag, no sign flip in a weeks 0–3 check; largest |β_h3|): Untouchable v0.103.2.
+  Contrast card: the first rule (second-patch, |β_h3| < 2 se, no flag; most treated offers)
+  picked Crescent Spear, dropped (clear at all weeks, +2.3 se with the pooled before block,
+  anticipation gap). The stricter rule (also |β| < 2 se at all weeks and with the pooled
+  before block, no informative anticipation gap > 2 se) picked Juggernaut v0.107.1. For
+  consistency with the nerf rule, pre-trend p > 0.05 and no weeks 0–3 check moving it > 2 se
+  were then added. Juggernaut (p = 0.011, tagged −5.3 se), Hyperbeam (p = 0.014) and
+  Untouchable v0.107.1 (p = 0.005) drop out. Pick: The Scythe v0.107.1, damage scaling 3 → 4,
+  −1.38 pts at weeks 0–3, +0.40 at all weeks. Parry figure: percentage points, not %, since
+  the rate itself is a percentage; the caption has no CI because the placebo check says the
+  intervals are too narrow. "Second patch weaker" is the median |β| comparison at weeks 0–3 (4.40 vs. 1.95 pts).
+  Parry's change is Block (6(9) → 10(14) when you play Sovereign Blade), not Vigor.

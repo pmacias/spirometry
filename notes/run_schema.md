@@ -461,10 +461,11 @@ For solo shops, an optional second source row per bought card
 
 ## Test fixture
 
-`tests/fixtures/sample_runs.jsonl` holds 6 runs from these pages, the only run data in git:
-a solo win (v0.98.3), a loss with a 6-card reward floor (v0.100.0), a run abandoned
-mid-fight (v0.98.3), a 2-player co-op run (v0.99.1), a beta run offering `PREPARE`
-(v0.100.0), and a v0.111.0 run from the recent page (schema 10). A seventh record (added
-for parser 1.5.0, edited, not from a page) is that v0.111.0 run again under another
-`run_hash` and without `_sts`: a solo run uploaded twice. In the co-op run the
-Steam IDs are replaced by 1001 and 1002 in `players[].id` and every `player_stats[].player_id`.
+`tests/fixtures/sample_runs.jsonl` holds seven synthetic records written by
+`tests/fixtures/make_sample_runs.py`; no run data is in git. Only the game's own ids (cards,
+relics, encounters, builds) are real, because the parser checks them against the game's
+lists. The records are a solo win (v0.98.3), a loss with 6-card reward floors (v0.100.0), a
+run abandoned mid-fight (v0.98.3), a 2-player co-op run (v0.99.1), an abandoned beta run
+offering `PREPARE` (v0.100.0), a v0.111.0 run (schema 10), and that run again under another
+`run_hash` and without `_sts`: a solo run uploaded twice. The co-op players' ids are 1001 and
+1002.

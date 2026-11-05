@@ -2,14 +2,13 @@
 
 Measuring what Slay the Spire 2's early-access balance patches actually did.
 
-**Status:** the project ends with field guide v2, "What Did the Patch Do?" (a study guide built
-from `writeup/`, written 2026-10-16 and being reworked with math, code listings and the reading
-notes, PLAN item 17: 152 pages after phase 2; how to build it is under "Running things").
-Pick-rate results for the numeric tweaks and the design checks are below and in
-[SPIROMETRY.md](SPIROMETRY.md), from the final rerun on the complete run snapshot (2,071
-export pages, downloaded by 2026-10-04). Win effects (tooling built and tested in simulation),
-the strength change across patches, partial pooling, the staggered rollout, reworks and the
-dashboard are future work (PLAN.md).
+**Status:** the pick-rate analysis of the numeric tweaks is finished. Results and design checks
+are below and in [SPIROMETRY.md](SPIROMETRY.md), from the final rerun on the complete run
+snapshot (2,071 export pages, downloaded by 2026-10-04). The write-up is field guide v2, "What
+Did the Patch Do?", a study guide built from `writeup/` (152 pages so far; chapters 0–6 have
+their math and code listings, the rest are still being reworked). Win effects (tooling built
+and tested in simulation), the strength change across patches, partial pooling, the staggered
+rollout, reworks and the dashboard are future work ([PLAN.md](PLAN.md)).
 
 ## The question
 
@@ -108,7 +107,8 @@ cards, not proof of why players changed their picks.
 | [PLAN.md](PLAN.md) | Research questions, phases, status, decision log |
 | [SPIROMETRY.md](SPIROMETRY.md) | Reference: data sources, record structure, known data issues |
 | [CLAUDE.md](CLAUDE.md) | Standing instructions for Claude Code sessions |
-| `notes/` | Investigation notes: patch history endpoints (`patch_history.md`), run file structure and table proposal (`run_schema.md`), patch notes vs. card tables (`patch_notes_crosscheck.md`), card versions and DiD windows (`treatment_table.md`); the Phase 5 design decks (`phase5_deck_v1.pdf`, `phase5_deck_v3.pdf`) and the statistics field guide v1 (`spirometry_stats_field_guide_v1.pdf`, a study guide on the 1,393-page tables; v2 is built from `writeup/`) |
+| [LICENSE](LICENSE) | MIT, for the code; see "License and attribution" for the data |
+| `notes/` | Investigation notes: patch history endpoints (`patch_history.md`), run file structure and table proposal (`run_schema.md`), patch notes vs. card tables (`patch_notes_crosscheck.md`), card versions and DiD windows (`treatment_table.md`); the Phase 5 design decks (`phase5_deck_v1.pdf`, `phase5_deck_v3.pdf`). Field guide v1, an earlier study guide on the 1,393-page tables, is kept locally and isn't in this repository; v2 is built from `writeup/` |
 | `src/spirometry/` | The package. `patch_history.py` builds the card patch dataset from Spire Codex; `patch_notes.py` parses the official patch notes and reconciles `builds.csv`; `notes_crosscheck.py` compares the two; `treatment.py` builds the per-build card versions and DiD windows from them; `tweaks.py` builds the tweak size table for the dose-response plot; `exposure.py` builds the beta exposure table (first beta date and lead time per tweak); `runs.py` parses the run snapshot into Parquet + DuckDB run tables; `did.py` holds the Phase 5 estimation functions (offer-rate check, pick-rate DiD, event study, anticipation check, placebo calibration of the errors) that the analysis notebook calls; `wins.py` the win-effect functions (intent-to-treat and IV on each run's first reward screens); `strength.py` the strength change across a patch (IV before vs. after, net of unchanged cards) and the offer balance checks; `meta.py` the dose-response meta-regression (moved from notebook 02; optional per-patch SE inflation); `export.py` the results export (aggregate tables from the saved fits, for the dashboard); `sample_results.py` synthetic saved fits for the export's tests and the sample data; `sensitivity.py` the dose-response's sensitivity tables for the field guide (rulers, dose specs, review calls, mixed tweaks, leave-one-out, character terms, SE inflation, power by simulation); `iv_sim.py` the IV primer's simulated game as tables; `teaching_sims.py` the field guide's toy simulations (every toy from the reading notes, seeded, with known truth; their numbers become `toy.*` keys and their figures `fig_toy_*`); `checks.py` the field guide's design checks (fake patch, regression to the mean, token subset, control scope, per-group dose lines) summarised from the triage scripts' outputs, each labelled with its tables; `numbers.py` the field guide's numbers table (every printed number by key, formatted, with source and build stamp); `writeup.py` the field guide build (digit lint, math included; code listings extracted from this package; privacy, figure check, Typst compile); `site_figures.py` the website figure and chart data from notebook 02's saved fits (selection rules, per-week raw cells, JSON entries, site-styled event study), called by notebook 06 |
 | `scripts/snapshot_export.py` | Downloads the run export, resumable, rate-limit aware |
 | `scripts/make_sample_results.py` | Writes `results_sample/` by running the export on synthetic saved fits |
@@ -118,19 +118,23 @@ cards, not proof of why players changed their picks.
 | `scripts/final_rerun.sh` | The final rerun, in order: audit extract, notebooks 01–05, placebo calibration and diagnostics, export, sensitivity tables, IV simulation; stops at the first error. Moves `data/analysis/` to `data/analysis_before_final_<time>/` first so nothing cached is reused; `--from <step>` resumes at a step (names in the script's header) and leaves `data/analysis/` in place; notebook logs in `logs/`. About 1 h 45 min (estimate) |
 | `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power. `02_pick_rate_did.ipynb`: offer-rate check, pick-rate DiD, event studies, robustness, dose-response. `03_anticipation.ipynb`: does the gap between a changed card and its controls already move at the first-beta date, on builds where players still have the old card? `iv_primer.ipynb`: a simulation showing why the naive win effect is biased and how the offer as an instrument fixes it. `04_dose_diagnostics.ipynb`: the dose-response under other rulers, leave-one-out and slopes by kind of number. `05_tweak_ledger.ipynb`: every derived dose next to the numbers it came from (writes `data/analysis/tweak_ledger.csv`). `06_site_figures.ipynb`: website deliverables from notebook 02's saved fits: the card selection (rules and checks), the Parry event-study figure and the interactive chart's data (`figures/site/`); its section 3 reads `runs.duckdb` |
 | `triage/` | Record of a read-only investigation of the flat second patch (2026-10-07/08): `TRIAGE.md` (report and final synthesis), `scripts/` (each says how to run it), `out/` (card-level estimates, aggregates only), `figures/`. On the 1,873-page tables; not a result until rerun on the final tables. `out_final/`: the same scripts rerun on the final tables by `scripts/writeup/phil_runs.sh` (`TRIAGE_OUT`, `TRIAGE_AN`, `TRIAGE_COLORS`, `TRIAGE_DB` in `scripts/common.py` and `db.py`); `out/` is never written by the rerun |
-| `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes, change events, card-patch net fields, per-build card versions, DiD windows, numeric tweak sizes, beta exposure (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages) |
-| `writeup/` | Field guide v2 ("What Did the Patch Do?"): `OUTLINE.md` (the learning map written before the chapters), `main.typ` and `style.typ` (number function `#n`, boxes including COMMON MIX-UP / THE MATH, IN FULL / IN CODE, code listings, equations numbered by chapter, figure placeholders, answer key), `chapters/` (chapters 0–14 and appendices A–E: answer key, glossary and notation, numbers on one page, open items, "Talking about it"), `REWORK.md` (tracker for the 2026-10-22 rework: math, code and the reading notes; read it first in any rework session). `numbers.json`/`numbers.csv`, `figures/`, `listings/` and `build/` are generated and git-ignored |
+| `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes, change events, card-patch net fields, per-build card versions, DiD windows, numeric tweak sizes, beta exposure (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages; its README lists each source and license) |
+| `writeup/` | Field guide v2 ("What Did the Patch Do?"): `OUTLINE.md` (the learning map written before the chapters), `main.typ` and `style.typ` (number function `#n`, boxes including COMMON MIX-UP / THE MATH, IN FULL / IN CODE, code listings, equations numbered by chapter, figure placeholders, answer key), `chapters/` (chapters 0–14 and appendices A–E: answer key, glossary and notation, numbers on one page, open items, "Talking about it"), `REWORK.md` (tracker for the 2026-10-22 rework: math, code and the reading notes). `numbers.json`/`numbers.csv`, `figures/`, `listings/` and `build/` are generated and git-ignored |
 | `figures/site/` | Website deliverables written by notebook 06: `spirometry_parry.png`/`.pdf` (Parry's event study) and `spirometry_cards.json` (aggregates per card and week, for the interactive chart) |
 | `data/runs/` | Run tables built locally by `spirometry.runs` (git-ignored, never committed) |
 | `data/audit/` | Audit tables built locally by `scripts/audit_extract.py` (git-ignored) |
 | `data/analysis/` | Saved fits from notebooks 02, 03 and 05 and the placebo calibration (`placebo_main.parquet` all weeks, `placebo_h3.parquet` weeks 0–3), notebook 01's aggregates (`audit_summary.csv`, `audit_runs_per_build.csv`, `audit_upload_lag.csv`) and the field guide's tables in `writeup/` (git-ignored). Earlier sets are kept beside it: `analysis_p949/` (first pass), `analysis_p1393/` (1,393-page tables), `analysis_p1873/` (1,873-page tables), `analysis_before_final_<time>/` (what `scripts/final_rerun.sh` moved aside), `analysis_prev/` (earlier fits; which tables they came from is not recorded here) |
 | `dashboard/` | Streamlit dashboard (`app.py` pages, `charts.py` plots, `data.py` loading) on the exported tables; local only, not deployed |
-| `results/` | Aggregate tables written by `spirometry.export` (git-ignored until the release checklist is done) |
+| `results/` | Aggregate tables written by `spirometry.export` (git-ignored) |
 | `results_sample/` | Synthetic tables in the same layout, so the dashboard runs without real results (every page says SAMPLE DATA) |
 | `.streamlit/config.toml` | Dashboard theme (light: the chart colors are checked against it) |
-| `tests/` | pytest tests; `tests/fixtures/sample_runs.jsonl` holds 7 sample records (6 runs, one solo run uploaded twice; the only run data in git; co-op player IDs replaced) |
+| `tests/` | pytest tests; `tests/fixtures/sample_runs.jsonl` holds 7 synthetic records (6 runs, one solo run uploaded twice) written by `tests/fixtures/make_sample_runs.py`; no real run data is in git |
 
 ## Setup
+
+The first block below needs nothing but Python: the tests run on a synthetic fixture, and the
+dashboard runs on `results_sample/`. Most later steps read the run snapshot, which you download
+yourself (it isn't in this repository), or tables built from it.
 
 ```bash
 mamba create -n spirometry python=3.11
@@ -348,7 +352,7 @@ python -m spirometry.export --analysis data/analysis --out results --db data/run
 ```
 
 Run the dashboard locally (reads `results/`, or the synthetic `results_sample/` when
-`results/` is empty; nothing is deployed until the release checklist in PLAN.md is done):
+`results/` is empty; nothing is deployed):
 
 ```bash
 streamlit run dashboard/app.py               # from the repo root
@@ -358,14 +362,20 @@ python scripts/make_sample_results.py        # regenerate results_sample/
 `SPIROMETRY_SMOKE_DB=path/to/runs.duckdb python -m pytest tests/test_did.py tests/test_wins.py tests/test_strength.py tests/test_anticipation.py`
 also runs the smoke tests on a build from fetched pages.
 
-## Data
+## License and attribution
+
+The code is under the [MIT license](LICENSE), copyright 2026 Phillip Macias.
 
 Run data and game data come from [Spire Codex](https://spire-codex.com)
 ([source](https://github.com/ptrlrd/spire-codex)), a community database of Slay the Spire 2
-runs and game files. Spire Codex is not affiliated with Mega Crit, and neither is this project.
+runs and game files. Raw run data is not included in this repository: player IDs are hashed
+in all derived tables, only aggregates are published, and the test fixture is synthetic. The
+cached Spire Codex responses in `reference/raw/` are not under the MIT license; see
+[its README](reference/raw/README.md).
 
-Patch notes are Mega Crit's, as transcribed on the [Slay the Spire Wiki](https://slaythespire.wiki.gg/wiki/Slay_the_Spire_2:Patch_Notes)
-(CC BY-SA 4.0); the cached pages and the tables derived from them are under the same license.
+Patch notes are Mega Crit's, as transcribed on the [Slay the Spire Wiki](https://slaythespire.wiki.gg/wiki/Slay_the_Spire_2:Patch_Notes).
+The wiki-derived files in `reference/raw/` and the tables derived from them are under
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) and keep that license.
 
-Raw run data is not included in this repository. Player IDs are hashed in all derived tables,
-and only aggregates are published.
+Slay the Spire 2 belongs to Mega Crit. This project isn't affiliated with Mega Crit, and
+neither is Spire Codex.

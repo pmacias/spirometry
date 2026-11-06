@@ -210,7 +210,8 @@ turn). "Was this card good in this run" can't be read directly off the file.
 
 Built by `python -m spirometry.patch_history` (fetches into `reference/raw/`, cached and
 committed — no player data — then builds the CSVs from the cache; at most 10 requests/min,
-~60 min for a cold cache). Cards only so far. The cache also holds the game lists that
+~60 min for a cold cache). Cards only so far. The Spire Codex maintainer approved publishing
+these cached responses (`reference/raw/README.md`). The cache also holds the game lists that
 `spirometry.runs` checks run ids against (mod markers): enchantments
 (`raw/enchantments.json`, `/api/enchantments`), and events, encounters and monsters
 (`raw/{events,encounters,monsters}.json` from `/api/<name>`, the stable build's data, plus
@@ -1628,6 +1629,10 @@ close to randomized. That supports:
 
 - Current contents: see the repository table in `README.md` (`src/spirometry/`,
   `scripts/snapshot_export.py`, `reference/`, `tests/`, `notes/`, plus PLAN/README/CLAUDE).
+- History: rewritten on 2026-11-06 with `git filter-repo` (uploader-ID outputs, local paths,
+  old emails and the real-run fixture removed) and pushed to a new `pmacias/spirometry`; the
+  old repository is archived privately. Commit hashes from before that date no longer apply,
+  and PR numbers in commit subjects and docs are the old repository's (PLAN.md, Next up 20).
 - Snapshot command (moved from the repo root; behaviour, output folder `sts2_snapshot/`
   and checkpoint `sts2_snapshot/cursor.txt` unchanged — paths are relative to the working
   directory, so run it from the repo root): `python scripts/snapshot_export.py`. A download
@@ -1675,7 +1680,8 @@ close to randomized. That supports:
    for the `runs` and `card_offers` columns and the decisions they need.
 3. ~~Estimate total snapshot size and rate-budget cost per page.~~ Done — see Data sources.
 4. Message the Spire Codex maintainer: describe the project, ask about the academia tier
-   and whether it raises the export budget, confirm they're fine with the use.
+   and whether it raises the export budget, confirm they're fine with the use. *The maintainer
+   approved publishing `reference/raw/`; the academia-tier question isn't recorded as answered.*
 5. ~~Push the repo to GitHub, then test whether a CC cloud session can clone it and reach
    spire-codex.com.~~ Done — passed.
 6. ~~Claim the cloud credit (`/claim-credit` in CC) before October 7, 2026.~~ Done.

@@ -17,3 +17,5 @@ from that code. Run data is not in this folder or anywhere else in the repositor
 
 Neither source is affiliated with Mega Crit, and neither is this project. If a rights holder
 objects to any file here, open an issue and it will be removed.
+
+**Permission:** the Spire Codex maintainer confirmed on Discord (#support, November 2026) that publishing these cached API responses is fine, and preferred.

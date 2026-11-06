@@ -32,8 +32,9 @@ print("patch_summary:", got, "| CAL matches", F)
 PY
 
 cp figures/site/spirometry_parry.png "$SITE/figures/spirometry_parry.png"
+cp figures/site/spirometry_patch1.png "$SITE/figures/spirometry_patch1.png"
 cp figures/site/spirometry_cards.json "$SITE/figures/spirometry_cards.json"
 js="$SITE/figures/spirometry_cards.js"
 header=$(head -n 2 "$js")
 printf '%s\nwindow.SPIROMETRY_CARDS = %s;\n' "$header" "$(cat figures/site/spirometry_cards.json)" > "$js"
-echo "copied into $SITE/figures: spirometry_parry.png, spirometry_cards.json, spirometry_cards.js"
+echo "copied into $SITE/figures: spirometry_parry.png, spirometry_patch1.png, spirometry_cards.json, spirometry_cards.js"

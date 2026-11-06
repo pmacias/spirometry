@@ -608,6 +608,13 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
       calibration of the DiD errors"); the band's 95% is the factor's scaling, not a
       measured coverage.
       (f) The PDF stays in this repo; the site loads only the PNG.
+      (g) `spirometry_patch1.png` is built but not on the page: `index.html` still shows Parry.
+      The swap needs a new src, alt and caption, and that `.fig-slot` off its 4:3 box (the
+      image is 1600×1850, so 4:3 shrinks it below the 10 pt floor).
+      (h) The forest plot's ±2 and the Parry band's and widget's ±1.96 differ on purpose
+      (decision log); Debilitate is the only card they split.
+      (i) Leading Strike is a buff on the forest plot, `rework` in `spirometry_cards.json`,
+      and mixed with `change` nerf in `results/`.
 
 ## Decision log
 - Spire Codex export is the primary source; sts2runs.com only for cross-checks.
@@ -1487,3 +1494,8 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
   say so. `spirometry_cards.json` keeps raw headline CIs because the site widens them at draw
   time, and `n_clear` is the calibrated count. The factors are in two places on purpose (two
   repos); `index.html`'s `CAL` must match. The `sentence` field is gone: nothing read it.
+- First-patch forest plot (Phil, 2026-11-05): replaces Parry as the site's static figure, 25
+  cards (Serpent Form out). Intervals are ±2 placebo-scaled SEs (`site_figures.CAL_Z`), not
+  ±1.96, so the count clear of zero is the calibrated rule's: 13 of 25. At ±1.96 it was 14,
+  because Debilitate's calibrated z is 1.961. Uses the rounded 4.10; the unrounded factor was
+  not chased. Leading Strike is a buff, per the patch notes.

@@ -1059,8 +1059,13 @@ patch's factor around the rounded beta. Parry's static figure draws the same ban
 +20.1). Weekly bars, on both, stay clustered: sampling error only, not placebo-tested. The
 factors live in two places that must agree: `site_figures.PLACEBO_FACTORS_H3` here and `CAL`
 in the website's `index.html` (`scripts/site_publish.sh` stops if they differ). Debilitate
-is the edge case: calibrated z 1.96, so its band just excludes zero (+0.0 to +12.1) while it
+is the edge case: calibrated z 1.961, so its band just excludes zero (+0.0 to +12.1) while it
 is not among the 13, which need |z| > 2.
+
+The site's first-patch forest plot (`figures/site/spirometry_patch1.png`, 25 cards, Serpent
+Form out) draws ±2 placebo-scaled SEs instead, so its intervals clear zero exactly when the
+calibrated count does: 13 of 25, 8 buffs and 5 nerfs, all toward the change. There Debilitate
+starts at −0.1. Leading Strike is a buff on that figure, per the patch notes.
 
 - Largest: Corrosive Wave −15.9 (pick rate 42% → 29%), Parry +14.5 (13% → 27%), Leading
   Strike +10.0 (mixed: damage 7 → 3, Shivs 1 → 2), Untouchable (v0.103.2) −9.4, Fight Me

@@ -171,3 +171,48 @@ def test_card_entry_keeps_the_raw_ci(saved):
     assert (e["headline"]["ci_lo_pts"], e["headline"]["ci_hi_pts"]) == pytest.approx(
         (100 * h.ci_lo, 100 * h.ci_hi))
     assert "sentence" not in e
+
+
+def _forest(saved):
+    h3 = saved["h3"]
+    tw = h3.assign(upgrade_only="no")
+    names = {c: c.title() for c in h3.card_id}
+    return tw, names
+
+
+def test_forest_table_uses_the_calibrated_cutoff(saved):
+    tw, names = _forest(saved)
+    f = sf.PLACEBO_FACTORS_H3["first"]
+    h3 = saved["h3"].assign(se=0.01)
+    h3.loc["MID@1", "beta"] = 0.01 * f * 1.98           # past 1.96, not past 2
+    h3.loc["BIG@1", "beta"] = 0.01 * f * 2.02
+    t = sf.forest_table(dict(saved, h3=h3), tw.assign(se=0.01), names,
+                        kinds={"MIX@1": "nerf"})
+    assert not t.loc["MID@1", "clear"] and t.loc["BIG@1", "clear"]
+    assert list(t.beta_pts) == sorted(t.beta_pts, reverse=True)
+
+
+def test_forest_table_drops_upgrade_only_and_needs_a_kind_for_reworks(saved):
+    tw, names = _forest(saved)
+    tw.loc["FLIP@1", "upgrade_only"] = "yes"
+    t = sf.forest_table(saved, tw, names, kinds={"MIX@1": "buff"})
+    assert "FLIP@1" not in t.index and t.loc["MIX@1", "kind"] == "buff"
+    with pytest.raises(ValueError, match="MIX@1"):
+        sf.forest_table(saved, tw, names)
+
+
+def test_forest_plot_text_size_and_colors(saved):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    tw, names = _forest(saved)
+    t = sf.forest_table(saved, tw, names, kinds={"MIX@1": "nerf"})
+    with plt.rc_context(sf.SITE_STYLE):
+        fig = sf.plot_forest_site(t, title="t", subtitle="s", xlabel="x")
+    fig.canvas.draw()
+    ax = fig.axes[0]
+    sizes = [x.get_fontsize() for x in [*fig.texts, *ax.get_yticklabels(), *ax.get_xticklabels(),
+                                         *ax.get_legend().get_texts()]]
+    assert min(sizes) >= 13
+    plt.close(fig)
+

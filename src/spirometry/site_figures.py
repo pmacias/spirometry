@@ -30,6 +30,7 @@ FIRST_BEFORE = "v0.99.1"        # the first patch's before block; anything else 
 # calibrated counts in "Phase 5 results". Multiplies a clustered SE as it divides a z.
 # index.html's CAL (website repo) must match; scripts/site_publish.sh checks that it does.
 PLACEBO_FACTORS_H3 = {"first": 4.10, "second": 2.67}
+CAL_Z = 2                       # calibrated |z| cutoff: the calibrated counts' rule
 
 H3_CHECKS = ["pooled_groups", "tagged", "untagged", "drop_shared_screens",
              "drop_behavior_flags", "drop_top_uploaders", "picked_screens_only"]
@@ -43,6 +44,7 @@ SITE_STYLE = {
 }
 ACCENT = "#ff9273"
 OLD_BUILD = "#a9bccf"
+NERF = "#a9cdf5"
 MINUS = "−"
 
 
@@ -326,7 +328,71 @@ def card_entry(saved, cpid, cells, *, change_text, tweaks, builds, name, kind=No
     return entry
 
 
-# ---- static figure ---------------------------------------------------------------------------
+# ---- static figures --------------------------------------------------------------------------
+
+def forest_table(saved, tweaks, names, *, patch="first", kinds=None):
+    """One row per estimable tweak of a patch at weeks 0-3, upgrade-only tweaks dropped,
+    sorted by estimate (largest first): name, kind (buff/nerf; `kinds` overrides by
+    card_patch_id, and a rework left over raises), beta_pts, and lo_pts/hi_pts at
+    +- CAL_Z placebo-scaled SEs, so `clear` is the calibrated count's rule. `names` maps
+    card_id to display name."""
+    kinds = kinds or {}
+    t = _estimable(saved)
+    t = t[t.before_builds.map(patch_of) == patch]
+    t = t[tweaks.loc[t.index, "upgrade_only"] != "yes"]
+    half = 100 * CAL_Z * t.se * PLACEBO_FACTORS_H3[patch]
+    out = pd.DataFrame({
+        "name": [names[tweaks.loc[c, "card_id"]] for c in t.index],
+        "kind": [kinds.get(c) or kind_of(tweaks.loc[c]) for c in t.index],
+        "beta_pts": 100 * t.beta, "lo_pts": 100 * t.beta - half, "hi_pts": 100 * t.beta + half},
+        index=t.index)
+    bad = out.index[~out.kind.isin(["buff", "nerf"])]
+    if len(bad):
+        raise ValueError(f"give these a buff or nerf in `kinds`: {list(bad)}")
+    out["clear"] = (out.lo_pts > 0) | (out.hi_pts < 0)
+    return out.sort_values("beta_pts", ascending=False)
+
+
+def plot_forest_site(table, *, title, subtitle, xlabel):
+    """Forest plot of forest_table's rows: buffs in ACCENT, nerfs in NERF, a line at 0.
+    Text is 13 pt or more, about 10 pt on a 600 px wide page. Call inside
+    plt.rc_context(SITE_STYLE). Returns the figure."""
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    colors = {"buff": ACCENT, "nerf": NERF}
+    n = len(table)
+    top_in, bottom_in, row_in = 1.2, 0.8, 0.29
+    height = top_in + bottom_in + n * row_in
+    fig, ax = plt.subplots(figsize=(8, height), dpi=200)
+    y = np.arange(n)[::-1]
+    c = table.kind.map(colors)
+    ax.hlines(y, table.lo_pts, table.hi_pts, colors=c, lw=2.2, zorder=3)
+    ax.scatter(table.beta_pts, y, c=c, s=52, zorder=4, linewidths=0)
+    ax.axvline(0, color="#c9d6e6", lw=1.2, zorder=2)
+    ax.grid(True, axis="x", lw=0.8)
+    ax.set_axisbelow(True)
+    for side in ("top", "right", "left"):
+        ax.spines[side].set_visible(False)
+    ax.set_ylim(-0.7, n - 0.3)
+    ax.set_yticks(y, table.name)
+    ax.xaxis.set_major_locator(plt.MultipleLocator(10))
+    ax.xaxis.set_major_formatter(lambda v, _: f"{v:+.0f}".replace("-", MINUS) if v else "0")
+    ax.tick_params(axis="y", labelsize=13, length=0, labelcolor="#f3f6fa")
+    ax.tick_params(axis="x", labelsize=13, length=0)
+    fig.subplots_adjust(left=0.235, right=0.97, top=1 - top_in / height,
+                        bottom=bottom_in / height)
+    fig.text(0.5, 0.2 / height, xlabel, ha="center", va="bottom", fontsize=13, color="#c9d6e6")
+    fig.text(0.04, 1 - 0.14 / height, title, ha="left", va="top", fontsize=20,
+             fontweight="bold")
+    fig.text(0.04, 1 - 0.62 / height, subtitle, ha="left", va="top", fontsize=14,
+             color="#c9d6e6")
+    handles = [Line2D([], [], color=col, marker="o", ms=7, lw=2.2) for col in colors.values()]
+    ax.legend(handles, list(colors), loc="upper left", frameon=False, fontsize=13,
+              labelcolor="#f3f6fa", handletextpad=0.5)
+    return fig
+
+
 
 def plot_event_study_site(cells, entry, *, title, change_label, min_offers=MIN_OFFERS):
     """Site version of notebook 02's event-study plot for one card, in percentage points:

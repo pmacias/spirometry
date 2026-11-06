@@ -590,9 +590,24 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
       read-through).*
    18. Website deliverables from notebook 02 (Phil, 2026-10-27): `notebooks/06_site_figures.ipynb`
       with `src/spirometry/site_figures.py`, into `figures/site/`. *Selection and Parry figure
-      done (CC, 2026-10-27; from saved fits only; contrast card The Scythe). `spirometry_cards.json` not yet written: its
-      section 3 needs `reference/raw/cards.json` (the card list), which the CC session can't
-      read; Phil runs the notebook.*
+      done (CC, 2026-10-27; from saved fits only; contrast card The Scythe). Calibrated
+      version (CC, 2026-11-05): Parry's band, the export's `n_clear`, no `sentence` field,
+      `scripts/site_publish.sh`. Code and docs done; Phil runs the script (notebook 06 needs
+      `data/`, the CC sandbox can't write to the website repo). Until then
+      `spirometry_cards.json` still says 21 and 8, and the PNG and PDF come from `results/`.*
+   19. Loose ends from the calibrated site (2026-11-05), all open:
+      (a) Debilitate: calibrated z 1.96, so its site band reads +0.0 to +12.1 while it is not
+      one of the 13 (|z| > 2). Phil decides whether to keep it or add a note.
+      (b) The card selection rules (notebook 06) still use clustered SEs (|β| > 2 se), by
+      design; they were fixed before the picks.
+      (c) The factors live in two places (`PLACEBO_FACTORS_H3`, `CAL`); the script checks
+      them but nothing checks them on a plain `index.html` edit.
+      (d) `index.html`'s prose hard-codes 26, 13, 4.4, 17, 1.9, 2 and "about 1.1 million"
+      (1,122,054 primary runs), so an export change won't reach it.
+      (e) Why the placebo spread is so large is still not verified (SPIROMETRY.md, "Placebo
+      calibration of the DiD errors"); the band's 95% is the factor's scaling, not a
+      measured coverage.
+      (f) The PDF stays in this repo; the site loads only the PNG.
 
 ## Decision log
 - Spire Codex export is the primary source; sts2runs.com only for cross-checks.
@@ -1466,3 +1481,9 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
   the rate itself is a percentage; the caption has no CI because the placebo check says the
   intervals are too narrow. "Second patch weaker" is the median |β| comparison at weeks 0–3 (4.40 vs. 1.95 pts).
   Parry's change is Block (6(9) → 10(14) when you play Sovereign Blade), not Vigor.
+- Calibrated site numbers (Phil, 2026-11-05): the weeks 0–3 band is the 95% interval widened
+  by the patch's weeks 0–3 placebo factor (`site_figures.PLACEBO_FACTORS_H3`: 4.10, 2.67),
+  around the rounded beta as `index.html`'s `calCI` does; the weekly bars stay clustered and
+  say so. `spirometry_cards.json` keeps raw headline CIs because the site widens them at draw
+  time, and `n_clear` is the calibrated count. The factors are in two places on purpose (two
+  repos); `index.html`'s `CAL` must match. The `sentence` field is gone: nothing read it.

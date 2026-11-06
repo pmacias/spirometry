@@ -26,6 +26,10 @@ HORIZON_LABEL = f"weeks 0–{HORIZON}"
 WEEKS = (-6, 8)                 # fit_event_study's default bins
 MIN_OFFERS = 100                # hide event-study cells with fewer treated offers (as notebook 02)
 FIRST_BEFORE = "v0.99.1"        # the first patch's before block; anything else is the second
+# Robust placebo sd by patch at weeks 0-3: SPIROMETRY.md, "Weeks 0–3 placebos" and the
+# calibrated counts in "Phase 5 results". Multiplies a clustered SE as it divides a z.
+# index.html's CAL (website repo) must match; scripts/site_publish.sh checks that it does.
+PLACEBO_FACTORS_H3 = {"first": 4.10, "second": 2.67}
 
 H3_CHECKS = ["pooled_groups", "tagged", "untagged", "drop_shared_screens",
              "drop_behavior_flags", "drop_top_uploaders", "picked_screens_only"]
@@ -216,12 +220,15 @@ def pick_null(saved):
 
 
 def patch_summary(saved):
-    """Per patch at weeks 0-3: median |beta| in points, tweaks with |beta| > 2 se, tweaks."""
+    """Per patch at weeks 0-3: median |beta| in points, tweaks clearly nonzero on the
+    calibrated scale (|beta / se| / PLACEBO_FACTORS_H3 > 2, SPIROMETRY.md's calibrated
+    counts), tweaks."""
     t = _estimable(saved)
     out = {}
     for patch, g in t.groupby(t.before_builds.map(patch_of)):
         out[patch] = {"median_abs_beta_pts": round(100 * float(g.beta.abs().median()), 2),
-                      "n_clear": int((g.beta.abs() > 2 * g.se).sum()), "n": len(g)}
+                      "n_clear": int((g.beta.abs() / g.se / PLACEBO_FACTORS_H3[patch] > 2).sum()),
+                      "n": len(g)}
     return {k: out[k] for k in ("first", "second") if k in out}
 
 
@@ -281,21 +288,11 @@ def _pts(x):
     return f"{x:+.1f}".replace("-", MINUS)
 
 
-def sentence(beta_pts, lo, hi, character):
-    """One plain line: up/down when the 95% CI excludes zero, else 'no clear change'."""
-    vs = f"vs. unchanged {character} cards"
-    if lo > 0 or hi < 0:
-        a, b = sorted([abs(lo), abs(hi)])
-        return (f"Pick rate {'up' if beta_pts > 0 else 'down'} {abs(beta_pts):.1f} pts {vs} "
-                f"(95% CI {a:.1f}–{b:.1f}).")
-    return (f"No clear change in pick rate {vs}: {_pts(beta_pts)} pts "
-            f"(95% CI {_pts(lo)} to {_pts(hi)}).")
-
-
 def card_entry(saved, cpid, cells, *, change_text, tweaks, builds, name, kind=None,
                note=None, min_offers=MIN_OFFERS):
-    """The JSON entry for one card-patch: headline at weeks 0-3, one sentence, the week
-    cells (weekly_cells) with at least `min_offers` treated offers; cells=None leaves the
+    """The JSON entry for one card-patch: headline at weeks 0-3, with the raw clustered CI
+    (the site widens it at draw time, so don't widen it here), and the week cells
+    (weekly_cells) with at least `min_offers` treated offers; cells=None leaves the
     weeks out. `tweaks` is tweak_sizes.csv indexed by card_patch_id, `builds` builds.csv
     indexed by build_id."""
     t = tweaks.loc[cpid]
@@ -315,7 +312,6 @@ def card_entry(saved, cpid, cells, *, change_text, tweaks, builds, name, kind=No
             **{c: _num(h[c], 4) for c in ["treated_rate_before", "treated_rate_after",
                                           "control_rate_before", "control_rate_after"]},
             "n_controls": int(h.n_control_cards), "n_treated_offers": int(h.n_treated_offers)},
-        "sentence": sentence(beta, lo, hi, character),
     }
     if note:
         entry["note"] = note
@@ -334,11 +330,14 @@ def card_entry(saved, cpid, cells, *, change_text, tweaks, builds, name, kind=No
 
 def plot_event_study_site(cells, entry, *, title, change_label, min_offers=MIN_OFFERS):
     """Site version of notebook 02's event-study plot for one card, in percentage points:
-    old build in OLD_BUILD (squares), new build in ACCENT (circles), 95% intervals, cells
-    with fewer than `min_offers` treated offers hidden, the release as a dashed line, the
-    weeks 0-3 estimate as a band across weeks 0-3 with its label. Call inside
-    plt.rc_context(SITE_STYLE). Returns the figure."""
+    old build in OLD_BUILD (squares), new build in ACCENT (circles), 95% clustered intervals
+    (sampling error only), cells with fewer than `min_offers` treated offers hidden, the
+    release as a dashed line, the weeks 0-3 estimate as a band across weeks 0-3 with its
+    label. The band is the 95% interval widened by the patch's PLACEBO_FACTORS_H3 around
+    the rounded beta, as index.html's calCI does. Call inside plt.rc_context(SITE_STYLE).
+    Returns the figure."""
     import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
 
     hd = entry["headline"]
     fig, ax = plt.subplots(figsize=(8, 6), dpi=200)
@@ -347,10 +346,11 @@ def plot_event_study_site(cells, entry, *, title, change_label, min_offers=MIN_O
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
 
-    # weeks 0-3 estimate: CI band and line across the headline weeks
+    # weeks 0-3 estimate: placebo-calibrated band and line across the headline weeks
     x0, x1 = -0.5, HORIZON + 0.5
-    ax.fill_between([x0, x1], hd["ci_lo_pts"], hd["ci_hi_pts"], color=ACCENT, alpha=0.18,
-                    lw=0, zorder=1)
+    half = (hd["ci_hi_pts"] - hd["ci_lo_pts"]) / 2 * PLACEBO_FACTORS_H3[entry["patch"]]
+    ax.fill_between([x0, x1], hd["beta_pts"] - half, hd["beta_pts"] + half, color=ACCENT,
+                    alpha=0.18, lw=0, zorder=1)
     ax.plot([x0, x1], [hd["beta_pts"]] * 2, color=ACCENT, lw=1.5, alpha=0.7, zorder=1)
 
     c = cells[(cells.offers >= min_offers) | cells.is_ref]       # the reference is always 0
@@ -396,7 +396,12 @@ def plot_event_study_site(cells, entry, *, title, change_label, min_offers=MIN_O
                   "(percentage points, relative to the week before)", fontsize=12)
     fig.suptitle(title, x=0.04, y=0.975, ha="left", fontsize=17, fontweight="bold")
     fig.text(0.04, 0.905, change_label, ha="left", fontsize=12.5, color="#c9d6e6")
-    ax.legend(loc="lower right", frameon=False, fontsize=10.5, labelcolor="#f3f6fa",
+    handles, labels = ax.get_legend_handles_labels()
+    swatch = Line2D([], [], ls="none", marker="s", ms=10, mfc=ACCENT, mew=0, alpha=0.18)
+    ax.legend([swatch] + handles, ["95% interval, placebo-calibrated"] + labels,
+              loc="lower right", frameon=False, fontsize=10.5, labelcolor="#f3f6fa",
               handletextpad=0.4)
+    ax.text(hi_w + 0.5, ymax + 0.7, "weekly bars: sampling error only", ha="right",
+            va="bottom", fontsize=10.5, color="#c9d6e6")
     fig.subplots_adjust(left=0.13, right=0.97, top=0.85, bottom=0.11)
     return fig

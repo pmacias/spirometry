@@ -1052,6 +1052,16 @@ v0.107.1 just misses at −1.98), 0 with the plain-sd factor (2.94). All weeks: 
 Strike) and the second patch's (Bulwark, Debilitate v0.107.1) all fall within calibrated
 |z| 2 (`data/analysis/writeup/calibrated_counts.csv`; field guide v2, chapters 8–9).
 
+The website shows the calibrated weeks 0–3 numbers. `patch_summary.n_clear` in
+`figures/site/spirometry_cards.json` is the calibrated count (13 of 26, 2 of 17). Headline
+intervals are the raw clustered CIs in the JSON and are widened once, at draw time, by the
+patch's factor around the rounded beta. Parry's static figure draws the same band (+8.2 to
++20.1). Weekly bars, on both, stay clustered: sampling error only, not placebo-tested. The
+factors live in two places that must agree: `site_figures.PLACEBO_FACTORS_H3` here and `CAL`
+in the website's `index.html` (`scripts/site_publish.sh` stops if they differ). Debilitate
+is the edge case: calibrated z 1.96, so its band just excludes zero (+0.0 to +12.1) while it
+is not among the 13, which need |z| > 2.
+
 - Largest: Corrosive Wave −15.9 (pick rate 42% → 29%), Parry +14.5 (13% → 27%), Leading
   Strike +10.0 (mixed: damage 7 → 3, Shivs 1 → 2), Untouchable (v0.103.2) −9.4, Fight Me
   +9.0, Pinpoint −8.6, Danse Macabre +7.5 (7% → 15%). Royalties (+7.3 ± 6.0) and Serpent

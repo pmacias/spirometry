@@ -82,18 +82,10 @@ def test_pick_null(saved):
 def test_patch_summary_and_kind(saved):
     s = sf.patch_summary(saved)
     assert s["first"]["n"] == 5 and s["second"]["n"] == 4
-    assert s["second"]["n_clear"] == 1
+    assert s["second"]["n_clear"] == 0      # N4@2's z of 5 is 1.87 calibrated
     assert sf.kind_of(saved["h3"].loc["MIX@1"]) == "rework"
     assert sf.kind_of(saved["h3"].loc["BUFF@1"]) == "buff"
     assert sf.kind_of(saved["h3"].loc["MID@1"]) == "nerf"
-
-
-def test_sentence():
-    assert sf.sentence(14.13, 12.68, 15.57, "Regent") == \
-        "Pick rate up 14.1 pts vs. unchanged Regent cards (95% CI 12.7–15.6)."
-    assert sf.sentence(-8.1, -9.1, -7.2, "Silent").startswith("Pick rate down 8.1 pts")
-    assert "(95% CI 7.2–9.1)" in sf.sentence(-8.1, -9.1, -7.2, "Silent")
-    assert sf.sentence(-2.0, -4.2, 0.2, "Ironclad").startswith("No clear change")
 
 
 def test_weekly_cells_match_event_study(ref):
@@ -129,3 +121,53 @@ def test_card_entry_shape(ref, saved):
     assert all(w["offers"] >= sf.MIN_OFFERS for w in e["weeks"])
     assert {"week", "block", "coef_pts", "se_pts", "offers", "picks", "pick_rate",
             "control_pick_rate"} == set(e["weeks"][0])
+
+
+def _plot(patch):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    cells = sf.es_cells(pd.DataFrame(es_rows("X@1", [0.0, 0.0])), "X@1")
+    entry = {"patch": patch, "builds": "vA → vB", "headline": {
+        "beta_pts": 10.0, "ci_lo_pts": 9.0, "ci_hi_pts": 11.0,
+        "treated_rate_before": 0.2, "treated_rate_after": 0.3}}
+    with plt.rc_context(sf.SITE_STYLE):
+        return sf.plot_event_study_site(cells, entry, title="t", change_label="c")
+
+
+@pytest.mark.parametrize("patch", ["first", "second"])
+def test_site_plot_band_is_placebo_calibrated(patch):
+    import matplotlib.pyplot as plt
+    fig = _plot(patch)
+    ax = fig.axes[0]
+    ys = ax.collections[0].get_paths()[0].vertices[:, 1]
+    f = sf.PLACEBO_FACTORS_H3[patch]
+    assert (ys.min(), ys.max()) == pytest.approx((10 - f, 10 + f))
+    labels = [t.get_text() for t in ax.get_legend().get_texts()]
+    assert labels[0] == "95% interval, placebo-calibrated"
+    assert any(t.get_text() == "weekly bars: sampling error only" for t in ax.texts)
+    plt.close(fig)
+
+
+def test_patch_summary_counts_are_calibrated(saved):
+    f = sf.PLACEBO_FACTORS_H3["second"]
+    h3 = saved["h3"].copy()
+    keep = ["N1@2", "N2@2"]
+    h3 = h3.loc[keep].assign(se=0.01)
+    h3.loc["N1@2", "beta"] = 0.01 * 2 * f * 0.9        # past 2 se, not past the calibrated 2
+    h3.loc["N2@2", "beta"] = 0.01 * 2 * f * 1.1
+    s = sf.patch_summary(dict(saved, h3=h3, main=h3))
+    assert s["second"]["n_clear"] == 1 and s["second"]["n"] == 2
+
+
+def test_card_entry_keeps_the_raw_ci(saved):
+    tw = pd.DataFrame([dict(card_patch_id="MID@1", color="silent", before_builds=sf.FIRST_BEFORE,
+                            after_builds="vB", direction=1.0, log_ratio=-0.4,
+                            upgraded_log_ratio=np.nan, mixed_direction="no", upgrade_only="no")]) \
+        .set_index("card_patch_id")
+    b = pd.DataFrame({"release_date": ["2026-04-16"]}, index=["vB"])
+    e = sf.card_entry(saved, "MID@1", None, change_text="", tweaks=tw, builds=b, name="M", kind="nerf")
+    h = saved["h3"].loc["MID@1"]
+    assert (e["headline"]["ci_lo_pts"], e["headline"]["ci_hi_pts"]) == pytest.approx(
+        (100 * h.ci_lo, 100 * h.ci_hi))
+    assert "sentence" not in e

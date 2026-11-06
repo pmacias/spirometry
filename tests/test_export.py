@@ -1,12 +1,15 @@
 """spirometry.export on synthetic saved fits (spirometry.sample_results: the column layout
 notebooks 02 and 03 save). No run data."""
 import json
+import pathlib
 
 import numpy as np
 import pandas as pd
 import pytest
 
 from spirometry import export, sample_results
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture()
@@ -44,6 +47,11 @@ def test_pick_rate_table(inputs, tmp_path):
     k = p.treated_rate_before * (1 - p.treated_rate_before)
     np.testing.assert_allclose(p.beta_lo, p.beta / k, rtol=1e-4)
     assert ((p.beta.abs() > 2 * p.se) == (p.clearly_nonzero == "yes")).all()
+    assert ((p.beta_h.abs() > 2 * p.se_h) == (p.clearly_nonzero_h == "yes")).all()
+    for col, est, se, factors in [
+            ("clearly_nonzero_cal", p.beta, p.se, export.PLACEBO_FACTORS_ALL),
+            ("clearly_nonzero_h_cal", p.beta_h, p.se_h, export.PLACEBO_FACTORS_H3)]:
+        assert ((est.abs() > 2 * se * p.patch.map(factors)) == (p[col] == "yes")).all()
     single = (p.mixed_direction == "no") & (p.upgrade_only == "no")
     assert (p.toward_change[~single].isna()).all()
     s = p[single]
@@ -239,3 +247,27 @@ def test_cli(inputs, tmp_path, capsys):
     assert "pick_rate_did.csv" in capsys.readouterr().out
     with pytest.raises(SystemExit, match="export stopped"):
         export.main(["--analysis", str(tmp_path / "nowhere"), "--ref", str(r)])
+
+
+def test_calibrated_rule_scales_the_se_by_the_patch_factor():
+    beta = pd.Series([0.03, 0.05, 0.05, 0.0, np.nan, 0.05])
+    se = pd.Series([0.01] * 6)
+    patch = pd.Series(["first", "first", "second", "second", "second", "third"])
+    got = export.clearly_nonzero_calibrated(beta, se, patch, {"first": 2.0, "second": 3.0})
+    # z 3 and 5 against 2 x 2.0; z 5 and 0 against 2 x 3.0; no beta; no factor for the patch
+    assert list(got) == ["no", "yes", "no", "no", "", ""]
+
+
+def test_committed_results_give_the_calibrated_counts():
+    """The factors, rounded as the site uses them, on the published estimates give the
+    headline counts, and they agree with the unrounded factors in the numbers table."""
+    p = pd.read_csv(ROOT / "results" / "pick_rate_did.csv")
+    assert ((p.patch == "first").sum(), (p.patch == "second").sum()) == (26, 17)
+    for est, se, factors, want in [(p.beta_h, p.se_h, export.PLACEBO_FACTORS_H3, (13, 2)),
+                                   (p.beta, p.se, export.PLACEBO_FACTORS_ALL, (13, 4))]:
+        clear = export.clearly_nonzero_calibrated(est, se, p.patch, factors) == "yes"
+        assert (clear[p.patch == "first"].sum(), clear[p.patch == "second"].sum()) == want
+    nums = json.loads((ROOT / "writeup" / "numbers.json").read_text())["numbers"]
+    for hz, factors in [("h3", export.PLACEBO_FACTORS_H3), ("all", export.PLACEBO_FACTORS_ALL)]:
+        for patch, f in factors.items():
+            assert round(nums[f"did.{hz}.{patch}.calibrated.factor"]["value"], 2) == f

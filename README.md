@@ -50,10 +50,11 @@ game's RNG decides the offers.
    errors". With each patch's errors scaled by its placebo spread (the lead count in the
    field guide), over the first four weeks: 13 of 26 first-patch tweaks, all 12 with one
    direction toward the change, and 2 of 17 second-patch tweaks.
-   `results/pick_rate_did.csv` doesn't carry those counts: its `clearly_nonzero_*` columns use
-   uncalibrated clustered errors. `clearly_nonzero_h` (first four weeks) gives 21 of 26 and 8
-   of 17, and `clearly_nonzero` (all weeks) the 22 and 9 above. The headline 13 of 26 and 2 of
-   17 apply the placebo factors in SPIROMETRY.md, "Placebo calibration of the DiD errors".
+   In `results/pick_rate_did.csv`, `clearly_nonzero_h_cal` gives those 13 of 26 and 2 of 17,
+   applying the placebo factors in SPIROMETRY.md, "Placebo calibration of the DiD errors";
+   `clearly_nonzero_cal` does the same over all weeks (13 of 26, 4 of 17). `clearly_nonzero_h`
+   (first four weeks: 21 of 26, 8 of 17) and `clearly_nonzero` (all weeks: the 22 and 9 above)
+   use uncalibrated clustered errors.
 2. **One worked example.** Parry (a Regent card, main number 6 → 10) went from a 13.1% to a
    27.1% pick rate, while the unchanged Regent cards went from 27.8% to 27.3%. The estimated
    change is +14.5 points (95% interval +13.2 to +15.8). The largest drop is Corrosive Wave

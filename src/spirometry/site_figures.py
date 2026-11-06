@@ -20,17 +20,13 @@ import pandas as pd
 from scipy import stats
 
 from spirometry import did
+from spirometry.export import CAL_Z, PLACEBO_FACTORS_H3  # noqa: F401  (the calibrated rule)
 
-HORIZON = 3                     # weeks 0-3: the headline horizon
+HORIZON = 3                    # weeks 0-3: the headline horizon
 HORIZON_LABEL = f"weeks 0–{HORIZON}"
 WEEKS = (-6, 8)                 # fit_event_study's default bins
 MIN_OFFERS = 100                # hide event-study cells with fewer treated offers (as notebook 02)
 FIRST_BEFORE = "v0.99.1"        # the first patch's before block; anything else is the second
-# Robust placebo sd by patch at weeks 0-3: SPIROMETRY.md, "Weeks 0–3 placebos" and the
-# calibrated counts in "Phase 5 results". Multiplies a clustered SE as it divides a z.
-# index.html's CAL (website repo) must match; scripts/site_publish.sh checks that it does.
-PLACEBO_FACTORS_H3 = {"first": 4.10, "second": 2.67}
-CAL_Z = 2                       # calibrated |z| cutoff: the calibrated counts' rule
 
 H3_CHECKS = ["pooled_groups", "tagged", "untagged", "drop_shared_screens",
              "drop_behavior_flags", "drop_top_uploaders", "picked_screens_only"]

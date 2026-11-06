@@ -216,3 +216,8 @@ def test_forest_plot_text_size_and_colors(saved):
     assert min(sizes) >= 13
     plt.close(fig)
 
+
+def test_factors_are_the_exports():
+    from spirometry import export
+    assert sf.PLACEBO_FACTORS_H3 is export.PLACEBO_FACTORS_H3 and sf.CAL_Z is export.CAL_Z
+

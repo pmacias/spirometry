@@ -47,7 +47,12 @@ Derived columns (everything else is copied from the fits or tweak_sizes.csv):
 - beta_lo, se_lo (all weeks) and beta_lo_h, se_lo_h (fixed horizon): delta method, as in
   the notebook's section 8 (did.to_log_odds): beta / (p (1 - p)), se / (p (1 - p)), p =
   the treated card's pick rate before, from the same fit.
-- clearly_nonzero (clearly_nonzero_h): |beta| > 2 se, "yes" / "no".
+- clearly_nonzero (clearly_nonzero_h): |beta| > 2 se, "yes" / "no". Clustered errors, not
+  calibrated.
+- clearly_nonzero_cal (clearly_nonzero_h_cal): the same with the se multiplied by the
+  patch's placebo factor at that horizon (PLACEBO_FACTORS_ALL, PLACEBO_FACTORS_H3), which
+  gives the calibrated counts: |beta| > CAL_Z x se x factor. Blank for a patch with no
+  factor.
 - toward_change: "yes" when sign(beta) = sign(direction x log_ratio), "no" otherwise,
   blank for mixed-direction and upgrade-only tweaks (no single direction to compare) and
   when beta or log_ratio is missing. Computed for every tweak, not only clearly nonzero
@@ -83,6 +88,14 @@ PATCH_NAMES = ["first", "second", "third", "fourth", "fifth"]
 FORBIDDEN_COLUMN = re.compile(r"^(uploader_hash|run_key|run_hash|seed|player_.*)$")
 HASH_VALUE = re.compile(r"(?<![0-9a-f])(?:[0-9a-f]{16}|[0-9a-f]{64})(?![0-9a-f])")
 FIT_CHECK_SKIP = {"main", "second_patch_checks"}     # did_*.parquet that aren't checks
+# Robust placebo sd by patch: SPIROMETRY.md, "Weeks 0–3 placebos" and the calibrated counts
+# in "Phase 5 results". Multiplies a clustered SE as it divides a z. Here because the export
+# can't import site_figures (that needs pyfixest); site_figures imports them from here.
+# index.html's CAL (website repo) must match the weeks 0-3 ones; scripts/site_publish.sh
+# checks that it does.
+PLACEBO_FACTORS_H3 = {"first": 4.10, "second": 2.67}
+PLACEBO_FACTORS_ALL = {"first": 4.52, "second": 2.07}
+CAL_Z = 2                       # calibrated |z| cutoff: the calibrated counts' rule
 
 
 class ExportError(RuntimeError):
@@ -165,6 +178,13 @@ def _yes_no(cond, valid=None):
     return out
 
 
+def clearly_nonzero_calibrated(beta, se, patch, factors):
+    """'yes' / 'no' by the calibrated rule, |beta| > CAL_Z x se x the patch's factor; blank
+    where beta is missing or the patch has no factor."""
+    factor = patch.map(factors)
+    return _yes_no(beta.abs() > CAL_Z * se * factor, beta.notna() & factor.notna())
+
+
 def toward_change(beta, dose_x, single):
     """"yes" when sign(beta) = sign(dose_x), "no" otherwise; blank where the tweak has no
     single direction (`single` false: mixed-direction or upgrade-only) or beta or dose_x is
@@ -202,6 +222,7 @@ PICK_RATE_COLUMNS = [
     "main_field", "old", "new", "log_ratio", "upgrade_field", "upgrade_old", "upgrade_new",
     "upgraded_log_ratio", "direction", "upgrade_only", "mixed_direction", "solo_estimable",
     "beta_lo", "se_lo", "beta_lo_h", "se_lo_h", "clearly_nonzero", "clearly_nonzero_h",
+    "clearly_nonzero_cal", "clearly_nonzero_h_cal",
     "toward_change", "change", "dose_x", "dose_x_upgraded"]
 
 
@@ -231,6 +252,10 @@ def pick_rate_did(main, h, tw):
                                                    out.treated_rate_before_h)
     out["clearly_nonzero"] = _yes_no(out.beta.abs() > 2 * out.se, out.beta.notna())
     out["clearly_nonzero_h"] = _yes_no(out.beta_h.abs() > 2 * out.se_h, out.beta_h.notna())
+    out["clearly_nonzero_cal"] = clearly_nonzero_calibrated(out.beta, out.se, out.patch,
+                                                            PLACEBO_FACTORS_ALL)
+    out["clearly_nonzero_h_cal"] = clearly_nonzero_calibrated(out.beta_h, out.se_h, out.patch,
+                                                              PLACEBO_FACTORS_H3)
     out["dose_x"] = out.direction * out.log_ratio
     out["dose_x_upgraded"] = out.direction * out.upgraded_log_ratio
     single = (out.mixed_direction != "yes") & (out.upgrade_only != "yes")

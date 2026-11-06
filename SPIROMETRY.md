@@ -1058,10 +1058,15 @@ The website shows the calibrated weeks 0–3 numbers. `patch_summary.n_clear` in
 intervals are the raw clustered CIs in the JSON and are widened once, at draw time, by the
 patch's factor around the rounded beta. Parry's static figure draws the same band (+8.2 to
 +20.1). Weekly bars, on both, stay clustered: sampling error only, not placebo-tested. The
-factors live in two places that must agree: `site_figures.PLACEBO_FACTORS_H3` here and `CAL`
-in the website's `index.html` (`scripts/site_publish.sh` stops if they differ). Debilitate
-is the edge case: calibrated z 1.961, so its band just excludes zero (+0.0 to +12.1) while it
-is not among the 13, which need |z| > 2.
+factors live in two places that must agree: `export.PLACEBO_FACTORS_H3` here (`site_figures`
+imports it) and `CAL` in the website's `index.html` (`scripts/site_publish.sh` stops if they
+differ). Debilitate is the edge case: calibrated z 1.961, so its band just excludes zero (+0.0
+to +12.1) while it is not among the 13, which need |z| > 2.
+
+`results/pick_rate_did.csv` carries the same rule per tweak: `clearly_nonzero_h_cal` (weeks
+0–3, factors 4.10 and 2.67, 13 of 26 and 2 of 17) and `clearly_nonzero_cal` (all weeks, factors
+4.52 and 2.07, 13 of 26 and 4 of 17). `clearly_nonzero_h` and `clearly_nonzero` stay
+uncalibrated.
 
 The site's first-patch forest plot (`figures/site/spirometry_patch1.png`, 25 cards, Serpent
 Form out) draws ±2 placebo-scaled SEs instead, so its intervals clear zero exactly when the

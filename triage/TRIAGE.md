@@ -24,7 +24,7 @@ fits). Notebook outputs were read with `triage/scripts/dump_notebook.py` (hashed
 [computed] Notebooks 02 and 03 print `build_info` as parser 1.7.0, built
 2026-10-02 22:32 UTC, `records_read` 1,871,830 (the 1,513-page tables had 1,511,837 records).
 Every file in `data/analysis/` was written 2026-10-02 15:50–19:23 local time, after that
-build (commit 09aa195 "Rebuild pipeline and re-run notebooks"). SPIROMETRY.md "Phase 5
+build (commit 198a6d8 "Rebuild pipeline and re-run notebooks"). SPIROMETRY.md "Phase 5
 results", "Anticipation" and PLAN.md item 7 still quote the 1,513-page (2026-09-29) numbers.
 The placebo section says "1,513-page tables", but `placebo_main.parquet` was written
 2026-10-02 18:27, about 3 hours after the rebuild, and its real-tweak comparison uses the

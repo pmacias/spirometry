@@ -137,7 +137,7 @@ unparseable lines; 75,996 exact repeats dropped (the re-downloaded pages); solo 
 keys 124; `primary_run_keys_retried` 74; `runs_mod_entity_only` 453;
 `primary_offers_dedup_removed` 4,130 (1,393-page build: 119, 72, 425, 4,061). `deck_final`, `deaths` and relic/event choices not
 started. Rebuilt 2026-10-02 22:32 UTC (parser 1.7.0, 1,873 pages, 1,871,830 records; commit
-09aa195): every file in `data/analysis/`, `results/` and `triage/out/` comes from that build.
+198a6d8): every file in `data/analysis/`, `results/` and `triage/out/` comes from that build.
 Final build on the complete snapshot (Phil, 2026-10-09 21:18 UTC, parser 1.7.0): 2,071 pages
 (0–2,070), 2,069,493 records read, 75,996 exact repeats dropped, 0 pages failed. Before
 anything is refitted on it, `data/analysis/` (the 1,873-page fits) was copied to
@@ -319,7 +319,8 @@ started. Not planned for field guide v2 (future work).*
 ### 7. Write-up
 Field guide v2: a personal study guide (PDF) that teaches the statistics through the project's
 own data, in the voice and format of v1 (`notes/spirometry_stats_field_guide_v1.pdf`, a study
-guide on the 1,393-page tables). Publishing undecided. Built from `writeup/` (Typst) by
+guide on the 1,393-page tables). The PDF stays unpublished for now: publish as a GitHub Release
+asset after the chapter 7-14 review. Built from `writeup/` (Typst) by
 `python -m spirometry.writeup build`; every number comes from the generated
 `writeup/numbers.json` (`python -m spirometry.numbers`), and every figure from
 `scripts/writeup/figures.py`, so a rebuild never leaves stale numbers. The build runs a privacy
@@ -370,7 +371,9 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
    are not re-downloaded for `player_token` (the triage's token work used the pages that have
    it).
 4. Send the maintainer message (budget per IP or per client, the daily cap, short pages,
-   bulk dump, stable-only hotfixes, when `player_token` was added).
+   bulk dump, stable-only hotfixes, when `player_token` was added). *The maintainer has since
+   approved publishing `reference/raw/` (item 12); whether these questions were asked or
+   answered isn't recorded.*
 5. ~~Final rebuild on the complete snapshot~~ (done 2026-10-09: 2,071 pages, 0 failed;
    Phase 3) ~~and copy `data/analysis/` to `data/analysis_p1873/`~~ (done 2026-10-09)
    ~~and rerun notebooks 01–05, the placebo calibration, the export and the sensitivity
@@ -440,11 +443,16 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
 11. README results section: drafted on the 1,513-page numbers with figure slots; numbers
    updated to the final rerun 2026-10-10. Figure slots wait on the field guide's figure
    script.
-12. Release checklist (only if something is published): send the maintainer message (item 4);
-   clear notebook 02's output cells that show top-uploader run counts (the hashed IDs are
-   gone since task 6);
-   review the licenses and attribution of `reference/raw/` (wiki pages CC BY-SA, Spire Codex
-   caches); aggregates only.
+12. Release checklist (only if something is published): ~~send the maintainer message (item 4)~~
+   *(done for publishing: the Spire Codex maintainer approved publishing `reference/raw/`,
+   noted in `reference/raw/README.md`; item 4's questions stay open)*;
+   ~~clear notebook 02's output cells that show top-uploader run counts (the hashed IDs are
+   gone since task 6)~~ *(checked 2026-11-06: cells 27 and 41 have no outputs)*;
+   ~~review the licenses and attribution of `reference/raw/` (wiki pages CC BY-SA, Spire Codex
+   caches)~~ *(README, "License and attribution"; `reference/raw/README.md`)*;
+   ~~aggregates only~~ *(checked 2026-11-06 outside `reference/raw/`: no run, player or
+   uploader ID columns or values in tracked files; the 7 records in the test fixture are
+   synthetic)*. All done; item 20 has what is still open.
 13. Set `MIN_RUNS` (notebook 01, "Runs per build") from a power calculation. It is a working
    threshold now: 2,000 primary runs, chosen by hand. *Not planned (the windows are fixed, so
    it changes no result).*
@@ -581,7 +589,10 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
       The cloud sandbox can’t read reference/raw/, so the parser, patch-history and treatment 
       tests only run locally.
    16. ~~Only if Phil decides to publish: release checklist (item 12), then publish (Phil).~~
-      *Future work, not planned (Phil, 2026-10-16).*
+      *Future work, not planned (Phil, 2026-10-16).* *Reopened for the repository (Phil,
+      2026-11-06): the checklist is done and the repo is being made public (item 20).
+      The field guide PDF stays unpublished for now: publish as a GitHub Release asset after
+      the chapter 7-14 review.*
    17. Rework of field guide v2: math, code listings and the reading notes (Phil, 2026-10-22;
       tracker `writeup/REWORK.md`), four CC phases, one PR each. *Phase 1 (infrastructure and
       chapter 6) done (CC, 2026-10-22); Phil approved chapter 6 as the template. Phase 2
@@ -615,6 +626,28 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
       (decision log); Debilitate is the only card they split.
       (i) Leading Strike is a buff on the forest plot, `rework` in `spirometry_cards.json`,
       and mixed with `change` nerf in `results/`.
+20. Repository move (Phil, 2026-11-06). History rewritten on 2026-11-06 with `git filter-repo`
+   (uploader-ID outputs, local paths, old emails and the real-run fixture removed) and pushed to
+   a new `pmacias/spirometry`; the old repository is archived privately. Every commit hash
+   changed. The one commit cited in tracked docs (here, Phase 3, and `triage/TRIAGE.md`) now
+   carries its new hash. PR numbers in commit subjects and in these docs (`#19`, `PR #12`) are
+   the old repository's; those PRs aren't in this one, and new PRs here number from #1 again.
+   Release checklist: item 12. `results/` and `writeup/numbers.json` / `numbers.csv` are
+   committed for the release (checked 2026-11-06: nothing below card level, nothing over 5 MB).
+   `writeup/figures/` and the field guide PDF stay git-ignored; the PDF's plan is in item 15,
+   task 16.
+   Tests (2026-11-06, in the sandbox, which can't read `reference/raw/` or start a process
+   pool): 262 passed, 6 skipped, 46 stop on the `reference/raw/` permission, the worker tests
+   among them; Phil reruns them locally. The worker-test failure after the dashboard test is
+   fixed (decision log) and was checked with a spawned process in a copy without `results/`.
+21. Export a calibrated column alongside `clearly_nonzero` and `clearly_nonzero_h` in
+   `results/pick_rate_did.csv` (CC). Those columns use uncalibrated clustered errors (21 of 26
+   and 8 of 17 at weeks 0–3), while the headline 13 of 26 and 2 of 17 apply the placebo factors
+   (SPIROMETRY.md), so the file can't reproduce them. *Not started.*
+22. `tests/test_dashboard.py` skips whenever `results/pick_rate_did.csv` exists, so with
+   `results/` committed it never runs, and it is the only test that reads `results_sample/`.
+   Make it run against `results_sample/` explicitly instead of skipping (CC; `results_dir` in
+   `dashboard/data.py` picks the folder). Keep its `__main__` restore. *Not started.*
 
 ## Decision log
 - Spire Codex export is the primary source; sts2runs.com only for cross-checks.
@@ -1499,3 +1532,16 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
   ±1.96, so the count clear of zero is the calibrated rule's: 13 of 25. At ±1.96 it was 14,
   because Debilitate's calibrated z is 1.961. Uses the rounded 4.10; the unrounded factor was
   not chased. Leading Strike is a buff, per the patch notes.
+- Repository move (Phil, 2026-11-06): history rewritten with `git filter-repo` and pushed to a
+  new `pmacias/spirometry`, the old repository archived privately (Next up 20). The release
+  step, future work since 2026-10-16, is done for the repository: the Spire Codex maintainer
+  approved publishing `reference/raw/` (`reference/raw/README.md`). Commit citations use the
+  new hashes. Docs don't link the archive.
+- Dashboard test (CC, 2026-11-06): Streamlit's script runner replaces `sys.modules["__main__"]`
+  with `dashboard/app.py` and doesn't restore it, so a spawned worker in any later test re-ran
+  the app and failed on `import charts`. `tests/test_dashboard.py` restores it. The test only
+  runs without `results/`, so the failure needs a clone without that folder; an editable
+  install doesn't change it (reproduced with one present).
+- Release contents (Phil, 2026-11-06): `results/` and `writeup/numbers.json` / `numbers.csv` are
+  committed. The field guide PDF is not, replacing the 2026-10-09 plan to commit it at release:
+  it goes out as a GitHub Release asset after the chapter 7-14 review.

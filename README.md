@@ -50,6 +50,10 @@ game's RNG decides the offers.
    errors". With each patch's errors scaled by its placebo spread (the lead count in the
    field guide), over the first four weeks: 13 of 26 first-patch tweaks, all 12 with one
    direction toward the change, and 2 of 17 second-patch tweaks.
+   `results/pick_rate_did.csv` doesn't carry those counts: its `clearly_nonzero_*` columns use
+   uncalibrated clustered errors. `clearly_nonzero_h` (first four weeks) gives 21 of 26 and 8
+   of 17, and `clearly_nonzero` (all weeks) the 22 and 9 above. The headline 13 of 26 and 2 of
+   17 apply the placebo factors in SPIROMETRY.md, "Placebo calibration of the DiD errors".
 2. **One worked example.** Parry (a Regent card, main number 6 → 10) went from a 13.1% to a
    27.1% pick rate, while the unchanged Regent cards went from 27.8% to 27.3%. The estimated
    change is +14.5 points (95% interval +13.2 to +15.8). The largest drop is Corrosive Wave
@@ -120,21 +124,22 @@ cards, not proof of why players changed their picks.
 | `notebooks/` | Analysis notebooks. `01_data_audit.ipynb`: integrity, coverage, filters, population mix, offers, power. `02_pick_rate_did.ipynb`: offer-rate check, pick-rate DiD, event studies, robustness, dose-response. `03_anticipation.ipynb`: does the gap between a changed card and its controls already move at the first-beta date, on builds where players still have the old card? `iv_primer.ipynb`: a simulation showing why the naive win effect is biased and how the offer as an instrument fixes it. `04_dose_diagnostics.ipynb`: the dose-response under other rulers, leave-one-out and slopes by kind of number. `05_tweak_ledger.ipynb`: every derived dose next to the numbers it came from (writes `data/analysis/tweak_ledger.csv`). `06_site_figures.ipynb`: website deliverables from notebook 02's saved fits: the card selection (rules and checks), the Parry event-study figure and the interactive chart's data (`figures/site/`); its section 3 reads `runs.duckdb` |
 | `triage/` | Record of a read-only investigation of the flat second patch (2026-10-07/08): `TRIAGE.md` (report and final synthesis), `scripts/` (each says how to run it), `out/` (card-level estimates, aggregates only), `figures/`. On the 1,873-page tables; not a result until rerun on the final tables. `out_final/`: the same scripts rerun on the final tables by `scripts/writeup/phil_runs.sh` (`TRIAGE_OUT`, `TRIAGE_AN`, `TRIAGE_COLORS`, `TRIAGE_DB` in `scripts/common.py` and `db.py`); `out/` is never written by the rerun |
 | `reference/` | Small committed reference tables: game builds, card changes, text-only labels, patch-note card mentions, cross-check, bug-fix behavior changes, beta-only changes, change events, card-patch net fields, per-build card versions, DiD windows, numeric tweak sizes, beta exposure (+ raw caches in `reference/raw/`: Spire Codex API incl. the game's enchantment, event, encounter and monster lists used as mod markers, wiki pages; its README lists each source and license) |
-| `writeup/` | Field guide v2 ("What Did the Patch Do?"): `OUTLINE.md` (the learning map written before the chapters), `main.typ` and `style.typ` (number function `#n`, boxes including COMMON MIX-UP / THE MATH, IN FULL / IN CODE, code listings, equations numbered by chapter, figure placeholders, answer key), `chapters/` (chapters 0–14 and appendices A–E: answer key, glossary and notation, numbers on one page, open items, "Talking about it"), `REWORK.md` (tracker for the 2026-10-22 rework: math, code and the reading notes). `numbers.json`/`numbers.csv`, `figures/`, `listings/` and `build/` are generated and git-ignored |
+| `writeup/` | Field guide v2 ("What Did the Patch Do?"): `OUTLINE.md` (the learning map written before the chapters), `main.typ` and `style.typ` (number function `#n`, boxes including COMMON MIX-UP / THE MATH, IN FULL / IN CODE, code listings, equations numbered by chapter, figure placeholders, answer key), `chapters/` (chapters 0–14 and appendices A–E: answer key, glossary and notation, numbers on one page, open items, "Talking about it"), `REWORK.md` (tracker for the 2026-10-22 rework: math, code and the reading notes). `numbers.json`/`numbers.csv` are generated and committed; `figures/`, `listings/` and `build/` are generated and git-ignored |
 | `figures/site/` | Website deliverables written by notebook 06: `spirometry_parry.png`/`.pdf` (Parry's event study, placebo-calibrated weeks 0–3 band), `spirometry_patch1.png` (first-patch forest plot, 25 cards) and `spirometry_cards.json` (aggregates per card and week, for the interactive chart: calibrated counts, raw headline CIs that the site widens) |
 | `data/runs/` | Run tables built locally by `spirometry.runs` (git-ignored, never committed) |
 | `data/audit/` | Audit tables built locally by `scripts/audit_extract.py` (git-ignored) |
 | `data/analysis/` | Saved fits from notebooks 02, 03 and 05 and the placebo calibration (`placebo_main.parquet` all weeks, `placebo_h3.parquet` weeks 0–3), notebook 01's aggregates (`audit_summary.csv`, `audit_runs_per_build.csv`, `audit_upload_lag.csv`) and the field guide's tables in `writeup/` (git-ignored). Earlier sets are kept beside it: `analysis_p949/` (first pass), `analysis_p1393/` (1,393-page tables), `analysis_p1873/` (1,873-page tables), `analysis_before_final_<time>/` (what `scripts/final_rerun.sh` moved aside), `analysis_prev/` (earlier fits; which tables they came from is not recorded here) |
 | `dashboard/` | Streamlit dashboard (`app.py` pages, `charts.py` plots, `data.py` loading) on the exported tables; local only, not deployed |
-| `results/` | Aggregate tables written by `spirometry.export` (git-ignored) |
-| `results_sample/` | Synthetic tables in the same layout, so the dashboard runs without real results (every page says SAMPLE DATA) |
+| `results/` | Aggregate tables written by `spirometry.export` (committed) |
+| `results_sample/` | Synthetic tables in the same layout, the dashboard's fallback when `results/` has no export (every page then says SAMPLE DATA) |
 | `.streamlit/config.toml` | Dashboard theme (light: the chart colors are checked against it) |
 | `tests/` | pytest tests; `tests/fixtures/sample_runs.jsonl` holds 7 synthetic records (6 runs, one solo run uploaded twice) written by `tests/fixtures/make_sample_runs.py`; no real run data is in git |
 
 ## Setup
 
-The first block below needs nothing but Python: the tests run on a synthetic fixture, and the
-dashboard runs on `results_sample/`. Most later steps read the run snapshot, which you download
+The first block below needs nothing but Python: the tests run on synthetic data, and the
+dashboard opens on the committed results in `results/`, falling back to the synthetic
+`results_sample/` if they're missing. Most later steps read the run snapshot, which you download
 yourself (it isn't in this repository), or tables built from it.
 
 ```bash
@@ -305,7 +310,7 @@ The field guide's numbers table, after the export (with `--db`, which puts the b
 and the snapshot's play dates into `results/meta.json`) and the two commands above. It reads
 `results/`, `data/analysis/` and `snapshot.log`, never the run database; it stops if an input
 is older than the tables in `results/meta.json`, if the play dates are blank, or on anything
-identifying. Writes `writeup/numbers.json` and `writeup/numbers.csv`, git-ignored:
+identifying. Writes `writeup/numbers.json` and `writeup/numbers.csv`, both committed:
 
 ```bash
 python -m spirometry.numbers --analysis data/analysis --results results --out writeup/numbers.json

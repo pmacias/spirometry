@@ -2997,3 +2997,705 @@ rest.
   players following a strategy as a whole both remain. A grouping from the data (which cards
   are picked into the same decks) would test the clustering without my reading of the text.
 - The factors are unaffected: they measure the spread and don't depend on its cause.
+
+---
+
+## Q. The release nudge — EXPLORATORY
+
+**EXPLORATORY.** Proposed by Phil after sections O and P were seen. Nothing in this section
+changes the calibration factors, the numbers module, the guide or any headline result. Script:
+`triage/scripts/q_nudge.py`; tables in `triage/out_final/q_*.csv`. Inputs: the final tables
+(`data/runs/runs.duckdb`, read-only), `data/analysis/placebo_h3.parquet` (weeks 0–3, 463 pairs,
+one row per (window, pseudo card)) and the reference tables. Colors are derived (`db.py`);
+`reference/raw/` stays closed. No figures: tables for plotting are listed at the end.
+
+**The hypothesis under test (Phil's working story, not a result).** Each new build gives every
+card a fresh random offset in pick rate, unrelated to balance changes. If so, a DiD across a
+build boundary carries extra variance 2σ_b² that the clustered SE doesn't include, and a DiD
+inside one build doesn't.
+
+### Rules and what each outcome means, written before running
+
+Written 2026-11-11, before any number of this section was computed. What I had looked at:
+sections C, I, N, O and P and their tables; offers, runs and first and last dates per build;
+the number of cards `window_changes` reports across each pair of consecutive stable builds
+(0, 0, 0, 88, 0, 50); the column names of the saved files and change tables. No fit, no z and
+no offer-rate statistic was run. `.git` is not writable in this session (`git fetch` failed
+with "cannot open .git/FETCH_HEAD: Operation not permitted"), so no commit timestamps this
+order; the claim rests on this note and on the order of the section. The work is based on the
+local `main` (41787cf), which equals `origin/main` as last fetched.
+
+**Disclosure.** The rules marked (Phil) came from Phil's prompt, written before any Q number
+existed. While part 3 was running, after parts 1 and 2 were done, Phil ran
+`triage/scripts/q_z_vs_offers.py`, a quick look with no intervals: τ = 3.35 / 2.47 pp, median
+SE 0.82 / 0.95 pp, and the width of z rising with offers in both patches except the second
+patch's top offer bin (about 35k offers); it changed no rule and no computation here.
+
+Rules marked **(Phil)** are as given. Everything marked **(mine)** is a choice the prompt left
+open, made here.
+
+**Two facts already on file that the hypothesis must live with** (mine, noted before running):
+- C found the z of the same pseudo card in the two patches correlated at +0.45. The two real
+  windows share no build, so independent offsets per build predict 0 there. A pure nudge
+  can't be the whole story even if every test below goes its way.
+- I found fake and real second-patch effects correlated at −0.66. Those two differences share
+  the v0.103.3 block with opposite signs, and independent offsets of equal size predict −0.5
+  before noise. That one fits.
+
+#### Part 1. One nudge size, two patches?
+
+Data: the 463 pairs. β in pp; SE the saved clustered SE (for a pair shared by several tweaks,
+the mean over them, as `placebo_pairs` saves it).
+
+- Model, per patch: β_i ~ Normal(μ, SE_i² + τ²). μ and τ by maximum likelihood, per patch and
+  pooled (one τ, a μ per patch). 95% interval on τ from 2,000 resamples of pseudo cards; in the
+  pooled fit a card in both patches stays together. Median SE per patch is reported.
+- Prediction: with the pooled τ, simulate z_i = β_i / SE_i from each pair's own SE, 5,000
+  draws, and take the 95% range of the robust sd (1.4826 × MAD) of z per patch.
+- **Rule (Phil): the two per-patch τ intervals overlap AND each patch's observed robust sd
+  (4.10, 2.67) falls inside the pooled-τ prediction's range = "one nudge size fits both; the
+  factors differ because the patches' SEs differ." Otherwise = "the patches differ in nudge
+  size."**
+- Secondary (Phil): the same on the log-odds scale (`to_log_odds` with the pseudo card's rate
+  before). Both reported; pp decides.
+- The normal model is an approximation (Phil): O found tails a little heavier than a normal's.
+  The robust-sd comparison is the check on it.
+- Mine:
+  - "Overlap" means the two 95% intervals share at least one value. That is a lenient test of
+    equality, so the interval of τ_first − τ_second (cards resampled jointly) is reported
+    next to it. It doesn't decide.
+  - The simulation draws β_i ~ Normal(μ_patch, SE_i² + τ²) with the pooled fit's μ, and
+    holds τ at its point estimate, as the rule says. The same range with τ drawn from its
+    bootstrap is reported as a wider secondary range.
+  - The observed robust sd is recomputed from the saved z and must give 4.10 and 2.67 (2.68 in
+    O's table is the same number to one more rounding); the script stops otherwise.
+  - τ is one number per patch, over all five characters and both kinds of fit (403 all-offers
+    pairs, 60 upgraded-offers pairs). τ on the all-offers pairs alone is reported beside it.
+  - If the hypothesis holds, σ_b = τ / √2.
+
+#### Part 2. Negative-control outcome: offer rate
+
+The game's RNG sets offers, so an unchanged card's share of offers should move only by chance.
+
+- Data: the 43 windows, `load_window` as in the main analysis, after block cut to weeks 0–3.
+  `offer_rate_check` per window; control rows kept; one row per (window, card) as
+  `placebo_pairs` dedupes. Statistic: `z_binom_rarity`. Per patch: robust sd, plain sd, share
+  |z| > 2, n.
+- **Rules (Phil): robust sd ≤ 1.2 = the window construction gives honest z on a pure-chance
+  quantity, so the pick-rate excess is behavior and not the data pipeline. Robust sd ≥ 1.5 =
+  offer rate is inflated too; then report it per rarity, per window, and for windows whose
+  card pool changed against those where it didn't. Between 1.2 and 1.5 = mixed.**
+- **Limit (Phil): `z_binom` uses a binomial SE, which treats offers as independent. So this
+  tests the windows and the data, not the clustering.**
+- Secondary (Phil): a run-clustered bootstrap SE of the log share ratio, 200 draws, and the
+  robust sd of z with that SE. Timed first; skipped with a note if over 1 h.
+- Mine:
+  - The rule is applied per patch. If the patches land in different bands, I report each and
+    call the part mixed.
+  - Dedupe key: color, before builds, after builds, card. Tweaks sharing a window differ only
+    in which treated card is left out, so their z for one control card are near duplicates and
+    are averaged. `fit_on` is not in the key: offer rate is computed on all offers whichever
+    offers the tweak's DiD used.
+  - Rows without a finite z (no offers in a block) are dropped and counted.
+  - **Rarity is derived, not read.** `offer_rate_check` takes rarity from
+    `reference/raw/cards.json`. Here it comes from `card_changes.csv` and
+    `offer_rate.parquet` where they have the card, else from offer tiers as in N (95 of 97 on
+    file matched there). A card in the wrong tier is measured against the wrong median, which
+    can only add spread. With `TRIAGE_COLORS=reference` the file's rarities are used.
+  - "Card pool changed": `card_changes.csv` has a row for a card of the window's color at the
+    window's stable build whose kind includes added, removed or rarity_change.
+  - Bootstrap: runs resampled with replacement within each block; each draw recomputes every
+    control card's log share ratio and its rarity median, so the SE is of the deviation the z
+    uses. That is cheap done by matrix, so it runs on every control row. The "fixed random 100
+    rows" (seed 0) are reported too, as asked.
+  - A limit to add: offers are RNG given the pool a run draws from, but who is playing, and
+    what they have unlocked or reached, can still move shares between blocks. Whether this
+    game gates cards behind unlocks is not known to me. [unverified] An inflated offer z
+    therefore isn't proof of a pipeline fault. An honest one is clean evidence for the
+    pipeline.
+
+#### Part 3. Cut-point sweep (the main test)
+
+Design, the same at every cut **(Phil)**: before = the 3 weeks before the cut, after = weeks
+0–2 from the cut. Pseudo cards: each character's cards unchanged across the cut
+(`window_changes`), up to 20 per character per cut, seed fixed, `min_offers` as in
+`placebo_all` (51 in each block). Same model and clustering as `placebo_fit`. One row per
+(cut, character, card).
+
+- a. Real stable boundaries: v0.98.1 → v0.98.2 → v0.98.3 → v0.99.1 → v0.103.2 → v0.103.3 →
+  v0.107.1, six cuts at the newer build's release date. Before is the older build's offers,
+  after the newer build's.
+- b. Interior cuts: inside one stable build, every 7 days from release + 3 weeks to (last day
+  with play) − 3 weeks; both blocks are that build's offers, split by `start_time`.
+- Gate (Phil): the date-split path, given a real boundary's build split, must reproduce the
+  build-split z for 3 pairs to 1e-4.
+- Anchors (Phil): the two real windows under this 3 + 3 design, next to 4.10 / 2.67.
+- Per cut (Phil): robust sd and plain sd of z, share |z| > 2, n, weeks since that build's
+  release, card changes across the cut, 95% interval on the robust sd from resampling cards
+  within the cut; and the offer-rate z of part 2.
+- Runtime (Phil): 10 fits timed first and the estimate reported. Over 2 h: interior cuts every
+  14 days.
+
+**Rules (Phil):**
+- **Interior cuts pooled have robust sd ≤ 1.3 AND the real boundaries pooled have ≥ 2 = "the
+  excess is tied to releases" (the nudge story is supported).**
+- **Interior cuts pooled ≥ 2 = "the excess is not tied to releases": week-to-week variation
+  the SEs miss, release or not.**
+- **Otherwise mixed; described.**
+- **Settling (N's lead): robust sd of interior cuts against weeks since release. Spearman < 0
+  with its interval below 0 = the spread fades through a build.** Weeks since release and
+  calendar date can't be separated in v0.107.1.
+- **Boundaries with zero card changes against boundaries with changes: descriptive only, not a
+  test; too few boundaries.**
+
+Mine:
+- **Blocks at a boundary.** Before = the older build's offers started in the 21 days before
+  the newer build's release date (00:00 UTC, as `release_date`); its offers played after the
+  release are left out, unlike the main design, because "the 3 weeks before the cut" excludes
+  them. After = the newer build's offers in weeks 0–2 from its release. Three older builds
+  lived under 3 weeks (v0.98.1 one day, v0.98.2 four, v0.98.3 seven) and v0.103.3 lived 20
+  days, so those before blocks are shorter than 3 weeks. For v0.98.2 and v0.98.3 as the newer
+  build, weeks 0–2 run past their replacement's release, so the after block holds play on a
+  superseded build; the share of such offers is reported per cut.
+- **"Last day with play"** is read as the last day the build was the current stable: the day
+  before the next stable's release, or 2026-10-03 for v0.107.1 (the snapshot's last full day).
+  Every build has stray play into October, so the literal reading would put cuts in periods
+  with almost no data. That gives no interior cut in v0.98.x, v0.99.1 (30 days) or v0.103.3,
+  one in v0.103.2 (2026-05-07) and ten in v0.107.1 (2026-07-09 to 2026-09-10, 3 to 12 weeks
+  after release): 11 cuts. So the interior side is almost entirely one build.
+- **Interior cuts overlap.** Blocks are 3 weeks and cuts are 7 days apart, so neighbouring
+  cuts share two thirds of their data and the pooled rows are not independent. The pooled
+  robust sd is still the declared statistic. Its interval resamples cards, keeping a card's
+  rows from every cut together. The two cuts of v0.107.1 that share no data (weeks 3 and 9)
+  are also reported alone.
+- **Sampling.** Each character's cards are put in one fixed random order (seed 0 and the
+  character), and a cut takes the first 20 in that order that are eligible there. So the same
+  cards recur across cuts where they can, which the card-level resampling and the
+  adjacent-boundary check below need.
+- **Pseudo cards at interior cuts.** As given: unchanged across the cut, which inside a build
+  is every card. A card changed on entering the build may still be settling, which N kept out.
+  Each row is flagged, and the interior result is also given without the flagged rows. The
+  flagged cards stay in the controls either way.
+- **Gate.** Three saved pairs (first patch, second patch, and an upgraded-offers pair or a
+  third character), refit through this script's loader and fake window with the block set by
+  build and the after block cut at week 3, must return the saved z to 1e-4.
+- **Anchors.** The prompt names "v0.99.1 → v0.103.2 and v0.103.2 → v0.107.1 (the real
+  windows)". The second real window is v0.103.3 → v0.107.1 (`windows.csv`), and v0.103.2 had
+  only stray play in the 3 weeks before v0.107.1, so I read it as v0.103.3 → v0.107.1. Two
+  versions: (i) the 463 saved pairs refit under 3 + 3, same cards and same kind of fit, so
+  only the design changes; (ii) the sweep's own rows for those two boundaries (new sample of
+  cards, all offers). (i) is the one to set next to 4.10 / 2.67.
+- **z depends on the SE, and the hypothesis is stated in pp.** A nudge of fixed size gives a
+  smaller z where blocks hold fewer offers, and late v0.107.1 blocks do. So each cut also gets
+  its excess variance in pp² (Var(β) − mean SE², and a robust version), its τ by part 1's
+  likelihood, and its median SE. And one benchmark: the robust sd of z the interior cuts
+  **would** show at their own SEs if they carried the τ of the real boundaries pooled (5,000
+  draws, 95% range). The rules decide on z as given. If interior z is ≤ 1.3 but inside that
+  benchmark's range, the interior cuts were too imprecise to tell, and I will say so.
+- **Pooling the boundaries.** All six, as given. The three v0.98.x boundaries have short
+  before blocks and so large SEs; the pooled figure is also given for the three later
+  boundaries alone.
+- **Settling.** Spearman over the 11 interior cuts' robust sds against weeks since release;
+  interval by resampling cards (all of a card's cuts together) and recomputing. Also on τ.
+- **Adjacent boundaries** (not asked; no rule). Independent offsets per build predict that a
+  card's β across one boundary and across the next are negatively correlated (−0.5 before
+  noise), since they share a block. Reported for each pair of consecutive boundaries on the
+  cards sampled in both, with the value expected at those SEs. v0.103.2 → v0.103.3 → v0.107.1
+  is the pair with usable data.
+- **Offer-rate z at every cut.** `offer_rate_check` on the cut's two blocks, every unchanged
+  card of the character, `z_binom_rarity`, with the bootstrap SE version if part 2 shows it is
+  cheap. Same bands as part 2 (≤ 1.2, ≥ 1.5), read at the interior cuts first.
+- **What the main rule can't separate.** A release also moves who is on the stable branch
+  (beta players come back, others return to try the patch). A spread tied to releases
+  supports "something happens at a release", of which a per-card offset is one form.
+  Interior cuts of v0.107.1 are not quiet either: five beta builds came out during it.
+
+### Results
+
+Everything below was computed after the text above was written.
+
+### Answer
+
+**Mixed under the rule, and the substance is clearer than the label: most of the placebo
+excess sits at releases, but not as a fresh offset at every build.** Across real boundaries the
+robust sd of z is 2.14 [1.91, 2.37]; at cuts inside a build it is 1.38 [1.26, 1.48], just over
+the 1.3 the rule needed. In pp² the excess is 5.0 at boundaries against 1.2 inside builds. Three
+things don't fit the hypothesis as stated. The one boundary that changed no card and has full
+blocks (v0.103.2 → v0.103.3) looks like an interior cut (1.69, τ 1.2 pp), not like the two
+patches (2.80 and 2.33, τ 3.1 and 2.2 pp). The spread inside a build is highest in the weeks
+right after a release and fades. And a card's moves across consecutive boundaries are not
+negatively correlated where the blocks share no data, which fresh offsets would require.
+What the tables fit is **a step at a release that changes cards, which then persists, plus a
+few weeks of settling**. Offer rate, which players don't choose, is honest throughout. The
+factors stay as they are. [inferred]
+
+### Declared outcomes [computed]
+
+| Part | Result | Outcome under the rule |
+|---|---|---|
+| 1. One nudge size | τ 3.35 [2.95, 3.72] and 2.44 [2.15, 2.71] pp, intervals apart; both robust sds inside the pooled-τ range | **The patches differ in nudge size** |
+| 2. Offer rate | Robust sd 1.16 (first), 0.93 (second) | **Honest**: the excess is behavior, not the pipeline. Plain sd 2.44 in the first patch: a one-sided tail, unrelated to the placebo misses |
+| 3. Sweep | Interior pooled 1.38 [1.26, 1.48]; boundaries pooled 2.14 [1.91, 2.37] | **Mixed**: the boundaries pass (≥ 2), the interior misses ≤ 1.3 by 0.08 and is far below 2 |
+| 3. Settling | Spearman −0.66 [−0.90, −0.21] over 11 interior cuts | **The spread fades through a build.** v0.107.1 alone: −0.55 [−0.87, +0.04], not clear of 0 |
+
+### Checks and changes after the rules [computed]
+
+- `--check`: the likelihood recovers a planted τ and returns 0 when there is none. **Gate
+  passed**: the date-split loader, given the real build split, returns the saved z for 3 pairs
+  (Silent first patch, Ironclad second patch, one upgraded-offers pair), through the real
+  window row and through the fake window: largest |Δz| 1e-09.
+- `placebo_h3` gives 463 pairs and 4.10 / 2.67; the script stops otherwise.
+- **Runtime estimate, made before the sweep:** 2.7 s per fit on the largest cut, so about 101
+  minutes for up to 2,163 fits. Under 2 h, so interior cuts stayed at every 7 days. The sweep
+  took about an hour: 1,603 cut fits and 463 anchor fits, none failed.
+- **The sweep's summary step crashed once**, after every fit was saved: the settling
+  correlation for "v0.107.1 only" was handed the empty v0.103.2 cut. Fixed, and the summaries
+  were recomputed from the saved fits (`--part 3 --summary`). No fit was rerun and no rule or
+  definition changed.
+- v0.98.1 → v0.98.2 has 3 fits: its before block is one day, and few cards reach 51 offers. It
+  is in the pooled boundary figure (503 rows = 500 + 3) and has no row of its own.
+- Rarity is derived, as declared: the offer tier agrees with the rarity on file for 95 of 97
+  cards.
+- No new dependency: scipy is already in the `analysis` extra.
+- **Part 4 is post hoc or asked for later:** the offer-rate tail and its link to the placebo
+  z (mine, after reading part 2), and the two descriptive asides (Phil, while part 3 ran).
+- Tests: `pytest tests` gives 266 passed, 4 skipped. The other 47 (27 failed, 20 errors) are
+  all `PermissionError` on `reference/raw/`, which the sandbox closes. Collection from the
+  repository root also stops on `.spirometry_salt` for the same reason, so the run names
+  `tests` and ignores the closed paths. The triage scripts have no tests of their own;
+  `--check` is this script's.
+- **Git writes are blocked**, as in O and P: no branch `nudge`, no commit. Phil's
+  `triage/scripts/q_z_vs_offers.py` is in the working tree, to go in the same commit.
+
+### Part 1. One nudge size, two patches? [computed]
+
+Tables: `q_tau.csv`, `q_tau_predict.csv`, `q_tau_pairs.csv` (the 463 pairs on both scales, for
+plotting). τ and its interval in pp unless marked.
+
+| Fit | Pairs (cards) | Median SE | μ | τ [95%] | σ_b = τ/√2 | τ, log-odds [95%] |
+|---|---|---|---|---|---|---|
+| First | 217 (199) | 0.82 | −0.13 | **3.35 [2.95, 3.72]** | 2.37 | 0.180 [0.155, 0.206] |
+| Second | 246 (222) | 0.95 | +0.41 | **2.44 [2.15, 2.71]** | 1.73 | 0.133 [0.115, 0.151] |
+| Pooled, one τ | 463 (312) | 0.88 | −0.13 / +0.42 | 2.92 [2.63, 3.16] | 2.06 | 0.158 [0.140, 0.176] |
+| First − second | | | | 0.91 [0.47, 1.33] | | 0.047 [0.023, 0.068] |
+
+On the 403 all-offers pairs: 3.25 [2.87, 3.60] and 2.44 [2.15, 2.69], difference 0.81
+[0.41, 1.21].
+
+Robust sd of z, observed against simulated from each pair's own SE:
+
+| Patch | Observed | Pooled τ: median [95% range] | Inside | Same, τ drawn from its bootstrap | The patch's own τ: median [95% range] |
+|---|---|---|---|---|---|
+| First | 4.10 | 3.60 [3.05, 4.21] | yes | [2.95, 4.27] | 4.07 [3.45, 4.77] |
+| Second | 2.67 | 3.05 [2.61, 3.54] | yes | [2.55, 3.58] | 2.64 [2.26, 3.05] |
+
+The log-odds scale gives the same pattern: predicted 3.62 [3.06, 4.24] and 3.08 [2.64, 3.57],
+both observed values inside.
+
+Reading. [inferred]
+- **Rule: "the patches differ in nudge size."** The second half of the rule passes: both
+  observed robust sds are inside the pooled-τ range. The first half fails: the τ intervals
+  don't overlap (2.95 against 2.71), on either scale, and the difference's own interval is
+  clear of 0. The rule needs both.
+- **The SEs explain part of the factors' gap, not most of it.** One τ of 2.92 pp predicts 3.60
+  and 3.05. That is a ratio of 1.18 from the SEs alone, against the observed 1.53, or about
+  0.4 of the gap between 4.10 and 2.67. The second patch sits at the bottom of its predicted
+  range and the first near the top of its own, which is what two different τ look like.
+- **The normal model is adequate for this purpose.** With each patch's own τ the simulation
+  gives 4.07 and 2.64, against 4.10 and 2.67.
+- In variance, τ² is 11.2 and 6.0 pp², which is N's direct figure (11.8 and 6.7) by another
+  route. If the hypothesis holds, the offset a build gives a card has sd 2.4 pp at v0.103.2
+  and 1.7 pp at v0.107.1. A nudge "unrelated to balance changes" has no reason to be larger
+  at the release with more changes (88 cards against 50), though two releases can't show
+  that it is related either.
+
+### Part 2. Offer rate as a negative control [computed]
+
+Tables: `q_offer_rows.csv` (622 rows, one per window and control card), `q_offer_summary.csv`
+(every split below, also per window). No row lacked a finite z. Tweaks sharing a window gave
+identical z for a control card, so the dedupe averaged nothing. Runtime 69 s, the bootstrap 9 s
+of it, so it ran on every row.
+
+| | n | Robust sd | Plain sd | Share \|z\| > 2 | Robust sd, bootstrap SE | Plain sd, bootstrap SE |
+|---|---|---|---|---|---|---|
+| **First** | 258 | **1.16** | 2.44 | 0.147 | 1.15 | 2.23 |
+| **Second** | 364 | **0.93** | 1.32 | 0.074 | 0.94 | 1.26 |
+| Both | 622 | 1.04 | 1.88 | 0.105 | 1.06 | 1.74 |
+| Fixed 100 rows | 100 | 0.81 | 1.94 | 0.070 | 0.83 | 1.72 |
+
+Per rarity, robust sd: first Common 0.84, Uncommon 1.45, Rare 0.93; second 0.77, 1.01, 1.01.
+Per window it runs from 0.78 to 1.36 (Silent, first). Windows whose pool changed against the
+rest: first 1.06 against 1.18, second 0.99 against 0.89. Without the rarity adjustment
+(`z_binom`) the robust sd is 1.29 and 1.33, so the adjustment matters, as `offer_rate_check`
+intends.
+
+Reading. [inferred]
+- **Rule: honest, in both patches (1.16 and 0.93, both ≤ 1.2).** The windows and the data give
+  a z of about the right size on a quantity players don't choose. So the pick-rate excess of
+  4.10 and 2.67 is not something the window construction makes by itself.
+- **The clustering isn't the issue for offers.** The run-clustered bootstrap SE is 0.98–0.99
+  of the binomial SE at the median, and the robust sds barely move. That was the declared
+  limit of the binomial z, and here it turns out not to bind.
+- **The body is honest and the tail is not.** The plain sd is 2.44 in the first patch, and
+  14.7% of rows are beyond 2 where 4.6% is expected. First-patch Uncommons are at 1.45,
+  which alone would read as mixed. The rule is on the robust sd and I apply it as written;
+  the tail is taken up post hoc below.
+
+**The offer-rate tail, post hoc** (`q_posthoc_offer_tail.csv`, `q_posthoc_offer_link.csv`;
+part 4 of the script, added after reading the table above). 36 of 622 rows have |z| > 3, and
+30 of those are positive: a card's share of offers **rose** against its rarity's median.
+
+| Patch | Card | Share change against its rarity | Offer z | Placebo z of the same pair |
+|---|---|---|---|---|
+| first | Blood Wall | +21% | +17.5 | +9.9 |
+| first | Inferno | +28% | +13.7 | not a pair |
+| first | Lunar Blast | +32% | +13.5 | −4.6 |
+| first | Afterlife | +14% | +11.1 | +0.2 |
+| first | Phantom Blades | +18% | +9.1 | +5.8 |
+| first | Veilpiercer | +19% | +8.4 | +0.8 |
+| first | Heavenly Drill | +25% | +7.6 | −2.1 |
+| second | Blood Wall | +9% | +7.6 | −0.2 |
+| second | TURBO | +8% | +6.2 | +3.6 |
+| second | Sculpting Strike | +8% | +6.0 | −1.4 |
+
+- Six cards are in the tail in both patches (Blood Wall, Inferno, Lunar Blast, Heavenly Drill,
+  Hidden Daggers, Supermassive), each time upward and by less in the second.
+- **This is not the placebo excess.** Across the 403 all-offers pairs, the rank correlation
+  between a card's offer z and its placebo z is +0.07 [−0.02, 0.16] signed and −0.07
+  [−0.17, 0.03] in size. With every pair whose offer |z| exceeds 2 left out, the placebo
+  robust sd is 4.30 and 3.06, against 4.23 and 2.95 on the same pairs before.
+- What moves these cards' offers is not known. Offers are random given the pool a run draws
+  from, so a one-sided, repeating rise looks like more runs having these cards in their pool
+  over time, as unlocks through play would do. Whether the game works that way is not in any
+  table here. [unverified] A rarity that the offer tiers got wrong doesn't explain it: that
+  would set a card against the wrong median, and a window's medians differ by 0.06 at most,
+  against rises of 0.07 to 0.28 in log share.
+
+### Descriptive asides, no tests [computed]
+
+Asked for by Phil while part 3 ran, after his `q_z_vs_offers.py` look. Tables:
+`q_aside_offer_bins.csv`, `q_aside_second_top_bin.csv`, `q_aside_first_offer_tail.csv`. His τ
+for the second patch (2.47) differs from part 1's (2.44) because his fit holds μ at 0.
+
+**(a) The second patch's top offer bin.** Six bins per patch by the pseudo card's offers in
+the fit, as in his script. The top bin is 41 pairs with 30,276 to 42,052 offers, and **every
+one is a Common**, all-offers fits: Necrobinder 13, Defect 12, Ironclad 8, Regent 5, Silent 3.
+30 of the 41 have z below 0.
+
+| Patch | Bin | Pairs | Offers, median | Median SE (pp) | Robust sd z | Robust sd β (pp) | Share Common |
+|---|---|---|---|---|---|---|---|
+| first | 1 | 37 | 6,244 | 1.27 | 2.35 | 3.90 | 0.00 |
+| first | 2 | 36 | 7,446 | 1.14 | 3.94 | 4.25 | 0.11 |
+| first | 3 | 37 | 13,171 | 0.83 | 3.91 | 3.15 | 0.00 |
+| first | 4 | 35 | 13,998 | 0.80 | 5.74 | 4.22 | 0.03 |
+| first | 5 | 36 | 16,604 | 0.69 | 4.18 | 2.92 | 0.22 |
+| first | 6 (top) | 36 | 43,157 | 0.43 | 5.53 | 2.17 | 1.00 |
+| second | 1 | 41 | 1,638 | 2.32 | 1.35 | 3.92 | 0.12 |
+| second | 2 | 41 | 5,391 | 1.36 | 2.03 | 2.77 | 0.05 |
+| second | 3 | 41 | 10,657 | 0.98 | 2.80 | 2.68 | 0.02 |
+| second | 4 | 41 | 11,847 | 0.93 | 3.21 | 2.94 | 0.00 |
+| second | 5 | 41 | 15,081 | 0.73 | 4.22 | 3.09 | 0.32 |
+| **second** | **6 (top)** | 41 | 33,257 | 0.50 | **2.71** | **1.55** | 1.00 |
+
+The top bin's pairs, β in pp:
+
+| Character | Card | Offers | β (SE) | z |
+|---|---|---|---|---|
+| Silent | Slice | 40,244 | −2.10 (0.40) | −5.2 |
+| Ironclad | Iron Wave | 41,654 | −2.17 (0.42) | −5.2 |
+| Ironclad | Setup Strike | 41,936 | −2.41 (0.47) | −5.1 |
+| Defect | Hotfix | 33,341 | −2.64 (0.55) | −4.8 |
+| Necrobinder | Drain Power | 33,007 | −1.85 (0.44) | −4.2 |
+| Necrobinder | Blight Strike | 33,274 | −1.97 (0.48) | −4.1 |
+| Necrobinder | Wisp | 33,118 | −2.40 (0.60) | −4.0 |
+| Defect | Leap | 33,561 | −1.89 (0.50) | −3.8 |
+| Regent | Refine Blade | 30,353 | −1.97 (0.59) | −3.3 |
+| Regent | Photon Cut | 30,276 | −1.35 (0.42) | −3.2 |
+| Necrobinder | Flatten | 32,736 | −1.82 (0.59) | −3.1 |
+| Silent | Poisoned Stab | 40,346 | −1.46 (0.48) | −3.1 |
+| Regent | Hidden Cache | 30,364 | −1.76 (0.59) | −3.0 |
+| Defect | Sweeping Beam | 33,257 | −1.27 (0.44) | −2.9 |
+| Necrobinder | Scourge | 31,887 | −1.48 (0.57) | −2.6 |
+| Defect | Ball Lightning | 33,502 | −1.17 (0.56) | −2.1 |
+| Ironclad | Molten Fist | 41,875 | −1.04 (0.53) | −2.0 |
+| Defect | Beam Cell | 33,434 | −0.90 (0.53) | −1.7 |
+| Necrobinder | Defile | 33,239 | −0.75 (0.46) | −1.6 |
+| Ironclad | Armaments | 42,052 | −0.72 (0.45) | −1.6 |
+| Defect | Charge Battery | 33,535 | −0.74 (0.59) | −1.3 |
+| Silent | Ricochet | 40,503 | −0.43 (0.48) | −0.9 |
+| Defect | Claw | 33,389 | −0.61 (0.77) | −0.8 |
+| Necrobinder | Poke | 32,745 | −0.43 (0.58) | −0.7 |
+| Regent | Crush Under | 30,286 | −0.28 (0.48) | −0.6 |
+| Ironclad | Blood Wall | 32,534 | −0.10 (0.54) | −0.2 |
+| Necrobinder | Fear | 33,074 | −0.08 (0.47) | −0.2 |
+| Ironclad | Cinder | 37,449 | −0.04 (0.30) | −0.1 |
+| Necrobinder | Pull Aggro | 32,841 | −0.06 (0.48) | −0.1 |
+| Defect | Cold Snap | 33,239 | −0.04 (0.49) | −0.1 |
+| Ironclad | Pommel Strike | 41,856 | +0.23 (0.58) | +0.4 |
+| Defect | Lightning Rod | 33,292 | +0.38 (0.58) | +0.7 |
+| Necrobinder | Reap | 32,816 | +0.33 (0.40) | +0.8 |
+| Necrobinder | Grave Warden | 33,016 | +0.64 (0.61) | +1.1 |
+| Necrobinder | Graveblast | 32,929 | +0.50 (0.46) | +1.1 |
+| Defect | Gunk Up | 33,236 | +0.89 (0.47) | +1.9 |
+| Ironclad | Tremble | 41,765 | +1.18 (0.51) | +2.3 |
+| Regent | Glitterstream | 30,405 | +2.28 (0.50) | +4.6 |
+| Defect | Hologram | 33,325 | +2.96 (0.58) | +5.1 |
+| Defect | Boost Away | 33,423 | +3.97 (0.56) | +7.1 |
+| Necrobinder | Defy | 33,070 | +4.52 (0.61) | +7.4 |
+
+So the bin that breaks the rising pattern is a rarity, not an offer count: the offer bins and
+rarity can't be separated at the top, in either patch. Commons' β is the tightest of any bin
+in both patches (2.17 and 1.55 pp against 2.9–4.2 and 2.7–3.9), which is N's result too
+(Commons drift least). In the first patch the SE there is small enough that z is still wide.
+Rarity is the offer tier where the card isn't on file. [computed; the last sentence of
+reading is inferred]
+
+**(b) The first patch's one-sided offer-rate tail.** The 20 control cards with offer z above
++3 in the first window (4 are below −3). `window_changes` gives the set of changed cards and
+not the kind of change, so the kind comes from `card_changes.csv` for cards in that set.
+
+| Character | Card | Rarity | Share change against its rarity | Offer z | Pool change on file for that character and rarity |
+|---|---|---|---|---|---|
+| Ironclad | Blood Wall | Common | +21% | +17.5 | none |
+| Ironclad | Inferno | Uncommon | +28% | +13.7 | Colossus joined (Rare → Uncommon) |
+| Regent | Lunar Blast | Uncommon | +32% | +13.5 | none |
+| Necrobinder | Afterlife | Common | +14% | +11.1 | none |
+| Silent | Phantom Blades | Uncommon | +18% | +9.1 | Acrobatics joined (Common → Uncommon) |
+| Necrobinder | Veilpiercer | Uncommon | +19% | +8.4 | none |
+| Regent | Heavenly Drill | Rare | +25% | +7.6 | none |
+| Silent | Hidden Daggers | Uncommon | +13% | +6.5 | Acrobatics joined |
+| Silent | Reflex | Uncommon | +11% | +6.2 | Acrobatics joined |
+| Ironclad | Drum of Battle | Uncommon | +11% | +6.2 | Colossus joined |
+| Necrobinder | Calcify | Uncommon | +11% | +5.4 | none |
+| Silent | Hand Trick | Uncommon | +10% | +5.4 | Acrobatics joined |
+| Silent | Master Planner | Rare | +12% | +4.4 | none |
+| Necrobinder | Sacrifice | Rare | +13% | +4.3 | none |
+| Regent | Supermassive | Uncommon | +8% | +4.1 | none |
+| Necrobinder | Sleight of Flesh | Uncommon | +7% | +3.8 | none |
+| Necrobinder | Haunt | Uncommon | +7% | +3.7 | none |
+| Ironclad | Feel No Pain | Uncommon | +5% | +3.4 | Colossus joined |
+| Regent | Child of the Stars | Uncommon | +5% | +3.1 | none |
+| Regent | Black Hole | Uncommon | +5% | +3.1 | none |
+
+- 13 of the 20 have no pool change on file for their rarity. The other 7 are Ironclad and
+  Silent Uncommons, where one card joined the rarity. A card joining a rarity lowers every
+  other member's share by the same amount, which the rarity median already removes, and these
+  shares rose.
+- Not placed: Grapple (removed) and Follow Through (Uncommon → Common) changed at v0.103.2
+  with no color on file, so they can't be assigned to a character. Left blank, not guessed.
+- Rarity is the offer tier for cards not on file; Regent and Necrobinder have no recorded
+  addition, removal or rarity change in this window.
+
+### Part 3. Cut-point sweep [computed]
+
+Tables: `q_cuts.csv` (the 17 cuts), `q_cut_fits.csv` (1,603 fits, one per cut, character and
+card), `q_cut_info.csv` (offers and dates per cut and character), `q_cut_offer.csv` (offer-rate
+z of every unchanged card at every cut), `q_cut_summary.csv`, `q_pooled.csv`,
+`q_interior_benchmark.csv`, `q_settling.csv`, `q_anchor_pairs.csv`, `q_anchor.csv`,
+`q_adjacent.csv`. 100 fits per cut (20 per character) except v0.98.1 → v0.98.2. Excess is
+Var(β) − mean SE²; τ by part 1's likelihood. "Offer z" is the robust sd / plain sd of
+`z_binom_rarity` over about 400 cards.
+
+**Real boundaries.**
+
+| Cut | Before block | Own-color cards changed | Robust sd z [95%] | Plain sd | \|z\| > 2 | Median SE (pp) | Excess (pp²) | τ (pp) [95%] | Offer z |
+|---|---|---|---|---|---|---|---|---|---|
+| v0.98.1 → v0.98.2 | 1 day | 0 | 3 fits | | | | | | |
+| v0.98.2 → v0.98.3 | 4 days | 0 | 1.92 [1.52, 2.55] | 2.24 | 0.36 | 1.43 | 7.0 | 2.49 [1.96, 2.94] | 1.16 / 3.63 |
+| v0.98.3 → v0.99.1 | 7 days | 0 | 2.13 [1.65, 2.41] | 1.86 | 0.29 | 1.05 | 2.3 | 1.43 [1.11, 1.66] | 1.14 / 2.35 |
+| **v0.99.1 → v0.103.2** | 21 days | 70 | **2.80 [2.27, 3.67]** | 3.45 | 0.50 | 0.97 | 9.7 | 3.07 [2.47, 3.61] | 1.09 / 2.02 |
+| v0.103.2 → v0.103.3 | 21 days | 0 | **1.69 [1.24, 2.11]** | 1.68 | 0.21 | 1.07 | 1.6 | 1.20 [0.90, 1.46] | 0.99 / 1.03 |
+| **v0.103.3 → v0.107.1** | 20 days | 37 | **2.33 [1.59, 3.21]** | 2.87 | 0.46 | 0.95 | 5.1 | 2.22 [1.79, 2.59] | 1.04 / 1.39 |
+
+After-block play on a superseded build: 12% of offers at v0.98.2 → v0.98.3, 4% at v0.103.2 →
+v0.103.3, none elsewhere.
+
+**Interior cuts.**
+
+| Cut | Weeks since release | Robust sd z [95%] | Plain sd | \|z\| > 2 | Median SE (pp) | Excess (pp²) | τ (pp) [95%] | Offer z |
+|---|---|---|---|---|---|---|---|---|
+| v0.103.2 @ 05-07 | 3 | 2.14 [1.69, 2.56] | 2.36 | 0.31 | 1.05 | 3.9 | 1.94 [1.53, 2.36] | 0.94 / 1.28 |
+| v0.107.1 @ 07-09 | 3 | 1.76 [1.37, 2.27] | 2.00 | 0.26 | 0.94 | 2.1 | 1.42 [1.05, 1.71] | 1.05 / 1.36 |
+| v0.107.1 @ 07-16 | 4 | 1.50 [1.19, 1.88] | 1.73 | 0.21 | 0.99 | 1.4 | 1.17 [0.79, 1.50] | 1.15 / 1.15 |
+| v0.107.1 @ 07-23 | 5 | 1.26 [0.87, 1.65] | 1.38 | 0.18 | 1.06 | 0.7 | 0.81 [0.52, 1.02] | 0.89 / 1.02 |
+| v0.107.1 @ 07-30 | 6 | 1.28 [0.97, 1.59] | 1.34 | 0.15 | 1.10 | 0.8 | 0.84 [0.46, 1.09] | 0.97 / 1.03 |
+| v0.107.1 @ 08-06 | 7 | 1.15 [0.82, 1.46] | 1.20 | 0.13 | 1.12 | 0.6 | 0.57 [0.00, 0.88] | 0.92 / 1.03 |
+| v0.107.1 @ 08-13 | 8 | 1.31 [1.06, 1.59] | 1.28 | 0.14 | 1.15 | 0.5 | 0.75 [0.49, 0.97] | 1.03 / 1.00 |
+| v0.107.1 @ 08-20 | 9 | 1.28 [0.97, 1.46] | 1.19 | 0.08 | 1.17 | 0.1 | 0.64 [0.34, 0.86] | 0.94 / 1.07 |
+| v0.107.1 @ 08-27 | 10 | 1.45 [1.11, 1.73] | 1.37 | 0.11 | 1.17 | 1.1 | 0.87 [0.54, 1.14] | 0.95 / 1.13 |
+| v0.107.1 @ 09-03 | 11 | 1.13 [0.79, 1.50] | 1.43 | 0.18 | 1.18 | 1.2 | 1.01 [0.53, 1.32] | 0.94 / 1.09 |
+| v0.107.1 @ 09-10 | 12 | 1.16 [0.78, 1.43] | 1.32 | 0.14 | 1.18 | 1.0 | 0.82 [0.41, 1.07] | 0.90 / 0.98 |
+
+**Pooled.** Intervals resample cards, a card's rows from every cut together.
+
+| Rows | n | Robust sd z [95%] | Plain sd | \|z\| > 2 | Median SE (pp) | Excess (pp²) | τ (pp) [95%] |
+|---|---|---|---|---|---|---|---|
+| **Interior cuts [rule]** | 1,100 | **1.38 [1.26, 1.48]** | 1.55 | 0.17 | 1.12 | 1.2 | 1.08 [0.92, 1.20] |
+| Interior, cards changed entering the build left out | 997 | 1.36 [1.25, 1.47] | 1.53 | 0.17 | 1.13 | 1.2 | 1.06 [0.90, 1.20] |
+| Interior, v0.107.1 only | 1,000 | 1.31 [1.20, 1.42] | 1.44 | 0.16 | 1.13 | 0.9 | 0.94 [0.77, 1.07] |
+| Interior, v0.107.1 weeks 3 and 9 (no shared data) | 200 | 1.39 [1.23, 1.62] | 1.64 | 0.17 | 1.07 | 1.1 | 1.13 [0.88, 1.34] |
+| Interior, v0.107.1 weeks 3–7 | 500 | 1.31 [1.20, 1.55] | 1.56 | 0.19 | 1.07 | 1.1 | 1.04 [0.80, 1.22] |
+| Interior, v0.107.1 weeks 8–12 | 500 | 1.22 [1.10, 1.39] | 1.32 | 0.13 | 1.17 | 0.8 | 0.81 [0.60, 0.97] |
+| **Real boundaries [rule]** | 503 | **2.14 [1.91, 2.37]** | 2.49 | 0.36 | 1.06 | 5.0 | 2.19 [1.92, 2.42] |
+| Boundaries, the three later ones | 300 | 2.27 [1.91, 2.55] | 2.76 | 0.39 | 0.99 | 5.5 | 2.31 [1.98, 2.63] |
+| Boundaries, v0.98.x | 203 | 2.00 [1.65, 2.30] | 2.04 | 0.32 | 1.25 | 4.3 | 1.94 [1.56, 2.25] |
+| Boundaries with zero card changes | 300 | 1.90 [1.65, 2.19] | 1.94 | 0.29 | 1.15 | 3.7 | 1.70 [1.40, 1.95] |
+| Boundaries with card changes | 203 | 2.63 [2.13, 3.23] | 3.14 | 0.47 | 0.96 | 7.0 | 2.67 [2.27, 3.06] |
+
+Offer-rate z, pooled: interior 0.96 robust (0.99 with the bootstrap SE), 1.11 plain, 6.5%
+beyond 2, over 4,399 rows. Boundaries 1.05 robust, 2.17 plain, 9.6% beyond 2, over 2,248 rows.
+
+**Benchmark: what the interior cuts would show at their own SEs with the boundaries' τ.**
+
+| τ taken from | τ (pp) | Predicted interior robust sd [95% range] | Observed |
+|---|---|---|---|
+| Boundaries pooled | 2.19 | 2.29 [2.13, 2.45] | 1.38 |
+| Same, lower end of its interval | 1.92 | 2.08 [1.93, 2.23] | 1.38 |
+| The three later boundaries | 2.31 | 2.38 [2.22, 2.56] | 1.38 |
+| v0.103.2 → v0.103.3 alone | 1.20 | 1.54 [1.44, 1.66] | 1.38 |
+
+**Settling.** Spearman of each interior cut's spread against weeks since release:
+
+| Statistic | Cuts | Spearman [95%] |
+|---|---|---|
+| Robust sd of z, all interior cuts [rule] | 11 | **−0.66 [−0.90, −0.21]** |
+| Robust sd of z, v0.107.1 only | 10 | −0.55 [−0.87, +0.04] |
+| τ, all interior cuts | 11 | −0.46 [−0.85, −0.14] |
+| τ, v0.107.1 only | 10 | −0.29 [−0.81, +0.13] |
+
+**Anchors: the 463 saved pairs refit under 3 + 3**, same cards and same kind of fit.
+
+| Patch | Pairs | Saved robust sd (factor) | Under 3 + 3 [95%] | Ratio [95%] | Median SE: saved → 3 + 3 (pp) | τ: saved → 3 + 3 (pp) | Corr of β |
+|---|---|---|---|---|---|---|---|
+| First | 217 | 4.10 | 3.30 [2.87, 3.98] | 0.81 [0.74, 0.93] | 0.82 → 0.96 | 3.35 → 3.31 | 0.96 |
+| Second | 246 | 2.67 | 2.75 [2.19, 3.23] | 1.03 [0.91, 1.12] | 0.95 → 1.00 | 2.44 → 2.68 | 0.98 |
+
+The sweep's own rows for the same two boundaries (a new sample of 100 cards, all offers) are
+2.80 and 2.33, in the boundary table above.
+
+**Adjacent boundaries.** Correlation of a card's β across one boundary and the next, on cards
+sampled in both, β centered within character. "Shared noise" is what the same offers in both
+fits produce with no nudge (the middle build's two blocks are the same days when it lived
+under 3 weeks); "fresh offsets" adds −τ₁τ₂/2.
+
+| Boundaries | Middle build | Cards | Corr of β [95%] | Expected, shared noise only | Expected, fresh offsets |
+|---|---|---|---|---|---|
+| v0.98.2 → v0.98.3 → v0.99.1 | v0.98.3, 7 days, same offers | 100 | **+0.40 [0.24, 0.55]** | −0.13 | −0.44 |
+| v0.98.3 → v0.99.1 → v0.103.2 | v0.99.1, 30 days, no shared offers | 87 | −0.07 [−0.27, 0.15] | 0 | −0.35 |
+| v0.99.1 → v0.103.2 → v0.103.3 | v0.103.2, 43 days, no shared offers | 87 | **+0.02 [−0.22, 0.25]** | 0 | −0.30 |
+| v0.103.2 → v0.103.3 → v0.107.1 | v0.103.3, 20 days, same offers | 91 | −0.32 [−0.51, −0.10] | −0.14 | −0.44 |
+
+Reading. [inferred]
+- **Rule: mixed.** The boundaries pooled reach 2 (2.14, interval 1.91–2.37, so not clear of
+  2). The interior cuts pooled are 1.38, over the 1.3 needed for "tied to releases" and far
+  from the 2 needed for "not tied to releases". The interior interval contains 1.3.
+- **The interior cuts were precise enough to tell.** Their SEs (median 1.12 pp) are like the
+  boundaries' (1.06). With the boundaries' τ they would have shown 2.29 [2.13, 2.45]; they
+  show 1.38. So this is not the case I flagged in the rules, where a low interior z could
+  come from large SEs. In pp² the excess is 5.0 across boundaries and 1.2 inside builds.
+- **So most of the excess is tied to releases, and about a quarter of it is there without
+  one.** The interior excess is not zero at any stretch: 17% of interior z are beyond 2
+  where 4.6% is expected, and τ is 0.8 pp even in weeks 8–12.
+- **It fades after a release, as N's lead said.** The two cuts 3 weeks after a release are
+  the highest interior ones (2.14 and 1.76), and their before blocks are the release's first
+  three weeks. From week 5 on the robust sd is 1.13–1.45. The declared Spearman is
+  below 0 with its interval. Within v0.107.1 alone the interval reaches +0.04, and weeks
+  since release can't be told from the calendar there, as declared. So a release is followed
+  by about a month of extra movement, which a single offset at the release doesn't describe.
+- **The boundary without card changes doesn't behave like a patch.** v0.103.2 → v0.103.3 has
+  full blocks and no card change: 1.69, τ 1.20 pp. That is below the interior cut of v0.103.2
+  three weeks after its release (2.14, τ 1.94) and level with v0.107.1's early interior cuts.
+  The two boundaries with card changes are at 2.80 and 2.33, τ 3.07 and 2.22. Descriptive
+  only, as declared: one clean boundary without changes, two with. The v0.98.x boundaries
+  also changed no card and are at 1.9–2.1, but they are the game's first twelve days, with
+  before blocks of 4 and 7 days, and can't stand for a quiet release.
+- **Fresh offsets per build are not what the cards do.** If each build drew a new offset
+  around a card's own level, a card's β across two consecutive boundaries would be negatively
+  correlated, about −0.3 at these SEs. Where the middle build's blocks share no offers, the
+  correlation is −0.07 and +0.02, and the intervals stop at −0.27 and −0.22, short of the
+  −0.35 and −0.30 expected. A step that stays (each release moves a card and it keeps the new level) predicts 0
+  and fits. The one negative value, −0.32 through v0.103.3, is where the two fits use the
+  same 20 days of offers, which gives −0.14 with no nudge at all; its interval holds both
+  −0.14 and −0.44. That is section I's −0.66, on 91 unchanged cards, and weaker.
+  At launch the sign is the other way: cards that moved from v0.98.2 to v0.98.3 kept moving
+  the same way into v0.99.1 (+0.40), a trend and not an offset.
+- **Under a step that stays, the extra variance of a DiD across one boundary is the step's
+  variance, not 2σ_b².** Part 1's σ_b = τ/√2 only applies under fresh offsets, so read τ
+  itself as the size: 3.3 pp at v0.103.2, 2.4 pp at v0.107.1.
+- **The design moves z, not τ.** For the first patch, 3 + 3 lowers the robust sd from 4.10 to
+  3.30 because the shorter before block raises the SE (0.82 → 0.96 pp); τ is unchanged (3.35 →
+  3.31). For the second patch both barely move, and τ rises a little (2.44 → 2.68). β under
+  the two designs correlate at 0.96 and 0.98. So the sweep's boundary figures are a little
+  lower than the factors for a reason that has nothing to do with the cards.
+- **Offer rate is honest wherever it is cleanest.** At interior cuts, where the pool can't
+  change, the robust sd is 0.96 and the plain sd 1.11. At boundaries the body is honest
+  (1.05) and the plain sd is 2.17, with the tail largest at launch (3.63, 2.35) and smaller
+  at each later boundary (2.02, 1.03, 1.39). That is the one-sided tail of part 2 again,
+  shrinking with the game's age.
+
+### What this does and doesn't settle
+
+- **Settled, within limits:**
+  - The pipeline is not the source. Offer rate gives z of the right size in both patches and
+    at every interior cut.
+  - The excess is much larger across a release than inside a build (5.0 against 1.2 pp²),
+    measured with the same design, model and SE sizes on both sides.
+  - It isn't one nudge size: τ differs between the two patches, and one release that changed
+    no card is far below both.
+  - It isn't a fresh offset per build: consecutive boundaries with separate data are
+    uncorrelated.
+  - Some excess remains inside a build and fades in the weeks after a release.
+- **Fits but not shown:** a step in pick rate at releases that change cards, which stays, and
+  about a month of settling after it. "Changes cards" rests on one clean boundary without
+  changes against two with; and the two with changes are also the two major updates, so card
+  changes can't be told from anything else those updates brought (relics, enemies, returning
+  players).
+- **Not settled:**
+  - What the step is. Nothing here separates a per-card behavioral shift from a change in who
+    is on the stable branch after a major update.
+  - Whether the fading is "weeks since release" or the calendar. Ten of the eleven interior
+    cuts are in one build.
+  - Why some cards' offer share rises across releases (the one-sided tail). It is unrelated
+    to the placebo misses, but it is unexplained.
+  - Commons: they hold the top offer bin in both patches and have the tightest β, so "z grows
+    with offers" and "Commons move less" can't be separated at the top.
+- **A consequence for the dose-response, not acted on here:** if the step belongs to releases
+  that change cards, an unchanged card's placebo spread is the right yardstick for a changed
+  card only if the step is unrelated to the card's own change, which is what M and P looked
+  at and didn't resolve.
+- The factors are unaffected: they measure the spread and don't depend on its cause.
+
+### Update to SPIROMETRY.md, open question 8 (applied 2026-11-11, with Phil's wording)
+
+The line below is what this section proposed. Phil then supplied the text now in
+SPIROMETRY.md. Two things from this line were merged into it: the rule's "mixed" label with
+the excess variances (1.2 against 5.0 pp²), and the offer-rate robust sds (1.16 / 0.93). His
+text also notes that the two boundaries with card changes are the two major updates.
+
+> Release nudge, exploratory (triage Q, final tables): offer rate is honest (robust sd 1.16 /
+> 0.93), so the excess is behavior and not the pipeline; under one 3 + 3 design the excess is
+> 5.0 pp² across real stable boundaries against 1.2 pp² at cuts inside a build (robust sd 2.14
+> against 1.38, "mixed" under the declared rule), fades in the weeks after a release, differs
+> between the patches (τ 3.35 / 2.44 pp), is small at the one boundary that changed no card
+> (1.69), and is uncorrelated across consecutive boundaries, so it reads as a lasting step at
+> releases that change cards plus about a month of settling, not a fresh offset per build.
+
+### Files, tables and runtime
+
+- Changed: `triage/TRIAGE.md` (this section), `triage/scripts/q_nudge.py` (new),
+  `README.md` (repository table), `PLAN.md` (status line and decision log), `SPIROMETRY.md`
+  (open question 8). In the working
+  tree and not mine: `triage/scripts/q_z_vs_offers.py` (Phil).
+- Tables in `triage/out_final/`, for plotting:
+  - Part 1: `q_tau.csv`, `q_tau_predict.csv`, `q_tau_pairs.csv`.
+  - Part 2: `q_offer_rows.csv`, `q_offer_summary.csv`.
+  - Part 3: `q_cuts.csv`, `q_cut_fits.csv`, `q_cut_info.csv`, `q_cut_offer.csv`,
+    `q_cut_summary.csv`, `q_pooled.csv`, `q_interior_benchmark.csv`, `q_settling.csv`,
+    `q_anchor_pairs.csv`, `q_anchor.csv`, `q_adjacent.csv`.
+  - Post hoc and asides: `q_posthoc_offer_tail.csv`, `q_posthoc_offer_link.csv`,
+    `q_aside_offer_bins.csv`, `q_aside_second_top_bin.csv`, `q_aside_first_offer_tail.csv`.
+  - No figure was made.
+- Runtime: `--check` 45 s; part 1 21 s; part 2 69 s; part 3 about an hour for the fits
+  (five characters) and 18 s for the summaries; part 4 8 s. Peak memory
+  2.9 GB for one character's v0.107.1 load; the sweep's own peak was not recorded, because
+  the run that did the fits stopped in the summary step before printing it.

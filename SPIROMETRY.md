@@ -1707,7 +1707,18 @@ close to randomized. That supports:
    +1.64 z, p 0.001) but rests on Ironclad and Silent in the first window, and by archetype
    the direction is at chance (17 of 29); placebo z does cluster by archetype in the first
    patch (robust sd 4.10 → 2.88 with archetype × window terms absorbed), not in the second.
-   The cause is not yet fully verified.
+   Release nudge, exploratory (triage Q, final tables): the excess sits at releases that
+   change cards. Cuts inside a build are near honest (robust sd 1.38 pooled, fading through
+   a build), against 2.14 at real boundaries ("mixed" under the declared rule; excess variance
+   1.2 against 5.0 pp²); at the two patches, unchanged cards shift by a
+   lasting 3.35 pp [2.95, 3.72] and 2.44 pp [2.15, 2.71] relative to their character, and
+   the one boundary without card changes (v0.103.3) by about 1.2 pp; the two boundaries with
+   changes are also the two major updates, so card changes and release size are not yet
+   separated (triage R tests this). Offsets are not fresh at every build (cross-boundary
+   correlation about 0). The offer-rate negative control is
+   honest (robust sd 1.16 / 0.93), so the excess is player behavior, not the pipeline.
+   Leading reading, inferred: players re-evaluate a character when some of its cards change
+   (interference with the controls), then settle over about a month. Not yet verified.
 9. Whether the second patch's flat dose-response survives calibrated errors. Answered on the
    1,873-page tables (triage C): it does; the patch difference depends on the ruler (triage
    B, K2) and leans on Debilitate v0.107.1 (triage K1). Final rerun, primary spec, weeks 0–3:

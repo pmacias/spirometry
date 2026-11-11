@@ -296,6 +296,12 @@ run on the final tables, exploratory, outputs in `triage/out_final/o_*.csv` and 
 no factor, number or headline changes. Results in `triage/TRIAGE.md` and SPIROMETRY.md (open
 question 8); the cause of the placebo spread is still not fully verified. Next: Phil reviews
 both sections.*
+*Status (CC, 2026-11-11): triage section Q (the release nudge, `triage/scripts/q_nudge.py`)
+run on the final tables, exploratory, outputs in `triage/out_final/q_*.csv`; no factor, number
+or headline changes. Results in `triage/TRIAGE.md`; SPIROMETRY.md's open question 8 is
+updated with Phil's text (2026-11-11). Not committed: `.git` was not writable
+in the session. Next: Phil reviews the section and commits it with his
+`triage/scripts/q_z_vs_offers.py`.*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -1597,3 +1603,21 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
   archetype-level table was added post hoc and the reading rests on both. Two archetypes'
   direction was known from section O before the rules were written; the test is also reported
   without O's pairs.
+- Release nudge (triage Q, exploratory; CC's choices, open to review, 2026-11-11): no factor,
+  number or headline changes. Phil's rules as given; mine where the prompt left a choice. At a
+  boundary the before block is the older build's last 21 days (play after the release left out)
+  and the after block the newer build's weeks 0–2. "Last day with play" is read as the last
+  day the build was the current stable, which gives 11 interior cuts, 10 of them in v0.107.1.
+  The second anchor is read as v0.103.3 → v0.107.1, the real window, where the prompt says
+  v0.103.2 → v0.107.1. Each character's cards are sampled in one fixed order, so cards recur
+  across cuts. Rarity for the offer-rate z is derived (file where present, else offer tier),
+  since `reference/raw/` stays closed. The run-clustered bootstrap runs on every offer row,
+  not 100, because it is cheap. Added by me and declared before running: excess variance and
+  τ in pp beside z, a benchmark for what interior cuts would show with the boundaries' τ, and
+  the correlation of a card's β across consecutive boundaries. Post hoc: the offer-rate tail.
+  The sweep's summary step crashed once after the fits were saved and was rerun from them.
+  SPIROMETRY.md's open question 8 was first left alone (the prompt asked for proposed text
+  only) and then updated with Phil's wording, plus two things merged from the section's own
+  proposed line: the rule's "mixed" label with the excess variances (1.2 against 5.0 pp²),
+  and the offer-rate robust sds (1.16 / 0.93). Phil added that the two boundaries with card
+  changes are also the two major updates (triage R is to test this).

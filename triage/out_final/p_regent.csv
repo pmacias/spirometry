@@ -1,0 +1,112 @@
+patch,pseudo_card,z,archetypes,create_window_text,create_current_text,changed_class
+first,ASTRAL_PULSE,-0.37584965954029387,star,False,False,False
+first,BLACK_HOLE,-3.7146091345856944,star,False,False,False
+first,BULWARK,7.255072504082067,forge,False,False,False
+first,CHILD_OF_THE_STARS,-2.545678382929496,star,False,False,False
+first,CLOAK_OF_STARS,-1.4135236457083546,star,False,False,False
+first,COMET,-2.0846734222410155,debuff star,False,False,False
+first,CONVERGENCE,5.232769632614879,star,False,False,False
+first,COSMIC_INDIFFERENCE,5.472847418478129,,False,False,False
+first,GENESIS,-2.728668677348381,star,False,False,False
+first,HEAVENLY_DRILL,-2.0678206659837293,,False,False,False
+first,KNOW_THY_PLACE,10.221282507215111,debuff,False,False,False
+first,LUNAR_BLAST,-4.643189074381106,skill_play,False,False,False
+first,MANIFEST_AUTHORITY,6.018979846601755,create,True,True,False
+first,MONARCHS_GAZE,-4.7098713612181475,,False,False,False
+first,PARTICLE_WALL,-3.3211822853046176,star,False,False,False
+first,PHOTON_CUT,-4.381360379254218,draw,False,False,False
+first,RADIATE,-5.68782828347978,star,False,False,False
+first,STARDUST,-1.2374565571267129,,False,False,False
+first,THE_SMITH,0.2280091701658685,forge star,False,False,False
+first,TYRANNY,1.3808604085103895,draw,False,False,False
+first,CRASH_LANDING,4.637406275549568,create,True,True,False
+first,DECISIONS_DECISIONS,-0.36437624186623646,draw skill_play star,False,False,False
+first,DYING_STAR,-4.218941567204283,star,False,False,False
+first,FOREGONE_CONCLUSION,-2.2297549528866663,,False,False,False
+first,FURNACE,-0.8143985530528951,forge,False,False,False
+first,HIDDEN_CACHE,-1.0291844022986036,star,False,False,False
+first,PILLAR_OF_CREATION,13.600038855557187,create,True,True,False
+first,RESONANCE,-5.623608989567091,star strength,False,False,False
+first,ROYAL_GAMBLE,1.5361858175336247,star,False,False,False
+first,TERRAFORMING,1.9776753739799648,,False,False,False
+first,BEAT_INTO_SHAPE,-1.958879616653767,forge,False,False,False
+first,DEVASTATE,-8.84232848970299,star,False,False,False
+first,KNOCKOUT_BLOW,-5.37406642442781,star,False,False,False
+first,MAKE_IT_SO,0.7182293760362514,skill_play,False,False,False
+first,MONOLOGUE,-3.2822811014788797,strength,False,False,False
+first,NEUTRON_AEGIS,-3.763317610500952,star,False,False,False
+first,ORBIT,3.0483478453532835,,False,False,False
+first,QUASAR,4.252120018343697,create star,True,True,False
+first,REFLECT,3.4339610870447737,star,False,False,False
+first,SUMMON_FORTH,3.4402477897183856,forge,False,False,False
+first,CRESCENT_SPEAR,-10.711729498888891,star,False,False,False
+first,GLIMMER,-2.3170913136885547,draw,False,False,False
+first,ROYALTIES,-1.628163620989042,,False,False,False
+first,SEVEN_STARS,-4.353865785419677,star,False,False,False
+first,SHINING_STRIKE,-5.5390321936385325,star,False,False,False
+first,SPECTRUM_SHIFT,7.172465436183857,create,True,True,False
+first,CRUSH_UNDER,-1.0254761899548768,,False,False,False
+first,GUARDS,3.19800881098977,create,True,True,False
+first,HEGEMONY,-2.915782093236261,,False,False,False
+first,PROPHESIZE,-1.8667225134252894,draw,False,False,False
+first,SEEKING_EDGE,0.38897782800717445,forge,False,False,False
+first,BIG_BANG,3.4011938931150265,draw forge star,False,False,False
+first,CONQUEROR,1.4317031460118776,forge,False,False,False
+first,GAMMA_BLAST,0.940454709680158,debuff star,False,False,False
+first,PALE_BLUE_DOT,4.619725019377728,draw,False,False,False
+first,SUPERMASSIVE,6.611275497833207,create,True,True,False
+second,BEAT_INTO_SHAPE,-2.885776618252711,forge,False,False,False
+second,CHARGE,7.306813556624696,create,True,True,False
+second,COSMIC_INDIFFERENCE,-0.37286770150479726,,False,False,False
+second,CRASH_LANDING,5.805468402228507,create,True,True,False
+second,FOREGONE_CONCLUSION,-0.2897826279541465,,False,False,False
+second,GLIMMER,0.6293180598355372,draw,False,False,False
+second,GUARDS,3.900937457067797,create,True,True,False
+second,HEGEMONY,-0.6121162764672291,,False,False,False
+second,HEIRLOOM_HAMMER,-1.2928584356918498,create,True,True,False
+second,HIDDEN_CACHE,-2.9874481020410735,star,False,False,False
+second,I_AM_INVINCIBLE,-1.6854200991968418,,False,False,False
+second,MAKE_IT_SO,-2.165333844891463,skill_play,False,False,False
+second,MONOLOGUE,-2.3303230731839215,strength,False,False,False
+second,PHOTON_CUT,-3.2381179827756,draw,False,False,False
+second,PROPHESIZE,-0.024192209540163993,draw,False,False,False
+second,QUASAR,3.6918622239799976,create star,True,True,False
+second,REFINE_BLADE,-3.308765305150241,forge,False,False,False
+second,ROYAL_GAMBLE,0.4949940492291445,star,False,False,False
+second,SHINING_STRIKE,-5.0754994616566425,star,False,False,False
+second,VOID_FORM,-1.6146305336791866,,False,False,False
+second,ARSENAL,3.9126652060190312,create strength,True,True,False
+second,BIG_BANG,2.2784112564664873,draw forge star,False,False,False
+second,CELESTIAL_MIGHT,2.0680321377463136,,False,False,False
+second,CLOAK_OF_STARS,-2.253979814863912,star,False,False,False
+second,CONVERGENCE,4.4956162437259035,star,False,False,False
+second,DECISIONS_DECISIONS,0.4893092423444616,draw skill_play star,False,False,False
+second,KINGLY_KICK,-1.9590886931671208,draw,False,False,False
+second,KINGLY_PUNCH,-1.6702423259957002,draw,False,False,False
+second,PALE_BLUE_DOT,2.4697490419289423,draw,False,False,False
+second,PARTICLE_WALL,-1.3229579711453194,star,False,False,False
+second,PILLAR_OF_CREATION,10.46938144585532,create,True,True,False
+second,RADIATE,-4.530759881186244,star,False,False,False
+second,RESONANCE,-1.9887479578507914,star strength,False,False,False
+second,SEEKING_EDGE,-2.4316494626176057,forge,False,False,False
+second,BEGONE,8.552135870969396,create,True,True,False
+second,BUNDLE_OF_JOY,2.055916974963204,create,True,True,False
+second,CRUSH_UNDER,-0.5702305081454248,,False,False,False
+second,DEVASTATE,-4.389687368512225,star,False,False,False
+second,GATHER_LIGHT,0.8556115616793917,star,False,False,False
+second,GENESIS,-2.9305602759369442,star,False,False,False
+second,GLITTERSTREAM,4.569383431394563,,False,False,False
+second,KNOW_THY_PLACE,5.237913133940236,debuff,False,False,False
+second,SOLAR_STRIKE,-7.174780946827984,star,False,False,False
+second,SPOILS_OF_BATTLE,-4.613321220898273,draw forge,False,False,False
+second,TERRAFORMING,0.5842661827220536,,False,False,False
+second,THE_SMITH,-1.57597101755479,forge star,False,False,False
+second,WROUGHT_IN_WAR,-7.716892844871872,forge,False,False,False
+second,COMET,-3.1931611330139145,debuff star,False,False,False
+second,NEUTRON_AEGIS,-0.2505663753190486,star,False,False,False
+second,BOMBARDMENT,2.2169934111257725,,False,False,False
+second,COLLISION_COURSE,5.47152001679713,create,True,True,False
+second,GAMMA_BLAST,2.131101101606355,debuff star,False,False,False
+second,HEAVENLY_DRILL,0.12232174073792114,,False,False,False
+second,ORBIT,2.4773864944500468,,False,False,False
+second,STARDUST,-2.207717506953789,,False,False,False

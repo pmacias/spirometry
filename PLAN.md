@@ -290,6 +290,12 @@ on the complete snapshot, plus notebook 02's weeks 0–3 checks; numbers in SPIR
 1,873-page fits no estimate moved by more than its old SE; the classifications that changed
 (Furnace v0.107.1 now clearly nonzero, Patter v0.107.1 no longer flagged against all
 controls, Reflect informative for anticipation) are listed there.*
+*Status (CC, 2026-11-10): triage sections O (forensics on the largest placebo misses,
+`triage/scripts/o_forensics.py`) and P (archetype spillover, `triage/scripts/p_archetype.py`)
+run on the final tables, exploratory, outputs in `triage/out_final/o_*.csv` and `p_*.csv`;
+no factor, number or headline changes. Results in `triage/TRIAGE.md` and SPIROMETRY.md (open
+question 8); the cause of the placebo spread is still not fully verified. Next: Phil reviews
+both sections.*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -1568,3 +1574,26 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
   match), since `reference/raw/` stays closed; card type is not computed in the sandbox. Test 4's
   declared rule, using a corrected SE, turned out to reward noise, so a noise-only benchmark was
   added post hoc and the reading rests on it. Detrending is not a calibration option.
+- Forensics on the largest placebo misses (triage O, exploratory; CC's choices, open to review,
+  2026-11-10): no factor, number or headline changes. The top-10% rule (> 50% tail-driven, < 25%
+  broad) is reported as given, next to a normal benchmark, because a plain normal already gives
+  0.46–0.51 and "< 25%" can't happen; the reading rests on the drop table. "Untagged" is run both
+  ways: no uploader token, and no SlayTheStats tag. The top 25 are ranked over both patches
+  together. A driver is split into precision only and of β, and that split still passed two weak
+  cases. XGBoost settings were fixed in advance and not tuned; they overfit, so the R² rule was a
+  harsh test. xgboost is a new optional extra (`forensics`), used by that script only. Card type
+  is not in the model in the sandbox. The refit tolerance is 1e-04, since derived colors drop two
+  two-offer control cards from one window.
+- Archetype spillover (triage P, exploratory; CC's choices, open to review, 2026-11-10): no
+  factor, number or headline changes. Archetypes are keyword rules on card text, one list for all
+  characters plus character keywords, a card in every archetype it matches, an archetype needing
+  3 reward-pool members. Text comes from `reference/raw/cards.json` (v0.107.1), rolled back with
+  `card_changes.csv` and old wordings quoted in the patch notes; the sandbox keeps that folder
+  closed, so Phil copied the file for the session and the script takes `P_CARDS`. A card's
+  direction is the patch notes' verb (all Buffed, all Nerfed, else unclear); a card whose text
+  enters an archetype counts as a buff to it and one that leaves as a nerf; an archetype's net
+  is the majority. The deciding p is two-sided, from shuffling labels within character-window.
+  That shuffle treats cards as independent, which the result itself contradicts, so an
+  archetype-level table was added post hoc and the reading rests on both. Two archetypes'
+  direction was known from section O before the rules were written; the test is also reported
+  without O's pairs.

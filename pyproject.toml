@@ -32,6 +32,9 @@ dashboard = [
 dev = [
     "pytest",
 ]
+forensics = [
+    "xgboost",      # triage/scripts/o_forensics.py part 3 (exploratory; its TreeSHAP gives the SHAP values)
+]
 writeup = [
     "typst==0.15.0", # field guide v2 PDF (python -m spirometry.writeup build); pinned so a rebuild typesets the same
 ]

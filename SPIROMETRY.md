@@ -1694,7 +1694,12 @@ close to randomized. That supports:
 8. Why the placebo spread of the DiD z is large (sd 4.21, 3.76 one row per window and card;
    see "Placebo calibration of the DiD errors"). Partly answered (triage C, G4): the spread is
    card by card and persists across patches; clustering by uploader token is a partial fix of
-   a minor part. The cause is not yet verified.
+   a minor part. Spillover from changed cards, exploratory (triage M, final tables): no signed
+   spillover and no link to exposure within a patch, but the clean-window test is unresolved
+   (Defect 2.73 [0.81, 4.14] against 4.10; that window has 3 non-numeric changes). Within-build
+   drift, exploratory (triage N, final tables): real but not a steady trend, about 0.35–0.7 of
+   the excess variance, and fading late in a build; linear detrending removes nothing. The
+   cause is not yet fully verified.
 9. Whether the second patch's flat dose-response survives calibrated errors. Answered on the
    1,873-page tables (triage C): it does; the patch difference depends on the ruler (triage
    B, K2) and leans on Debilitate v0.107.1 (triage K1). Final rerun, primary spec, weeks 0–3:

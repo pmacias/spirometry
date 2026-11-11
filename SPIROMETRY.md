@@ -1698,8 +1698,16 @@ close to randomized. That supports:
    spillover and no link to exposure within a patch, but the clean-window test is unresolved
    (Defect 2.73 [0.81, 4.14] against 4.10; that window has 3 non-numeric changes). Within-build
    drift, exploratory (triage N, final tables): real but not a steady trend, about 0.35–0.7 of
-   the excess variance, and fading late in a build; linear detrending removes nothing. The
-   cause is not yet fully verified.
+   the excess variance, and fading late in a build; linear detrending removes nothing.
+   Forensics, exploratory (triage O, final tables): the miss is broad, not a few cards (robust
+   sd 3.36 / 2.50 after dropping the top 10% of pairs); the 25 largest are steps at the release
+   that no uploader, week or ascension band produces; no feature predicts which cards miss (CV
+   R² < 0.05). Archetype spillover, exploratory (triage P, final tables): Phil's Regent
+   create-card pattern passes its declared test on the other four characters (pooled shift
+   +1.64 z, p 0.001) but rests on Ironclad and Silent in the first window, and by archetype
+   the direction is at chance (17 of 29); placebo z does cluster by archetype in the first
+   patch (robust sd 4.10 → 2.88 with archetype × window terms absorbed), not in the second.
+   The cause is not yet fully verified.
 9. Whether the second patch's flat dose-response survives calibrated errors. Answered on the
    1,873-page tables (triage C): it does; the patch difference depends on the ruler (triage
    B, K2) and leans on Debilitate v0.107.1 (triage K1). Final rerun, primary spec, weeks 0–3:

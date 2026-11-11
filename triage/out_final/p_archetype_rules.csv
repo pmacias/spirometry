@@ -1,0 +1,28 @@
+archetype,characters,text_regex,also_member_by
+create,all,\b[Aa]dds? (?:a |an |\d+ |X )?.*\b(?:into|to) (?:your|their) (?:Hand|Draw Pile|Discard Pile)|Transform|\bcop(?:y|ies) of|[Cc]reated?\b|Fill your Hand,
+exhaust,all,Exhaust,
+debuff,all,\bWeak\b|Vulnerable|debuff,
+strength,all,[Gg]ain \d+ Strength,
+attack_play,all,\bAttacks?\b,
+skill_play,all,\bSkills?\b,
+power_play,all,\bPowers?\b,
+block_payoff,all,your Block\b|gain Block\b|Block is not removed|Block from a card|Block gain|Gain Block equal,
+draw,all,[Dd]raw \d+ (?:additional )?cards?|[Dd]raw cards|[Ww]henever you draw|draw an? |cards? drawn,
+discard,all,\b[Dd]iscard(?:ed)? (?!Pile)|\bSly\b,keywords:Sly
+hp_loss,all,(?<!nemy )(?<!nemies )\b[Ll]ose \d+ HP|\blost HP|you lose HP|lose \d+ HP and,
+zero_cost,all,0 ?\[energy:1\] (?:cards?|Attacks?|copy)|do not cost 0,
+ethereal,all,Ethereal,keywords:Ethereal
+dexterity,all,Dexterity,
+orb,defect,Channel|Evoke|\bOrbs?\b,
+lightning,defect,Lightning,
+frost,defect,Frost,
+dark,defect,\bDark\b,
+focus,defect,Focus,
+status,defect,Status,spawns:BURN|DAZED|SLIMED|VOID|WOUND
+poison,silent,Poison,
+shiv,silent,Shivs?\b,spawns:SHIV
+osty,necrobinder,Osty|Summon,tags:OstyAttack
+doom,necrobinder,Doom,
+soul,necrobinder,\bSouls?\b,spawns:SOUL
+forge,regent,Forge|Sovereign Blade,
+star,regent,\[star:,star_cost:True

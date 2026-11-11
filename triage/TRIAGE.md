@@ -2102,3 +2102,898 @@ Reading. [inferred]
 - **Not settled:** what fills the rest of the spread, especially at least 6 pp² in the first patch.
   Section M didn't find spillover there, and nothing here measures a step at a release directly.
 - The factors are unaffected: they measure the spread and don't depend on its cause.
+
+---
+
+## O. Forensics on the largest placebo misses — EXPLORATORY
+
+**EXPLORATORY.** Proposed by Phil after sections M and N were seen. Nothing in this section
+changes the calibration factors, the numbers module, the guide or any headline result. Script:
+`triage/scripts/o_forensics.py`; tables in `triage/out_final/o_*.csv`. Inputs: the final tables
+(`data/runs/runs.duckdb`, read-only), `data/analysis/placebo_h3.parquet` (weeks 0–3, 463 pairs,
+one row per (window, pseudo card)), and the M and N tables (`m_exposure_pairs.csv`,
+`n_slopes.csv`). Colors are derived (`db.py`); `reference/raw/` stays closed.
+
+### Rules and what each outcome means, written before running
+
+Written 2026-11-10, before any number of this section was computed. What I had looked at: M's
+and N's saved tables and text, the count of runs by uploader tag and token, the number of pairs
+per window, the week layout of one window's offers, and the time one fit takes. Git writes are
+blocked in this session, so no commit timestamps this order; the claim rests on this note.
+
+**1. Concentration.** Pairs sorted by z², largest first. Excess of a pair is z² − 1. The curve
+is the cumulative share of total excess against the share of pairs, per patch and pooled. Then
+the robust sd (1.4826 × MAD) and plain sd of z, per patch and pooled, after dropping the 5, 10,
+20 and 46 pairs with the largest z² (pooled ranking; 46 is 10% of 463).
+
+- Phil's rule, as given: **the top 10% of pairs carrying > 50% of the excess = tail-driven;
+  < 25% = broad.** Between 25% and 50% the rule names no outcome, so that counts as mixed.
+- Tail-driven means a minority of cards hold the miscalibration: the forensics of test 2 are
+  the right tool, and a fix could target those cards. Broad means most unchanged cards miss by
+  a few SEs: there is no handful to explain, and only a general cause (drift, a step at a
+  release, an SE that is too small everywhere) would do.
+- Added by me, before running, because the two cutoffs aren't symmetric around what "broad"
+  produces. If every z were normal with one inflated sd s (as broad as it gets with honest
+  shape), the top 10% would carry (0.439 s² − 0.1) / (s² − 1) of the excess: **0.46 at s = 4.10
+  and 0.49 at s = 2.67.** Even a flat (uniform) z gives about 0.27. So "< 25%" can't
+  happen, and a share just over 50% is close to what a plain normal gives. I report the share
+  next to a simulated normal benchmark (same number of pairs, sd = the patch's plain sd, 10,000
+  draws) with its 95% range. Above that range: heavier tails than a normal. Inside it: the
+  spread is a normal's, scaled up, whatever side of 50% it falls.
+- The drop table is the more direct reading, since the factors are robust sds, which a few
+  pairs can't move. The same normal benchmark gives what each sd would be after the same drops.
+  Robust sd still near the factor after dropping 46: broad. Plain sd falling to the robust sd:
+  the tail explains the gap between the two, not the factor.
+
+**2. Influence on the top 25.** The 25 pairs with the largest |z|, ranked over both patches
+together (so most are expected from the first patch; each row says which). Each is refit with
+its first tweak's window row and compared with that refit's own baseline, which must
+reproduce the saved z. Slices, each removed from the whole fit (the card and its controls):
+
+- Uploader: each of the 10 tokens with the most offers of that card in the fit. Tokens exist on
+  about 16% of runs, so the rest are one slice, `no token`. Because "untagged" in this
+  repository means "no SlayTheStats tag" (`group`), which is a different split, `untagged` and
+  `tagged` are also removed, each as one slice. Uploaders are written as ranks, not hashes.
+- Week: each week of the before block (offers of before builds played after the release
+  pooled as one slice) and each of weeks 0–3 of the after block.
+- Ascension band: A0, A1–4, A5–8, A9–10, as in N.
+
+Reported per card: the largest single |Δz| and its slice, and every slice in a long table.
+Also saved for plotting: weekly offers and pick rate of each top card, and its controls' pooled
+rate and mean of card rates. No figures.
+
+- Phil's rule, as given: **a slice whose removal alone takes |z| below 2 is a driver for that
+  card.**
+- Added by me, before running. Removing a slice also removes data, so the SE grows and |z|
+  falls with β unchanged; `no token` and `untagged` are each about 80% of the offers. So each
+  refit also reports z with the baseline β over the new SE. A driver under the rule is called
+  **precision only** when that number is already below 2, and **a driver of β** when it isn't.
+  Only the second says the slice produced the miss.
+- Outcomes. Most top cards with a driver of β of one kind (one uploader, one week, one band):
+  that mechanism (C's hypotheses 3, 4 or 5) is the lead for the tail. Few or none: the misses
+  are spread across uploaders, weeks and bands, which is what a card-level shift between the
+  blocks looks like, whatever caused it.
+- Limit: about 30 slices per card and cards chosen for extreme z, so some shrinkage of |z|
+  under any removal is expected.
+
+**3. Predicting misses.** One row per pair (463). Targets z² and |z|. Features:
+
+| Feature | Source |
+|---|---|
+| Character | pair's color, five indicators |
+| Rarity | derived from offer tiers, as N (Common, Uncommon, Rare as 0, 1, 2) |
+| Type | only in `reference/raw/`: blank in the sandbox and then left out of the model |
+| Base pick rate | the pseudo card's rate before, from the saved fit |
+| Offers before, after | from the saved fit, log |
+| Within-build slope, lack of fit | `n_slopes.csv`, pp per week at the matched horizon, relative to the build × character mean, signed and absolute; chi²/df. From the build before the window: v0.99.1 for the first patch, v0.103.2 for the second (v0.103.3 has no slope). The after build's slope overlaps the outcome weeks, so it is not used. Blank when the card changed entering that build |
+| Exposure | `m_exposure_pairs.csv`, after block: signed; screen and run (substantive) as unsigned |
+| Behavior or bug-fix events | `window_changes`' flag for the card in the window, and the number of new behavior events |
+| Top-uploader share | largest single token's share of the card's offers in the fit; also the top 10's |
+| Untagged share | share of the card's offers without the SlayTheStats tag; also the share without a token |
+| Upgraded-offers fit | added by me: 60 pairs are fit on upgraded offers only |
+
+Patch is not a feature. XGBoost with fixed settings chosen here and not tuned (depth 3,
+learning rate 0.05, 200 trees, subsample 0.8, column sample 0.8, min child weight 5, squared
+error). Five folds holding out whole cards (a card in both patches stays together), repeated
+over 20 splits. CV R² = 1 − SSE / SST out of fold, SST around each training fold's mean,
+averaged over splits. SHAP values are XGBoost's own TreeSHAP on the model fit to all pairs,
+reported as mean |SHAP|. Then one model trained on the first patch's pairs scores the second
+patch's with no refit.
+
+- Phil's rule, as given: **CV R² < 0.05, or no transfer to patch 2 = no predictive feature
+  found.**
+- Definitions added by me, before running:
+  - Transfer is judged by rank: Spearman between the first-patch model's predictions and the
+    second patch's actual target, 95% interval resampling cards. Interval above 0 = transfer.
+    The level of z² differs by patch (factors 4.10 and 2.67), so raw R² on the second patch is
+    expected to be negative from the level alone; it is reported but doesn't decide. Transfer
+    is also reported on second-patch cards that are not in the first patch, since 95 cards are
+    in both and C found their z correlated (+0.45).
+  - The patch contrast: z² is larger in the first patch, so any feature that differs by patch
+    (exposure, offers) earns pooled R² without saying anything about cards; M's test 2 hit
+    this. So CV R² is also reported for a model whose only feature is the patch, and within
+    each patch. A pooled R² that is ≥ 0.05 but not above the patch-only model restates the
+    patch contrast and counts as no predictive feature. A permutation null (target shuffled
+    within patch, 200 times) gives the R² expected from that alone.
+  - A mechanical link: z = β / SE, and offers and base rate set the SE. C found the spread of
+    β doesn't shrink with the SE, so more offers means a larger z² with no cause behind it. So
+    the same model is also run on β² (pp²). If z² is predictable and β² isn't, the feature
+    found is precision.
+- SHAP is only read if the rule is passed; with CV R² near 0 it describes a fit to noise.
+
+### Answer
+
+**The misses are broad, and the largest ones are steps at the release that no uploader, week or
+ascension band produces. Nothing in the feature list predicts which cards miss.** The top 10%
+of pairs carry just over half the excess, which the rule calls tail-driven, but a normal with
+the same sd gives nearly that, and the robust sd is still 3.4 and 2.5 after the top 10% are
+gone. So there is no handful of cards to fix, and the factors stay as they are. [inferred]
+
+### Declared outcomes [computed]
+
+| Test | Result | Outcome under the rule | Reading |
+|---|---|---|---|
+| 1. Concentration | Top 10% carry 0.57 pooled, 0.53 first, 0.55 second | **Tail-driven** (> 0.50) | A normal gives 0.51, 0.46, 0.49. The first patch is just above the normal's range, the second inside it. Robust sd after dropping 46: 3.36 / 2.50. **Broad** |
+| 2. Influence | 2 of 25 cards have a driver, both `no token`, both second patch | **No driver for 23 of 25** | No single uploader, week or band takes any card below \|z\| = 3.8. The 2 are weak (see test 2) |
+| 3. Prediction | CV R² −0.05 (z²), 0.01 (\|z\|); transfer Spearman +0.28 [0.16, 0.40] | **No predictive feature found** (R² < 0.05) | Rank transfers weakly. The patch alone gives R² 0.05–0.06 |
+
+### Checks and changes after the rules [computed]
+
+- `--check`: this script's fit path returns the saved z for the largest pair of each patch
+  (|Δz| ≤ 5e-08). Uploader shares from the SQL equal those counted in the fit data. `top_share`
+  passes two known-answer checks, including the 0.46 at s = 4.10 quoted in the rules.
+- `placebo_h3` gives 463 pairs and first-patch robust sd 4.10; the script stops otherwise.
+- **Tolerance loosened during the run.** Part 2 stopped at Haunt: its refit z differed from the
+  saved one by 9e-06, over my 1e-06. With derived colors that window has 69 control cards, not
+  71; the two missing cards have 2 offers of 1.16 million. The tolerance is now 1e-04, and part 2
+  was rerun from the start.
+- **Card type: not in the model.** It exists only in `reference/raw/`. Set
+  `TRIAGE_COLORS=reference` and rerun `--part 3` to include it.
+- xgboost was not installed. It is now a `forensics` extra in `pyproject.toml`; here it ran from
+  a temporary directory (`FORENSICS_PYLIB`), placed last on the path, so the environment's
+  pandas and numpy were the ones used. SHAP values are XGBoost's own TreeSHAP (`pred_contribs`),
+  not the `shap` package.
+- 50 of 463 pairs have no slope (the card changed entering the earlier build), and 1 has no
+  exposure row. XGBoost treats those as missing.
+- **Part 4 is post hoc, added after reading tests 1–3:** the model on the features that set the
+  SE and on the rest; a per-slice summary of test 2; the size of each top card's step against
+  its weekly noise. Everything marked post hoc below comes from it.
+
+### 1. Concentration [computed]
+
+Tables: `o_concentration.csv`, `o_concentration_curve.csv` (the full curve, for plotting),
+`o_drop_top.csv`. Plain sd z on these 463 pairs: 3.73 pooled, 4.46 first, 2.94 second. "Normal"
+is the declared benchmark with its 95% range. The interval on the share resamples pairs.
+
+| | Pooled | First | Second |
+|---|---|---|---|
+| Pairs | 463 | 217 | 246 |
+| Share with \|z\| > 2 | 0.54 | 0.65 | 0.46 |
+| Top 5% carry [95%] | 0.39 [0.35, 0.43] | 0.33 [0.28, 0.38] | 0.38 [0.31, 0.44] |
+| Normal | 0.34 [0.30, 0.39] | 0.29 [0.24, 0.35] | 0.32 [0.27, 0.38] |
+| **Top 10% carry [95%]** | **0.57 [0.52, 0.61]** | **0.53 [0.47, 0.58]** | **0.55 [0.47, 0.62]** |
+| Normal | 0.51 [0.46, 0.56] | 0.46 [0.40, 0.52] | 0.49 [0.43, 0.55] |
+| Top 20% carry [95%] | 0.76 [0.72, 0.80] | 0.73 [0.68, 0.77] | 0.78 [0.72, 0.83] |
+| Normal | 0.72 [0.68, 0.76] | 0.68 [0.62, 0.73] | 0.71 [0.66, 0.77] |
+
+After dropping the pairs with the largest z² (pooled ranking). Each cell is robust sd / plain
+sd, with the normal benchmark's in brackets:
+
+| Dropped | From first, second | Pooled | First | Second |
+|---|---|---|---|---|
+| 0 | 0, 0 | 3.31 / 3.73 [3.52 / 3.73] | 4.10 / 4.46 [4.45 / 4.45] | 2.68 / 2.94 [2.92 / 2.94] |
+| 5 | 5, 0 | 3.27 / 3.55 [3.48 / 3.54] | 3.98 / 4.13 [4.33 / 4.14] | 2.68 / 2.94 [2.92 / 2.92] |
+| 10 | 9, 1 | 3.19 / 3.38 [3.43 / 3.42] | 3.86 / 3.90 [4.23 / 3.94] | 2.64 / 2.87 [2.92 / 2.90] |
+| 20 | 17, 3 | 3.10 / 3.13 [3.34 / 3.22] | 3.68 / 3.50 [4.03 / 3.64] | 2.64 / 2.78 [2.89 / 2.83] |
+| 46 | 34, 12 | 2.86 / 2.70 [3.11 / 2.85] | 3.36 / 2.94 [3.59 / 3.11] | 2.50 / 2.49 [2.80 / 2.63] |
+
+After the 46 are gone, 58% of the first patch's remaining pairs and 43% of the second's still
+have |z| > 2.
+
+Reading. [inferred]
+- **Under the rule as given: tail-driven, in both patches.** I don't think that reading holds,
+  for the reason declared: a plain normal lands at 0.46–0.51. The first patch is above the
+  normal's range by 0.01 and the second is inside it, so the tails are a little heavier than a
+  normal's and no more.
+- **The drop table says broad.** The robust sd falls from 4.10 to 3.36 and from 2.68 to 2.50,
+  about as a normal's would under the same trimming, and nowhere near 1. Removing the worst
+  tenth of the cards leaves the factors at 80–95% of their size.
+- The plain sd falls to the robust sd by the 20th drop. So the tail explains why the plain sd
+  (4.46 / 2.94) sits above the factor (4.10 / 2.67), and not the factor.
+- 34 of the 46 are first-patch pairs, where a normal mixture expects 37: the first patch
+  holds most of the tail because its whole distribution is wider.
+
+### 2. Influence on the top 25 [computed]
+
+Tables: `o_top_pairs.csv` (one row per pair), `o_influence.csv` (667 refits, none failed),
+`o_top_weekly.csv` (605 rows: offers and pick rate by block and week for each card, with its
+controls' pooled rate and mean of card rates; before-build offers played after the release are
+in it with their own weeks, and are thin). 21 of the 25 are first-patch pairs, 4 second; 10
+Silent, 7 Regent, 5 Ironclad, 3 Necrobinder; 16 positive, 9 negative. Pillar of Creation is in
+twice, rank 1 (first patch, z +13.6) and rank 9 (second, +10.5). All 25 are all-offers fits.
+
+β in pp. "Largest" is the single slice with the largest |Δz|; "z, β held" is the baseline β
+over the new SE, so it shows how much of the fall is lost precision.
+
+| Rank | Patch | Card | z | β (SE) | Largest slice (share of the card's offers) | z without it | z, β held | Lowest \|z\| over all slices |
+|---|---|---|---|---|---|---|---|---|
+| 1 | first | Pillar of Creation | +13.6 | +9.7 (0.7) | no token (0.81) | +4.8 | +6.0 | 4.8 |
+| 2 | first | Piercing Wail | +11.6 | +5.3 (0.5) | no token (0.82) | +2.7 | +4.9 | 2.7 |
+| 3 | first | Setup Strike | −11.5 | −4.8 (0.4) | A9–10 (0.21) | −5.9 | −9.5 | 5.9 |
+| 4 | first | Ricochet | −11.1 | −4.9 (0.4) | no token (0.82) | −2.4 | −4.5 | 2.4 |
+| 5 | first | Bloodletting | +11.1 | +5.2 (0.5) | untagged (0.73) | +5.9 | +5.9 | 5.9 |
+| 6 | first | Tactician | −11.1 | −9.2 (0.8) | no token (0.82) | −3.3 | −4.7 | 3.3 |
+| 7 | first | Reflex | −11.0 | −9.7 (0.9) | no token (0.82) | −3.4 | −4.7 | 3.4 |
+| 8 | first | Crescent Spear | −10.7 | −5.0 (0.5) | no token (0.81) | −4.6 | −4.6 | 4.6 |
+| 9 | second | Pillar of Creation | +10.5 | +9.3 (0.9) | no token (0.91) | +2.6 | +3.1 | 2.6 |
+| 10 | first | Know Thy Place | +10.2 | +4.8 (0.5) | no token (0.81) | +4.7 | +4.5 | 4.7 |
+| 11 | first | Blood Wall | +9.9 | +4.8 (0.5) | no token (0.81) | +3.9 | +4.2 | 3.9 |
+| 12 | first | Haunt | −9.9 | −8.7 (0.9) | no token (0.80) | −4.9 | −4.5 | 4.9 |
+| 13 | first | Dodge and Roll | +9.7 | +3.4 (0.4) | no token (0.82) | +4.6 | +4.0 | 4.6 |
+| 14 | first | Leg Sweep | +9.6 | +7.0 (0.7) | untagged (0.73) | +4.1 | +4.9 | 4.1 |
+| 15 | first | Footwork | +9.4 | +7.8 (0.8) | no token (0.82) | +3.6 | +3.9 | 3.6 |
+| 16 | first | Devastate | −8.8 | −6.3 (0.7) | no token (0.81) | −2.1 | −3.8 | 2.1 |
+| 17 | first | Lethality | +8.6 | +7.9 (0.9) | untagged (0.73) | +4.4 | +4.5 | 4.4 |
+| 18 | second | Second Wind | +8.6 | +5.6 (0.7) | no token (0.92) | **+0.8** | +2.4 | 0.8 |
+| 19 | second | Begone | +8.6 | +5.0 (0.6) | no token (0.90) | **+0.1** | +2.4 | 0.1 |
+| 20 | first | Breakthrough | +8.4 | +3.3 (0.4) | untagged (0.73) | +3.7 | +4.6 | 3.7 |
+| 21 | first | Blur | +8.4 | +6.7 (0.8) | untagged (0.72) | +4.6 | +4.3 | 4.6 |
+| 22 | first | Master Planner | −8.3 | −10.1 (1.2) | no token (0.82) | −2.7 | −3.5 | 2.7 |
+| 23 | first | Backflip | +8.2 | +3.9 (0.5) | no token (0.82) | +3.0 | +3.5 | 3.0 |
+| 24 | second | Wrought in War | −7.7 | −4.1 (0.5) | no token (0.91) | −2.5 | −2.4 | 2.5 |
+| 25 | first | Enfeebling Touch | +7.7 | +7.0 (0.9) | A9–10 (0.17) | +4.7 | +7.0 | 4.7 |
+
+By slice, post hoc (`o_posthoc_slices.csv`). "β kept" is the refit β over the baseline β.
+
+| Slice removed | Median share of the card's offers | β kept, median (range) | Largest \|Δz\| | Lowest \|z\| left |
+|---|---|---|---|---|
+| Any one token (250 refits) | 0.002 (max 0.007) | 1.00 (0.95–1.04) | 0.39 | 7.5 |
+| No token | 0.82 | 0.93 (0.03–1.52) | 8.92 | 0.1 |
+| Untagged | 0.73 | 1.05 (0.75–2.43) | 6.58 | 2.6 |
+| Tagged | 0.28 | 0.98 (0.77–1.09) | 4.03 | 5.3 |
+| Any one before week | 0.02–0.17 | 0.98–1.02 (0.85–1.15) | 2.45 | 6.0 |
+| After, week 0 | 0.15 | 0.99 (0.74–1.29) | 2.78 | 4.9 |
+| After, weeks 1–3, each | 0.08–0.11 | 1.00–1.01 (0.82–1.13) | 2.04 | 6.5 |
+| A0 | 0.21 | 1.01 (0.65–1.27) | 2.92 | 4.8 |
+| A1–4 | 0.35 | 1.15 (0.86–1.42) | 3.42 | 6.8 |
+| A5–8 | 0.22 | 1.03 (0.78–1.21) | 3.48 | 6.3 |
+| A9–10 | 0.21 | **0.76** (0.52–1.01) | 5.52 | 3.8 |
+
+Step against weekly noise, post hoc (`o_posthoc_step.csv`). For each top card: its gap to the
+controls' pooled rate by week; the step is the mean gap after minus before. Over the 25 cards
+the step is 2.1 to 22 times the sd of the weekly gap before (median 3.9), and in 23 of 25 more
+than half of it is already there between the last week before and week 0 (median share 1.0).
+
+Reading. [inferred]
+- **No uploader is behind any of these.** The largest token holds at most 0.7% of a card's
+  offers, and removing any one moves z by at most 0.4. C's hypothesis 3, as heavy uploaders,
+  is out for the tail.
+- **No week is behind them.** Removing any single week keeps 74–129% of β and leaves every
+  card at |z| ≥ 4.9. A one-week shock (C's hypothesis 4) doesn't make these misses.
+- **They look like steps at the release.** The shift is present in week 0 and holds through
+  week 3, and for most cards the gap before is flat. These cards were chosen for a large after-minus-before
+  difference, so a shift is guaranteed; that it arrives at once and not as a drift through the
+  before block is the part that carries information. It matches N: pre-trends don't carry
+  across a release, and the first patch's shortfall sits where a step would.
+- **A9–10 players hold more of the shift than their share.** They are 21% of offers, and
+  without them β falls by a median 24%; without A1–4 it rises 15%. No band alone takes a card
+  below |z| = 3.8, so this is a gradient and not a driver. It fits N's rising drift with
+  ascension, which N warned not to read as a finding; it is post hoc here too.
+- **The 2 drivers under the rule are weak.** Begone and Second Wind, both second patch: on the
+  8–10% of their offers with a token, β is +0.1 and +1.8 pp, against +5.0 and +5.6. Those
+  subset fits have SEs of about 2.1 and 2.4 pp, so each is about 2 SEs from the full estimate,
+  among 50 `no token` and `untagged` refits. They pass my own "driver of β" test only because
+  that test compared against |z| = 2 and not against the subset's error. The other 23 cards'
+  token subsets agree with the full fit (median β kept 0.93).
+- Every other fall in |z| under `no token` or `untagged` is lost precision: "z, β held" is
+  about what the refit gives.
+- Pillar of Creation moves +9.7 pp and then +9.3 pp in two windows that list it as unchanged.
+  Whether that is a change the tables don't record or players finding the card can't be told
+  from here. [unverified]
+
+### 3. Predicting misses [computed]
+
+Tables: `o_features.csv` (463 rows), `o_cv.csv`, `o_transfer.csv`, `o_shap.csv`,
+`o_posthoc_split.csv`. 22 features, 312 cards. CV R² is the mean over 20 splits, with the
+range. "Null" is the same model with the target shuffled within patch.
+
+| Target | Scope | CV R² (range) | Null mean, 95th pct | p |
+|---|---|---|---|---|
+| z² | Pooled | **−0.05** (−0.10, −0.01) | −0.11, −0.01 | 0.16 |
+| z² | Patch only, pooled | 0.05 (0.04, 0.05) | | |
+| z² | First | −0.13 (−0.24, −0.06) | −0.23, −0.10 | 0.10 |
+| z² | Second | −0.05 (−0.20, 0.06) | −0.22, −0.09 | 0.02 |
+| \|z\| | Pooled | **0.01** (−0.03, 0.06) | −0.09, −0.01 | 0.03 |
+| \|z\| | Patch only, pooled | 0.06 (0.05, 0.07) | | |
+| \|z\| | First | −0.10 (−0.23, −0.03) | −0.22, −0.10 | 0.06 |
+| \|z\| | Second | −0.03 (−0.14, 0.06) | −0.22, −0.09 | 0.02 |
+| β² (pp²) | Pooled | 0.05 (−0.12, 0.19) | −0.16, −0.09 | 0.005 |
+| β² (pp²) | First | −0.05 (−0.17, 0.08) | −0.23, −0.08 | 0.03 |
+| β² (pp²) | Second | 0.21 (−0.13, 0.32) | −0.19, −0.09 | 0.005 |
+
+Trained on the first patch, scored on the second, no refit:
+
+| Target | Scored on | Pairs | Spearman [95%] | R², no refit |
+|---|---|---|---|---|
+| z² | All second-patch pairs | 246 | +0.28 [0.16, 0.40] | −3.7 |
+| z² | Cards not in the first patch | 118 | +0.28 [0.11, 0.44] | −3.9 |
+| z² | Cards in both | 128 | +0.24 [0.06, 0.40] | −3.7 |
+| \|z\| | All second-patch pairs | 246 | +0.25 [0.14, 0.36] | −2.1 |
+| \|z\| | Cards not in the first patch | 118 | +0.18 [0.02, 0.34] | −2.1 |
+| β² | All second-patch pairs | 246 | +0.24 [0.12, 0.35] | −0.2 |
+
+Mean |SHAP| on the model fit to all pairs, top six, as a share of the total (the sign is the
+rank correlation of the feature with its SHAP value):
+
+| z² | \|z\| | β² |
+|---|---|---|
+| log offers before 0.23 (+) | log offers before 0.22 (+) | top-uploader share 0.15 (+) |
+| lack of fit 0.13 (+) | screen exposure 0.14 (+) | screen exposure 0.11 (+) |
+| log offers after 0.11 (+) | lack of fit 0.11 (+) | top-10 uploader share 0.11 (+) |
+| screen exposure 0.10 (+) | log offers after 0.10 (+) | base rate 0.10 (+) |
+| untagged share 0.10 (−) | untagged share 0.08 (−) | signed exposure 0.09 (−) |
+| signed exposure 0.07 (+) | no-token share 0.06 (−) | log offers before 0.09 (−) |
+
+Character, rarity, the behavior flag and the upgraded-offers flag are each under 0.01.
+
+Feature groups, post hoc (pooled CV R²; transfer Spearman on all second-patch pairs):
+
+| Features | z²: R², transfer | \|z\|: R², transfer | β²: R², transfer |
+|---|---|---|---|
+| Declared (22) | −0.05, +0.28 [0.16, 0.40] | 0.01, +0.25 [0.14, 0.36] | 0.05, +0.24 [0.12, 0.35] |
+| Precision only: offers, base rate, upgraded fit (4) | −0.02, +0.17 [0.04, 0.29] | 0.00, +0.07 [−0.05, 0.20] | 0.05, +0.18 [0.05, 0.30] |
+| Declared without those (18) | −0.05, +0.19 [0.06, 0.30] | 0.02, +0.23 [0.11, 0.35] | 0.05, +0.24 [0.10, 0.36] |
+
+Reading. [inferred]
+- **Under the rule: no predictive feature found.** CV R² is below 0.05 for z² and |z|, pooled
+  and within each patch, and below what the patch label alone gives (0.05–0.06). The features
+  don't even recover the patch contrast.
+- **The rule's two halves disagree, and the first decides.** Transfer by rank is there (+0.28,
+  interval above 0), including on cards the first-patch model never saw. So the features carry
+  a weak ordering of cards by how much they miss, and it is too weak to predict a size: a
+  Spearman of 0.28 is about 8% of rank variance.
+- **My settings made R² a harsh test.** The untuned 200-tree model overfits: on shuffled
+  targets it scores −0.11 to −0.23, where a model that learned nothing would score about 0.
+  The real fits beat that null in most rows (p 0.02–0.16) while staying under 0. The threshold
+  was applied as declared; a shallower or tuned model might clear 0, though probably not by
+  much, given the rank correlation.
+- **SHAP is not read as a finding**, as declared, since the rule wasn't passed. For the
+  record, offers lead for z² and |z|, with a positive sign. That is the mechanical link
+  declared beforehand: C found β's spread doesn't shrink with the SE, so more offers give a
+  larger z.
+- **The β² check didn't separate cause from precision, and I should have seen why.** β² holds
+  the SE² too, so cards with few offers have a larger β² from noise alone, and its SHAP ranks
+  the top uploader's share (largest when offers are few) and base rate first. Its pooled R² of
+  0.05 swings from −0.12 to 0.19 across splits, and the second patch's 0.21 from −0.13 to
+  0.32, so a few pairs set it.
+- The post hoc split doesn't isolate precision either. The 18 other features still transfer
+  (+0.19 to +0.23), but uploader shares and exposure both track how often a card is offered.
+- Drift's lack of fit ranks second or third for z². It is the one feature tied to a mechanism
+  (cards with noisy weeks earlier miss more later), and it fits N. With R² below 0 it is a
+  lead and not a result.
+
+### What this does and doesn't settle
+
+- **Settled, within limits:** the placebo miss is broad and not the work of a few cards. For
+  the 25 largest, it is not one uploader and not one week. The features on hand can't say
+  which cards will miss.
+- **Fits but not shown:** a step in an unchanged card's pick rate at a release, larger among
+  high-ascension players. That is what M's and N's leftover looked like, and now the top
+  cards show it directly, but only the top 25 were refit, and they were selected for it.
+- **Not settled:** what the step is. Changes outside cards (relics, enemies), a shift in how a
+  character is played after its changed cards move, and unrecorded card changes all remain,
+  and nothing here separates them. Pillar of Creation is the place to start by hand.
+- The factors are unaffected: they measure the spread and don't depend on its cause.
+
+---
+
+## P. Archetype (complement) spillover — EXPLORATORY
+
+**EXPLORATORY.** The pattern was found post hoc by Phil on Regent, after sections M, N and O
+were seen. Nothing in this section changes the calibration factors, the numbers module, the
+guide or any headline result. Script: `triage/scripts/p_archetype.py`; tables in
+`triage/out_final/p_*.csv`. Inputs: `data/analysis/placebo_h3.parquet` (weeks 0–3, 463 pairs),
+`reference/change_events.csv`, `patch_notes_cards.csv`, `card_changes.csv`, and card text.
+
+**The discovery (Phil, post hoc).** Among Regent placebo pairs (all offers, weeks 0–3), cards
+whose text creates cards or pays off creating them had positive z in 7 of 7 (first patch) and
+9 of 10 (second), against about a third of other Regent cards. The first window's changes to
+that archetype were mostly reworks and cost changes (Arsenal, Begone, Charge, Bundle of Joy),
+plus Collision Course and Heirloom Hammer tweaks. This section tests the idea on Defect,
+Ironclad, Necrobinder and Silent.
+
+### Rules, written before any placebo z of the four test characters was read for this section
+
+Written 2026-11-10. Git writes are blocked in this session, so no commit timestamps this
+order; the claim rests on this note and on the order of the section. Everything down to
+"Results" was written, and `p_archetypes.csv`, `p_changes.csv` and `p_archetype_windows.csv`
+were saved, before parts 3–5 of the script (the only ones that load a z) were run.
+
+**What I had already seen, which the order can't undo.** Section O prints z for its 25 largest
+pairs, and 18 of them are cards of the test characters: 10 Silent, 5 Ironclad, 3 Necrobinder.
+I knew, when writing the rules, that four Silent cards with Sly (Ricochet, Tactician, Reflex,
+Master Planner) were strongly negative in the first patch and that three Ironclad cards that
+lose HP (Bloodletting, Blood Wall, Breakthrough) were strongly positive. Both sit in archetypes
+below (`discard`, `hp_loss`). The rules are plain keyword rules that I would have written
+anyway, but that can't be shown. So the test is also reported with every pair of O's top 25
+left out, and that row should be read next to the declared one.
+
+**Card text.** Full text exists only in `reference/raw/cards.json`, which this session's
+sandbox does not open; Phil copied the file to the session's scratch folder for this task, and
+the script reads it through `P_CARDS` (default: the file in `reference/raw/`). It is stable
+v0.107.1's text. Text in force earlier is rebuilt in two steps: `card_changes.csv`'s old
+descriptions, then old wordings quoted in the patch notes (`TEXT_AT` in the script, each with
+its source). Limits:
+- `card_changes.csv` cuts descriptions at about 80 characters, and for five reworks (Stoke,
+  Dominate, Spite, Glow, Shatter) the earlier wording is in neither source. A card whose
+  earlier text is cut or unknown keeps its later memberships too, so it can't be seen entering
+  an archetype.
+- Begone, Charge and Cinder's earlier wording is rebuilt from the notes and the changed
+  fields, not quoted.
+- A placebo card is unchanged in its window, so its text there is one text. Its archetypes
+  come from that window's text, not from today's.
+
+**Archetype rules.** One list of keyword rules, applied by regular expression to the text with
+markup removed, plus a few structured fields. A card is in every archetype it matches. A card
+is a member whether it makes the thing or pays off for it, since both are complements of the
+other members. An archetype exists for a character in a window when at least 3 of its
+reward-pool cards (Common, Uncommon, Rare) match. `create` is the discovery's archetype, in
+the same words for every character. 96 of 439 cards match no archetype in each window.
+
+| Archetype | Characters | Text matches (markup removed) | Also a member by |
+|---|---|---|---|
+| create | all | `\b[Aa]dds? (?:a ¦an ¦\d+ ¦X )?.*\b(?:into¦to) (?:your¦their) (?:Hand¦Draw Pile¦Discard Pile)¦Transform¦\bcop(?:y¦ies) of¦[Cc]reated?\b¦Fill your Hand` |  |
+| exhaust | all | `Exhaust` |  |
+| debuff | all | `\bWeak\b¦Vulnerable¦debuff` |  |
+| strength | all | `[Gg]ain \d+ Strength` |  |
+| attack_play | all | `\bAttacks?\b` |  |
+| skill_play | all | `\bSkills?\b` |  |
+| power_play | all | `\bPowers?\b` |  |
+| block_payoff | all | `your Block\b¦gain Block\b¦Block is not removed¦Block from a card¦Block gain¦Gain Block equal` |  |
+| draw | all | `[Dd]raw \d+ (?:additional )?cards?¦[Dd]raw cards¦[Ww]henever you draw¦draw an? ¦cards? drawn` |  |
+| discard | all | `\b[Dd]iscard(?:ed)? (?!Pile)¦\bSly\b` | keywords:Sly |
+| hp_loss | all | `(?<!nemy )(?<!nemies )\b[Ll]ose \d+ HP¦\blost HP¦you lose HP¦lose \d+ HP and` |  |
+| zero_cost | all | `0 ?\[energy:1\] (?:cards?¦Attacks?¦copy)¦do not cost 0` |  |
+| ethereal | all | `Ethereal` | keywords:Ethereal |
+| dexterity | all | `Dexterity` |  |
+| orb | defect | `Channel¦Evoke¦\bOrbs?\b` |  |
+| lightning | defect | `Lightning` |  |
+| frost | defect | `Frost` |  |
+| dark | defect | `\bDark\b` |  |
+| focus | defect | `Focus` |  |
+| status | defect | `Status` | spawns:BURN, DAZED, SLIMED, VOID, WOUND |
+| poison | silent | `Poison` |  |
+| shiv | silent | `Shivs?\b` | spawns:SHIV |
+| osty | necrobinder | `Osty¦Summon` | tags:OstyAttack |
+| doom | necrobinder | `Doom` |  |
+| soul | necrobinder | `\bSouls?\b` | spawns:SOUL |
+| forge | regent | `Forge¦Sovereign Blade` |  |
+| star | regent | `\[star:` | star_cost:True |
+
+(`¦` stands for the regular expression's alternation bar.) Choices made here, before z:
+- The Exhaust keyword alone doesn't make a card an `exhaust` member; the text must mention it.
+- Sly cards are in `discard`: Sly is what a discard pays off. They are not a separate archetype.
+- `strength` is gaining Strength, not taking it from an enemy. `hp_loss` is the player's own.
+- `zero_cost` is cards that refer to 0-cost cards as a group, not cards that make one card free.
+- `draw` holds both cards that draw and cards that pay off drawing, so it is broad.
+- Only a character's own cards count. Colorless cards, relics and enemies are outside this.
+
+**Card → archetype, text at v0.107.1** (`p_archetypes.csv` has every card in both windows,
+with the text used and its source). Basic and Ancient cards are listed but aren't in the
+reward pool.
+
+| Character | Archetype | Cards | Members (text at v0.107.1) |
+|---|---|---|---|
+| Defect | create | 12 | Adaptive Strike, Boost Away, Compact, Creative AI, Fight Through, Gunk Up, Overclock, Rocket Punch, Smokestack, TURBO, Trash to Treasure, White Noise |
+| Defect | dark | 5 | Consuming Shadow, Darkness, Null, Rainbow, Shadow Shield |
+| Defect | debuff | 3 | Beam Cell, Go for the Eyes, Null |
+| Defect | draw | 12 | Compile Driver, Coolheaded, FTL, Iteration, Machine Learning, Modded, Overclock, Reboot, Rocket Punch, Scrape, Skim, Sweeping Beam |
+| Defect | focus | 6 | Biased Cognition, Defragment, Focused Strike, Hotfix, Hyperbeam, Synchronize |
+| Defect | frost | 7 | Chill, Cold Snap, Coolheaded, Glacier, Hailstorm, Ice Lance, Rainbow |
+| Defect | lightning | 9 | Ball Lightning, Lightning Rod, Rainbow, Storm, Tempest, Tesla Coil, Thunder, Voltaic, Zap |
+| Defect | orb | 37 | Ball Lightning, Barrage, Bulk Up, Capacitor, Chaos, Chill, Cold Snap, Compile Driver, Consuming Shadow, Coolant, Coolheaded, Darkness, Dualcast, Fusion, Glacier, Glasswork, Ice Lance, Ignition, Lightning Rod, Loop, Meteor Strike, Modded, Multi-Cast, Null, Quadcast, Rainbow, Refract, Shadow Shield, Shatter, Spinner, Storm, Synchronize, Tempest, Thunder, Trash to Treasure, Voltaic, Zap |
+| Defect | power_play | 6 | Creative AI, Signal Boost, Storm, Subroutine, Synthesis, White Noise |
+| Defect | status | 11 | Boost Away, Compact, Fight Through, Flak Cannon, Gunk Up, Iteration, Overclock, Rocket Punch, Smokestack, TURBO, Trash to Treasure |
+| Defect | zero_cost | 4 | Adaptive Strike, All for One, Feral, Scrape |
+| Ironclad | attack_play | 13 | Aggression, Expect a Fight, Infernal Blade, Juggling, One-Two Punch, Pillage, Primal Force, Rage, Second Wind, Stampede, Stomp, Thrash, Unrelenting |
+| Ironclad | block_payoff | 5 | Barricade, Body Slam, Demonic Shield, Juggernaut, Unmovable |
+| Ironclad | create | 5 | Anger, Infernal Blade, Juggling, Primal Force, Stoke |
+| Ironclad | debuff | 13 | Bash, Break, Bully, Colossus, Cruelty, Dismantle, Dominate, Molten Fist, Taunt, Thunderclap, Tremble, Uppercut, Vicious |
+| Ironclad | draw | 10 | Battle Trance, Burning Pact, Dark Embrace, Drum of Battle, Hellraiser, Offering, Pillage, Pommel Strike, Shrug It Off, Vicious |
+| Ironclad | exhaust | 18 | Ashen Strike, Brand, Burning Pact, Cinder, Corruption, Dark Embrace, Drum of Battle, Evil Eye, Feel No Pain, Fiend Fire, Forgotten Ritual, Havoc, Howl from Beyond, Pact's End, Second Wind, Stoke, Thrash, True Grit |
+| Ironclad | hp_loss | 12 | Blood Wall, Bloodletting, Brand, Breakthrough, Crimson Mantle, Demonic Shield, Hemokinesis, Inferno, Offering, Rupture, Spite, Tear Asunder |
+| Ironclad | strength | 7 | Brand, Demon Form, Dominate, Fight Me!, Inflame, Rupture, Setup Strike |
+| Necrobinder | attack_play | 3 | Lethality, Reaper Form, Squeeze |
+| Necrobinder | create | 10 | Call of the Void, Capture Spirit, Dirge, Glimpse Beyond, Grave Warden, Reave, Seance, Sentry Mode, Severance, Undeath |
+| Necrobinder | debuff | 8 | Deathbringer, Debilitate, Defy, Fear, High Five, Misery, Putrefy, Sleight of Flesh |
+| Necrobinder | doom | 13 | Blight Strike, Countdown, Death's Door, Deathbringer, End of Days, Negative Pulse, Neurosurge, No Escape, Oblivion, Reaper Form, Scourge, Shroud, Time's Up |
+| Necrobinder | draw | 7 | Death March, Demesne, Fetch, Neurosurge, Pagestorm, Parse, Scourge |
+| Necrobinder | ethereal | 15 | Banshee's Cry, Call of the Void, Defile, Defy, Demesne, Enfeebling Touch, Fear, Lethality, Pagestorm, Parse, Pull from Below, Sculpting Strike, Seance, Spirit of Ash, Veilpiercer |
+| Necrobinder | exhaust | 3 | Cleanse, Eidolon, Soul Storm |
+| Necrobinder | osty | 25 | Afterlife, Bodyguard, Bone Shards, Calcify, Cleanse, Devour Life, Dirge, Fetch, Flatten, High Five, Invoke, Legion of Bone, Necro Mastery, Poke, Protector, Pull Aggro, Rattle, Reanimate, Right Hand Hand, Sacrifice, Sic 'Em, Snap, Spur, Squeeze, Unleash |
+| Necrobinder | soul | 10 | Capture Spirit, Devour Life, Dirge, Glimpse Beyond, Grave Warden, Haunt, Reave, Seance, Severance, Soul Storm |
+| Regent | create | 14 | Arsenal, BEGONE!, Bundle of Joy, CHARGE!!, Collision Course, Crash Landing, GUARDS!!!, Heirloom Hammer, Largesse, Manifest Authority, Pillar of Creation, Quasar, Spectrum Shift, Supermassive |
+| Regent | debuff | 5 | Comet, Falling Star, Gamma Blast, Know Thy Place, Meteor Shower |
+| Regent | draw | 12 | Big Bang, Decisions, Decisions, Glimmer, Glow, Guiding Star, Kingly Kick, Kingly Punch, Pale Blue Dot, Photon Cut, Prophesize, Spoils of Battle, Tyranny |
+| Regent | forge | 14 | Beat into Shape, Big Bang, Bulwark, Conqueror, Furnace, Hammer Time, Parry, Refine Blade, Seeking Edge, Spoils of Battle, Summon Forth, Sword Sage, The Smith, Wrought in War |
+| Regent | skill_play | 3 | Decisions, Decisions, Lunar Blast, Make It So |
+| Regent | star | 34 | Alignment, Astral Pulse, Big Bang, Black Hole, Child of the Stars, Cloak of Stars, Comet, Convergence, Crescent Spear, Decisions, Decisions, Devastate, Dying Star, Falling Star, Gamma Blast, Gather Light, Genesis, Glow, Guiding Star, Hidden Cache, Knockout Blow, Meteor Shower, Neutron Aegis, Particle Wall, Quasar, Radiate, Reflect, Resonance, Royal Gamble, Seven Stars, Shining Strike, Solar Strike, The Sealed Throne, The Smith, Venerate |
+| Regent | strength | 3 | Arsenal, Monologue, Resonance |
+| Silent | attack_play | 4 | Envenom, Finisher, Shadow Step, Tracking |
+| Silent | block_payoff | 3 | Blur, Mirage, Shadowmeld |
+| Silent | create | 10 | Blade Dance, Blade of Ink, Cloak and Dagger, Fan of Knives, Hidden Daggers, Infinite Blades, Leading Strike, Nightmare, Storm of Steel, Up My Sleeve |
+| Silent | debuff | 9 | Assassinate, Expose, Leg Sweep, Malaise, Neutralize, Scare, Sucker Punch, Suppress, Tracking |
+| Silent | dexterity | 4 | Abrasive, Anticipate, Footwork, Wraith Form |
+| Silent | discard | 20 | Abrasive, Acrobatics, Calculated Gamble, Dagger Throw, Flick-Flack, Hand Trick, Haze, Hidden Daggers, Master Planner, Memento Mori, Prepared, Reflex, Ricochet, Shadow Step, Sneaky, Storm of Steel, Survivor, Tactician, Tools of the Trade, Untouchable |
+| Silent | draw | 13 | Acrobatics, Adrenaline, Backflip, Corrosive Wave, Dagger Throw, Escape Plan, Expertise, Murder, Predator, Prepared, Reflex, Speedster, Tools of the Trade |
+| Silent | poison | 12 | Accelerant, Bouncing Flask, Bubble Bubble, Corrosive Wave, Deadly Poison, Envenom, Haze, Mirage, Noxious Fumes, Outbreak, Poisoned Stab, Snakebite |
+| Silent | shiv | 12 | Accuracy, Blade Dance, Blade of Ink, Cloak and Dagger, Fan of Knives, Hidden Daggers, Infinite Blades, Knife Trap, Leading Strike, Phantom Blades, Storm of Steel, Up My Sleeve |
+| Silent | skill_play | 7 | Burst, Escape Plan, Flechettes, Hand Trick, Master Planner, Pinpoint, Pounce |
+
+Cards whose archetypes differ between the two sides of a window:
+
+| Window | Card | Before | After | Source of the earlier text |
+|---|---|---|---|---|
+| first | Arsenal | strength | create strength | patch notes v0.101.0, old text quoted |
+| first | Blade of Ink | attack_play | create shiv | patch notes v0.102.0, old text quoted |
+| first | Borrowed Time | doom | (none) | patch notes v0.102.0, old text quoted |
+| first | Spoils of Battle | forge | draw forge | patch notes v0.100.0/v0.101.0: draw added in v0.101.0 |
+| second | Conflagration | attack_play | (none) | patch notes v0.104.0, old text quoted |
+| second | Scare | (not in the game) | debuff | cards.json |
+
+**Changes and direction (step 2).** Every event of a member in the window, from
+`change_events.csv`, with the patch notes' verbs from `patch_notes_cards.csv` for the same card
+and version (`p_changes.csv`, with the field changes and note text).
+- A card's direction: **buff** if every balance note on it in the window says Buffed, **nerf**
+  if every one says Nerfed, **unclear** if the verbs are mixed or are Changed or Reworked, or
+  the change has no balance note. **No balance change** for wording, art and bug-fix behavior
+  events, and for a beta change reverted before stable (Capture Spirit).
+- For an archetype, a card whose text enters it (or that is added to the game) counts as a
+  buff, and one whose text leaves it counts as a nerf, whatever its verb: that is support
+  gained or lost. The last column drops this and uses verbs only.
+- Net direction of an archetype in a window: buff if more members count as buffs than nerfs,
+  nerf if the reverse, unclear if tied with any substantive change, none otherwise.
+- Many nets rest on one changed card. That is the rule as written; it makes the exposure
+  coarse, not graded.
+
+| Window | Character | Archetype | Changed members (how each counts) | Buff / nerf / unclear | Net | Net, verbs only |
+|---|---|---|---|---|---|---|
+| first | Defect | create | Rocket Punch (buff), Trash to Treasure (no balance change) | 1 / 0 / 0 | buff | buff |
+| first | Defect | draw | Iteration (no balance change), Rocket Punch (buff) | 1 / 0 / 0 | buff | buff |
+| first | Defect | focus | Hotfix (nerf) | 0 / 1 / 0 | nerf | nerf |
+| first | Defect | lightning | Voltaic (nerf) | 0 / 1 / 0 | nerf | nerf |
+| first | Defect | orb | Trash to Treasure (no balance change), Voltaic (nerf) | 0 / 1 / 0 | nerf | nerf |
+| first | Defect | status | Flak Cannon (no balance change), Iteration (no balance change), Rocket Punch (buff), Trash to Treasure (no balance change) | 1 / 0 / 0 | buff | buff |
+| first | Ironclad | attack_play | Expect a Fight (unclear) | 0 / 0 / 1 | unclear | unclear |
+| first | Ironclad | create | Stoke (unclear) | 0 / 0 / 1 | unclear | unclear |
+| first | Ironclad | debuff | Break (buff), Colossus (unclear), Dominate (unclear), Tremble (unclear) | 1 / 0 / 3 | buff | buff |
+| first | Ironclad | exhaust | Cinder (buff), Forgotten Ritual (nerf), Howl from Beyond (no balance change), Stoke (unclear) | 1 / 1 / 1 | unclear | unclear |
+| first | Ironclad | hp_loss | Hemokinesis (buff), Spite (unclear), Tear Asunder (no balance change) | 1 / 0 / 1 | buff | buff |
+| first | Ironclad | strength | Dominate (unclear), Fight Me! (buff) | 1 / 0 / 1 | buff | buff |
+| first | Necrobinder | create | Capture Spirit (no balance change), Dirge (nerf), Grave Warden (unclear), Seance (nerf) | 0 / 2 / 1 | nerf | nerf |
+| first | Necrobinder | debuff | Debilitate (buff), Defy (unclear) | 1 / 0 / 1 | buff | buff |
+| first | Necrobinder | doom | Borrowed Time (nerf; left) | 0 / 1 / 0 | nerf | unclear |
+| first | Necrobinder | ethereal | Banshee's Cry (nerf), Defy (unclear), Sculpting Strike (buff), Seance (nerf) | 1 / 2 / 1 | nerf | nerf |
+| first | Necrobinder | osty | Dirge (nerf) | 0 / 1 / 0 | nerf | nerf |
+| first | Necrobinder | soul | Capture Spirit (no balance change), Dirge (nerf), Grave Warden (unclear), Seance (nerf) | 0 / 2 / 1 | nerf | nerf |
+| first | Regent | create | Arsenal (buff; entered), BEGONE! (unclear), Bundle of Joy (buff), CHARGE!! (unclear), Collision Course (buff), Heirloom Hammer (buff) | 4 / 0 / 2 | buff | buff |
+| first | Regent | debuff | Falling Star (buff) | 1 / 0 / 0 | buff | buff |
+| first | Regent | draw | Glow (unclear), Guiding Star (buff), Kingly Kick (buff), Kingly Punch (buff), Spoils of Battle (buff; entered) | 4 / 0 / 1 | buff | buff |
+| first | Regent | forge | Parry (buff), Refine Blade (buff), Spoils of Battle (unclear), Sword Sage (buff), Wrought in War (buff) | 4 / 0 / 1 | buff | buff |
+| first | Regent | star | Alignment (nerf), Falling Star (buff), Gather Light (buff), Glow (unclear), Guiding Star (buff), Reflect (no balance change), Solar Strike (buff) | 4 / 1 / 1 | buff | buff |
+| first | Regent | strength | Arsenal (unclear) | 0 / 0 / 1 | unclear | unclear |
+| first | Silent | attack_play | Blade of Ink (nerf; left) | 0 / 1 / 0 | nerf | unclear |
+| first | Silent | create | Blade of Ink (buff; entered), Leading Strike (buff) | 2 / 0 / 0 | buff | buff |
+| first | Silent | dexterity | Anticipate (nerf) | 0 / 1 / 0 | nerf | nerf |
+| first | Silent | discard | Acrobatics (unclear), Flick-Flack (nerf), Memento Mori (buff), Prepared (unclear), Untouchable (nerf) | 1 / 2 / 2 | nerf | nerf |
+| first | Silent | draw | Acrobatics (unclear), Corrosive Wave (nerf), Prepared (unclear), Speedster (unclear) | 0 / 1 / 3 | nerf | nerf |
+| first | Silent | poison | Corrosive Wave (nerf) | 0 / 1 / 0 | nerf | nerf |
+| first | Silent | shiv | Blade of Ink (buff; entered), Leading Strike (buff) | 2 / 0 / 0 | buff | buff |
+| first | Silent | skill_play | Pinpoint (nerf) | 0 / 1 / 0 | nerf | nerf |
+| second | Defect | draw | Reboot (no balance change), Scrape (no balance change) | 0 / 0 / 0 | none | none |
+| second | Defect | focus | Hyperbeam (buff) | 1 / 0 / 0 | buff | buff |
+| second | Defect | lightning | Tesla Coil (buff) | 1 / 0 / 0 | buff | buff |
+| second | Defect | orb | Fusion (unclear), Shatter (unclear) | 0 / 0 / 2 | unclear | unclear |
+| second | Defect | power_play | Synthesis (buff) | 1 / 0 / 0 | buff | buff |
+| second | Defect | zero_cost | Scrape (no balance change) | 0 / 0 / 0 | none | none |
+| second | Ironclad | attack_play | Conflagration (nerf; left), Unrelenting (buff) | 1 / 1 / 0 | unclear | buff |
+| second | Ironclad | block_payoff | Juggernaut (buff) | 1 / 0 / 0 | buff | buff |
+| second | Ironclad | draw | Drum of Battle (unclear) | 0 / 0 / 1 | unclear | unclear |
+| second | Ironclad | exhaust | Drum of Battle (unclear), Howl from Beyond (buff), Pact's End (unclear) | 1 / 0 / 2 | buff | buff |
+| second | Necrobinder | attack_play | Reaper Form (no balance change) | 0 / 0 / 0 | none | none |
+| second | Necrobinder | create | Reave (no balance change) | 0 / 0 / 0 | none | none |
+| second | Necrobinder | debuff | Debilitate (nerf) | 0 / 1 / 0 | nerf | nerf |
+| second | Necrobinder | doom | Reaper Form (no balance change) | 0 / 0 / 0 | none | none |
+| second | Necrobinder | draw | Death March (buff) | 1 / 0 / 0 | buff | buff |
+| second | Necrobinder | ethereal | Enfeebling Touch (no balance change) | 0 / 0 / 0 | none | none |
+| second | Necrobinder | osty | Sic 'Em (buff) | 1 / 0 / 0 | buff | buff |
+| second | Necrobinder | soul | Reave (no balance change) | 0 / 0 / 0 | none | none |
+| second | Regent | create | Arsenal (no balance change), Pillar of Creation (no balance change), Supermassive (no balance change) | 0 / 0 / 0 | none | none |
+| second | Regent | draw | Tyranny (unclear) | 0 / 0 / 1 | unclear | unclear |
+| second | Regent | forge | Bulwark (nerf), Furnace (buff), Parry (unclear), Summon Forth (unclear), Sword Sage (unclear) | 1 / 1 / 3 | unclear | unclear |
+| second | Regent | star | Astral Pulse (unclear), Crescent Spear (buff), Reflect (nerf), Seven Stars (no balance change), The Sealed Throne (unclear) | 1 / 1 / 2 | unclear | unclear |
+| second | Regent | strength | Arsenal (no balance change) | 0 / 0 / 0 | none | none |
+| second | Silent | create | Blade of Ink (nerf), Hidden Daggers (no balance change), Nightmare (unclear) | 0 / 1 / 1 | nerf | nerf |
+| second | Silent | debuff | Scare (buff; entered) | 1 / 0 / 0 | buff | unclear |
+| second | Silent | discard | Hidden Daggers (no balance change), Tools of the Trade (no balance change), Untouchable (buff) | 1 / 0 / 0 | buff | buff |
+| second | Silent | draw | Predator (unclear), Tools of the Trade (no balance change) | 0 / 0 / 1 | unclear | unclear |
+| second | Silent | shiv | Blade of Ink (nerf), Hidden Daggers (no balance change) | 0 / 1 / 0 | nerf | nerf |
+| second | Silent | skill_play | Pounce (buff) | 1 / 0 / 0 | buff | buff |
+
+Grapple (removed in the first window) has no color or text on file and is in no archetype.
+Defect has no pairs in `placebo_h3` for the first window (no tweak there, section M), so its
+first-window rows above are not tested.
+
+**The test (step 3), as declared by Phil, with my definitions.**
+- Pairs: all-offers placebo pairs of Defect, Ironclad, Necrobinder and Silent, as in the
+  discovery. One pair per card and window.
+- Each pair gets a predicted sign d from its archetypes' net directions in its window: +1 if
+  at least one is a net buff and none a net nerf, −1 for the reverse, 0 (other) if neither.
+  A pair with both is **conflicted** and is left out of both groups, and counted.
+- Statistic: the mean over exposed pairs of d × (z − the mean z of the other pairs of the same
+  character-window). Positive means shifted as predicted. Also reported: mean z by group and
+  sign counts.
+- Permutation: d shuffled across pairs within each character-window, 10,000 times. Per
+  character and pooled over the four.
+- **Rule, as given: a pooled shift in the predicted direction with p < 0.05 = replicates;
+  otherwise not replicated.** The p that decides is two-sided; the one-sided p is reported
+  too. If they fall on different sides of 0.05 I say so and call it not replicated.
+- Sensitivities, named now: verbs only (no entry or exit); O's top-25 pairs left out;
+  upgraded-offers pairs included. None of them decides.
+
+**Budget (step 4).** All 463 pairs and all five characters, as the factors are computed.
+Robust sd of z by patch, next to 4.10 / 2.67:
+- with exposed pairs removed. Exposed, primary: in an archetype with any substantive change to
+  a member in the window (net buff, nerf or unclear). Secondary: net buff or nerf only.
+- with an archetype × window term absorbed: z regressed on one indicator per character-window
+  and archetype (a card in several gets several) plus a character-window intercept, by least
+  squares; robust sd of the residuals.
+- Both lose pairs or degrees of freedom, which moves a robust sd by itself. So each is set
+  next to the same computation with the pairs' archetype sets shuffled within character-window
+  (1,000 times; mean and 95% range). Only a fall below that range counts as explained spread.
+
+**Regent check (step 5).** Regent all-offers pairs split by `create` under each window's own
+text and under the v0.107.1 text for both windows; cards whose class differs are listed.
+Phil's own list of cards isn't on file, so the comparison is with his counts (7 of 7, 9 of 10).
+
+### Results
+
+Everything below was computed after the text above was written.
+
+### Answer
+
+**Under the declared rule the pattern replicates: pooled over the four test characters, pairs
+in net-buffed archetypes sit above, and pairs in net-nerfed archetypes below, their
+character's other placebo cards (shift +1.64 in z, two-sided p 0.001).** [computed]
+
+**I don't think that shows what the rule was meant to show.** The shift comes from Ironclad
+and Silent in the first window, and most of it from two archetypes whose direction I had
+already seen in section O. Defect goes the other way, Necrobinder shows nothing, and the
+second window shows nothing pooled. Counted by archetype, not by card, 17 of 29 go as
+predicted. What the data do show is weaker and more general: **cards of one archetype move
+together across a release, whether or not the archetype's members were buffed or nerfed.**
+In the first patch that co-movement is a real part of the placebo spread. The factors stay as
+they are. [inferred]
+
+### Checks and changes after the rules [computed]
+
+- `--check`: the rules pass their known-answer cases, the statistic recovers a planted shift,
+  and the permutation test rejects a true null 4.5% of the time at 0.05.
+- `placebo_h3` gives 463 pairs and first-patch robust sd 4.10; the script stops otherwise.
+- **The Regent rule reproduces the discovery exactly**: 7 of 7 and 9 of 10 (step 5). So the
+  `create` rule is at least the split Phil made.
+- **Rules changed while building the tables, before any z.** `zero_cost` first matched any
+  "costs 0" or "free to play" text and was narrowed to cards that name 0-cost cards as a
+  group. `block_payoff` matched Expose ("Block from the enemy") and was narrowed. An event
+  with no balance note first counted as unclear and now adds no verb (this made Rocket Punch a
+  buff, as its note says). Cut or unknown earlier text first made Rocket Punch look as if it
+  entered `zero_cost`; such text now keeps the later memberships. All four were found by
+  reading the member and change tables.
+- 5 of the 292 all-offers pairs are conflicted and left out: Hidden Daggers (both windows),
+  Storm of Steel, High Five (both windows).
+- **Part 6 is post hoc, added after reading the test:** archetypes as the unit.
+- A fix after the first run of part 3, which stopped on a column type before printing
+  anything: the flag for O's pairs. It also drops a flagged card's upgraded-offers pair.
+
+### 3. The declared test [computed]
+
+Tables: `p_test.csv`, `p_test_pairs.csv`. 287 pairs in the test: 59 in net-buffed archetypes,
+70 in net-nerfed, 158 other. "Shift as predicted" is the declared statistic, in z; positive
+means buffed archetypes up and nerfed archetypes down, against the same character-window's
+other pairs. "Sign as predicted" counts exposed pairs with z on the predicted side of 0.
+
+| Scope | Pairs: buff / nerf / other | Mean z: buff / nerf / other | Shift as predicted | Sign as predicted | Share z > 0: buff / nerf / other | p, two-sided | p, one-sided |
+|---|---|---|---|---|---|---|---|
+| Defect | 9 / 0 / 35 | -1.33 /  / +0.88 | **-2.21** | 1 of 9 | 0.11 /  / 0.54 | 0.045 | 0.980 |
+| Ironclad | 19 / 0 / 50 | +3.11 /  / -0.79 | **+3.85** | 14 of 19 | 0.74 /  / 0.40 | < 0.001 | < 0.001 |
+| Necrobinder | 14 / 36 / 45 | -0.20 / +0.20 / +0.46 | **-0.29** | 21 of 50 | 0.36 / 0.56 / 0.56 | 0.732 | 0.638 |
+| Silent | 17 / 34 / 28 | +1.45 / -2.30 / +1.16 | **+3.38** | 37 of 51 | 0.65 / 0.24 / 0.57 | < 0.001 | < 0.001 |
+| Pooled | 59 / 70 / 158 | +1.17 / -1.01 / +0.28 | **+1.64** | 73 of 129 | 0.53 / 0.40 / 0.51 | 0.001 | < 0.001 |
+
+By character-window:
+
+| Scope | Pairs: buff / nerf / other | Mean z: buff / nerf / other | Shift as predicted | Sign as predicted | Share z > 0: buff / nerf / other | p, two-sided | p, one-sided |
+|---|---|---|---|---|---|---|---|
+| Defect second | 9 / 0 / 35 | -1.33 /  / +0.88 | **-2.21** | 1 of 9 | 0.11 /  / 0.54 | 0.045 | 0.980 |
+| Ironclad first | 9 / 0 / 26 | +3.32 /  / -1.23 | **+4.55** | 7 of 9 | 0.78 /  / 0.35 | 0.013 | 0.008 |
+| Ironclad second | 10 / 0 / 24 | +2.91 /  / -0.32 | **+3.23** | 7 of 10 | 0.70 /  / 0.46 | 0.007 | 0.004 |
+| Necrobinder first | 1 / 31 / 11 | +5.32 / -0.19 / +0.01 | **+0.36** | 15 of 32 | 1.00 / 0.55 / 0.55 | 0.775 | 0.398 |
+| Necrobinder second | 13 / 5 / 34 | -0.62 / +2.65 / +0.60 | **-1.45** | 6 of 18 | 0.31 / 0.60 / 0.56 | 0.030 | 0.986 |
+| Silent first | 8 / 32 / 20 | +1.46 / -2.44 / +2.37 | **+3.66** | 30 of 40 | 0.62 / 0.22 / 0.70 | < 0.001 | < 0.001 |
+| Silent second | 9 / 2 / 8 | +1.43 / -0.05 / -1.85 | **+2.36** | 7 of 11 | 0.67 / 0.50 / 0.25 | 0.023 | 0.013 |
+| Pooled first | 18 / 63 / 57 | +2.60 / -1.33 / +0.27 | **+2.46** | 52 of 81 | 0.72 / 0.38 / 0.51 | < 0.001 | < 0.001 |
+| Pooled second | 41 / 7 / 101 | +0.54 / +1.88 / +0.29 | **+0.25** | 21 of 48 | 0.44 / 0.57 / 0.50 | 0.611 | 0.300 |
+
+Pooled, under each version:
+
+| Version | Exposed pairs | Shift as predicted | Sign as predicted | p, two-sided | p, one-sided | First / second shift |
+|---|---|---|---|---|---|---|
+| Declared | 129 | +1.64 | 73 of 129 | 0.001 | < 0.001 | +2.46 / +0.25 |
+| Patch-note verbs only | 120 | +1.52 | 69 of 120 | < 0.001 | < 0.001 | +2.86 / -0.35 |
+| Pairs shown in section o's top 25 left out | 115 | +0.99 | 64 of 115 | 0.011 | 0.006 | +1.63 / +0.07 |
+| Upgraded-offers pairs included | 150 | +1.62 | 88 of 150 | < 0.001 | < 0.001 | +2.41 / +0.35 |
+
+Reading. [inferred]
+- **Rule: replicates.** The pooled two-sided p is 0.001 and the one-sided p is below it, so
+  the two don't disagree. It also passes with O's pairs left out (+0.99, p 0.011).
+- **It is two characters, and one window.** Ironclad (+3.85) and Silent (+3.38) carry it.
+  Defect is −2.21, the wrong way, with 1 of 9 pairs as predicted. Necrobinder is −0.29.
+  Pooled, the first window gives +2.46 and the second +0.25 (p 0.61).
+- **Sign counts are weak.** 73 of 129 exposed pairs have z on the predicted side (57%). Pairs
+  in buffed archetypes are positive 52% of the time, against 51% of other pairs; the
+  difference is on the nerf side (40% positive). The shift is in sizes more than in signs.
+- **Entry and exit add little.** With verbs only the pooled shift is +1.52. Ironclad's second
+  window does depend on it (+3.23 with, +0.96 without): Conflagration leaving `attack_play`
+  cancels Unrelenting's buff there.
+- **The p is too small, for a reason I should have declared.** Shuffling labels across cards
+  treats cards as exchangeable. If cards of an archetype move together for any reason, the
+  number of independent units is nearer the 29 archetype-windows than the 129 pairs. The post
+  hoc table below is the check on that.
+
+### Archetypes as the unit, post hoc [computed]
+
+Tables: `p_posthoc_archetypes.csv`, `p_posthoc_summary.csv`. One row per character-window and
+archetype with at least 2 all-offers pairs: its pairs' mean z minus the mean z of the
+character-window's other pairs. Test characters, archetypes with a net direction, largest
+first:
+
+| Character | Window | Archetype | Net | Pairs | Mean z | Rest of the character-window | Difference | z > 0 | As predicted |
+|---|---|---|---|---|---|---|---|---|---|
+| Ironclad | first | hp_loss | buff | 6 | +6.34 | -1.38 | +7.72 | 6 of 6 | yes |
+| Silent | first | discard | nerf | 13 | -5.91 | +1.15 | -7.06 | 1 of 13 | yes |
+| Necrobinder | first | soul | nerf | 3 | -6.04 | +0.48 | -6.52 | 0 of 3 | yes |
+| Ironclad | first | strength | buff | 2 | -4.62 | +0.22 | -4.84 | 1 of 2 | no |
+| Necrobinder | first | debuff | buff | 2 | +3.65 | -0.14 | +3.78 | 2 of 2 | yes |
+| Defect | second | focus | buff | 2 | -3.06 | +0.59 | -3.65 | 0 of 2 | no |
+| Ironclad | second | exhaust | buff | 9 | +3.28 | -0.32 | +3.60 | 7 of 9 | yes |
+| Silent | first | dexterity | nerf | 2 | +3.10 | -0.45 | +3.55 | 1 of 2 | no |
+| Silent | first | draw | nerf | 9 | -2.52 | +0.04 | -2.56 | 2 of 9 | yes |
+| Necrobinder | first | ethereal | nerf | 8 | +2.04 | -0.41 | +2.45 | 6 of 8 | no |
+| Silent | second | skill_play | buff | 3 | +1.96 | -0.47 | +2.43 | 3 of 3 | yes |
+| Silent | second | debuff | buff | 2 | +1.82 | -0.32 | +2.14 | 1 of 2 | yes |
+| Necrobinder | second | debuff | nerf | 6 | +2.21 | +0.26 | +1.95 | 4 of 6 | no |
+| Silent | first | shiv | buff | 9 | +1.29 | -0.61 | +1.90 | 6 of 9 | yes |
+| Ironclad | first | debuff | buff | 2 | +1.65 | -0.16 | +1.81 | 1 of 2 | yes |
+| Silent | first | poison | nerf | 10 | -1.85 | -0.04 | -1.80 | 2 of 10 | yes |
+| Necrobinder | first | create | nerf | 4 | -1.44 | +0.18 | -1.62 | 1 of 4 | yes |
+| Defect | second | lightning | buff | 6 | -0.86 | +0.63 | -1.49 | 1 of 6 | no |
+| Silent | first | skill_play | nerf | 6 | -1.54 | -0.21 | -1.33 | 2 of 6 | yes |
+| Necrobinder | second | osty | buff | 11 | -0.54 | +0.75 | -1.29 | 4 of 11 | no |
+| Defect | second | power_play | buff | 2 | -0.79 | +0.49 | -1.27 | 0 of 2 | no |
+| Necrobinder | second | draw | buff | 3 | -0.71 | +0.56 | -1.26 | 1 of 3 | no |
+| Necrobinder | first | osty | nerf | 10 | -0.88 | +0.30 | -1.18 | 4 of 10 | yes |
+| Silent | first | attack_play | nerf | 4 | -1.23 | -0.27 | -0.95 | 1 of 4 | yes |
+| Silent | second | discard | buff | 6 | +0.54 | -0.38 | +0.92 | 3 of 6 | yes |
+| Necrobinder | first | doom | nerf | 9 | +0.46 | -0.08 | +0.54 | 7 of 9 | no |
+| Silent | second | create | nerf | 2 | -0.49 | -0.06 | -0.42 | 0 of 2 | yes |
+| Silent | first | create | buff | 7 | -0.46 | -0.32 | -0.14 | 3 of 7 | no |
+| Silent | second | shiv | nerf | 3 | -0.09 | -0.11 | +0.01 | 1 of 3 | no |
+
+- 17 of 29 as predicted (sign test p 0.46). Mean signed difference +0.87; flipping each
+  archetype's sign at random gives p 0.14.
+- Two rows hold 14.8 of the summed signed difference of 25.3: Silent `discard` in the first
+  window (13 pairs, 1 positive) and Ironclad `hp_loss` in the first window (6 pairs, all
+  positive). Those are the two archetypes I had seen in O. The other 27 average +0.39, with
+  15 as predicted.
+- Archetypes with no net direction sit almost as far from their character's other cards:
+  mean |difference| 1.51 over 28, against 2.42 for the 29 with one. The largest of them, all
+  five characters:
+
+| Character | Window | Archetype | Net | Pairs | Mean z | Difference | z > 0 |
+|---|---|---|---|---|---|---|---|
+| Regent | second | create | none | 10 | +4.99 | +6.02 | 9 of 10 |
+| Defect | second | status | none | 10 | +4.00 | +4.62 | 9 of 10 |
+| Regent | first | strength | unclear | 2 | -4.45 | -4.50 | 0 of 2 |
+| Ironclad | first | attack_play | unclear | 8 | -2.82 | -3.57 | 1 of 8 |
+| Regent | second | forge | unclear | 7 | -2.89 | -3.39 | 1 of 7 |
+| Silent | first | block_payoff | none | 3 | +2.88 | +3.38 | 2 of 3 |
+| Defect | second | create | none | 9 | +3.08 | +3.34 | 7 of 9 |
+| Silent | first | debuff | none | 6 | +2.32 | +2.93 | 5 of 6 |
+
+Reading. [inferred]
+- **At the archetype level the direction is not predicted beyond chance.** That is post hoc
+  and has little power at 29 units, so it doesn't overturn the declared result; it says the
+  declared p overstates it.
+- **Archetypes cluster with or without a change.** Defect's `status` cards are +4.0 in the
+  second window (9 of 10 positive) with no balance change to any member. Regent's `create`
+  cards are +5.0 in the second window with only bug fixes to members.
+- Silent's first window is the one place where the story fits in detail: `discard`, `draw`,
+  `poison`, `skill_play` and `attack_play` were net-nerfed and are all below the rest; `shiv`
+  was buffed and is above.
+
+### 4. Budget [computed]
+
+Table: `p_budget.csv`. All 463 pairs, five characters. Robust sd of z. "Sets shuffled" is the
+same computation with the pairs' archetype sets dealt to other pairs of the same
+character-window, 1,000 times: what removing that many pairs, or fitting that many terms,
+does by itself.
+
+| Exposure | Patch | Factor | Pairs exposed | Exposed removed | Same, sets shuffled [95%] | Archetype × window absorbed (terms) | Same, sets shuffled [95%] |
+|---|---|---|---|---|---|---|---|
+| Any substantive change to a member | first | 4.10 | 155 of 217 | **3.97** | 4.05 [3.18, 5.02] | **2.88** (46) | 3.84 [3.44, 4.24] |
+| Any substantive change to a member | second | 2.67 | 122 of 246 | **3.17** | 2.71 [2.28, 3.16] | **2.55** (46) | 2.58 [2.33, 2.84] |
+| Net buff or nerf only | first | 4.10 | 140 of 217 | **4.02** | 4.25 [3.47, 5.02] | **3.11** (35) | 3.93 [3.59, 4.30] |
+| Net buff or nerf only | second | 2.67 | 60 of 246 | **2.85** | 2.72 [2.45, 2.98] | **2.63** (35) | 2.60 [2.38, 2.82] |
+
+Plain sd, first patch: 4.46 before, 3.22 with the terms absorbed (primary exposure).
+
+Reading. [inferred]
+- **Removing exposed pairs changes nothing.** 3.97 against 4.10, and 3.17 against 2.67, both
+  inside or at the edge of what removing random pairs gives. Cards outside every changed
+  archetype miss as widely as cards inside one. Most first-patch pairs are exposed (155 of
+  217), so this removal is also coarse.
+- **Absorbing archetype × window terms takes the first patch from 4.10 to 2.88**, below the
+  shuffled range (3.44–4.24). In variance, that is about 0.41 of the excess over 1 beyond
+  what the same number of arbitrary terms absorbs ((3.84² − 2.88²) / (4.10² − 1)). **In the
+  second patch it absorbs nothing** (2.55 against 2.58).
+- So in the first patch, part of the spread is shared within archetypes. This fits M's and
+  N's leftover: a step at the release that isn't within-build drift and that card-by-card
+  exposure to changed cards didn't order. It does not say the changed cards caused it: the
+  terms absorb an archetype's mean whatever its sign, and the sign test above is at chance.
+- The terms were chosen by me from card text. Another grouping of the same cards would
+  absorb a different amount; the shuffled benchmark guards against the number of terms, not
+  against the choice of grouping.
+
+### 5. Regent check [computed]
+
+Tables: `p_regent.csv`, `p_regent_split.csv`. Regent all-offers pairs, `create` against the
+rest.
+
+| Window | Text used | Create pairs | z > 0 | Mean z | Other pairs | z > 0 | Mean z |
+|---|---|---|---|---|---|---|---|
+| first | the window's own | 7 | 7 | +6.50 | 49 | 17 (35%) | −1.06 |
+| first | v0.107.1 | 7 | 7 | +6.50 | 49 | 17 (35%) | −1.06 |
+| second | the window's own | 10 | 9 | +4.99 | 45 | 15 (33%) | −1.03 |
+| second | v0.107.1 | 10 | 9 | +4.99 | 45 | 15 (33%) | −1.03 |
+
+- **No card's classification changes.** The only Regent card whose `create` membership
+  differs by window is Arsenal (not a member before v0.103.2), and it is a changed card in
+  the first window, so it was never a placebo pair there.
+- First window pairs: Manifest Authority, Crash Landing, Pillar of Creation, Quasar, Spectrum
+  Shift, Guards, Supermassive. Second: those minus Manifest Authority, Spectrum Shift and
+  Supermassive, plus Charge, Heirloom Hammer (the one negative), Arsenal, Begone, Bundle of
+  Joy and Collision Course.
+- **The second window's result has no change behind it under my rule.** `create`'s members
+  had only bug fixes there (the Largesse fix to Arsenal, Pillar of Creation and Supermassive),
+  so its net direction is none. Four cards are in both windows and positive in both. So
+  Regent's second window reads as the same cards still rising, not as a response to that
+  window's changes. Most Regent `create` cards make Colorless cards, and Colorless changes
+  are outside this section. [inferred]
+- Regent's other buffed archetypes in the first window don't all follow: `forge` +2.1 and
+  `debuff` +3.3 above the rest, `draw` +0.2, and `star` (25 pairs, 4 buffs and 1 nerf among
+  members) −3.6.
+
+### What this does and doesn't settle
+
+- **Settled, within limits:** under the rule as given, the pooled test passes. The Regent
+  split is reproduced and doesn't depend on which build's text is used.
+- **Fits but not shown:** that changes to an archetype's members move its unchanged members
+  in the same direction. Silent's first window fits it well, Ironclad's `hp_loss` fits it,
+  Defect and Necrobinder don't, and by archetype the direction is at chance.
+- **Shown, post hoc:** placebo z clusters by archetype in the first patch, enough to take the
+  robust sd from 4.10 to 2.88. Not in the second patch.
+- **Not settled:** why archetypes move together when none of their cards changed (Defect
+  `status`, Regent `create` in the second window). Changes outside a character's cards and
+  players following a strategy as a whole both remain. A grouping from the data (which cards
+  are picked into the same decks) would test the clustering without my reading of the text.
+- The factors are unaffected: they measure the spread and don't depend on its cause.

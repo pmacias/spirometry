@@ -1,0 +1,2 @@
+n_directed,n_as_predicted,p_sign_two_sided,mean_signed_diff,p_sign_flip_two_sided,mean_abs_diff_directed,median_abs_diff_directed,n_undirected,mean_abs_diff_undirected,median_abs_diff_undirected
+29,17,0.45825831964612007,0.8724806304058516,0.13658634136586342,2.420872831059407,1.813128997059529,28,1.5096297905505887,1.0992240737476637

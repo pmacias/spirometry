@@ -1,0 +1,464 @@
+color,before_builds,after_builds,fit_on,pseudo_card,patch,z,archetypes,arch_buffed,arch_nerfed,arch_changed,d,seen_in_o
+silent,v0.99.1,v0.103.2,all offers,ASSASSINATE,first,-2.483262292555661,debuff,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,BUBBLE_BUBBLE,first,0.9123120761528544,poison,,poison,poison,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,BULLET_TIME,first,2.837640188290096,,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,BURST,first,-1.8145002888611674,skill_play,,skill_play,skill_play,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,CALCULATED_GAMBLE,first,-2.438756647767987,discard,,discard,discard,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,DODGE_AND_ROLL,first,9.728936396985159,,,,,0.0,True
+silent,v0.99.1,v0.103.2,all offers,ESCAPE_PLAN,first,5.360204262487806,draw skill_play,,draw skill_play,draw skill_play,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,EXPOSE,first,0.6030073258654327,debuff,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,FINISHER,first,-0.583675024484474,attack_play,,attack_play,attack_play,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,HAND_TRICK,first,-3.5871433520081175,discard skill_play,,discard skill_play,discard skill_play,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,HIDDEN_DAGGERS,first,2.733908015988138,create discard shiv,create shiv,discard,create discard shiv,,False
+silent,v0.99.1,v0.103.2,all offers,LEG_SWEEP,first,9.570042671355369,debuff,,,,0.0,True
+silent,v0.99.1,v0.103.2,all offers,MASTER_PLANNER,first,-8.319781694920886,discard skill_play,,discard skill_play,discard skill_play,-1.0,True
+silent,v0.99.1,v0.103.2,all offers,MURDER,first,-4.339905253489467,draw,,draw,draw,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,OUTBREAK,first,-2.0818075662634956,poison,,poison,poison,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,PIERCING_WAIL,first,11.632240112274602,,,,,0.0,True
+silent,v0.99.1,v0.103.2,all offers,PREDATOR,first,-3.2464277160007824,draw,,draw,draw,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,SHADOW_STEP,first,-5.0698191286488115,attack_play discard,,attack_play discard,attack_play discard,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,SUCKER_PUNCH,first,2.86123444806244,debuff,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,TRACKING,first,1.8175222271878322,attack_play debuff,,attack_play,attack_play,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,DEFLECT,first,5.213358401774848,,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,ENVENOM,first,-1.0643845383603872,attack_play poison,,attack_play poison,attack_play poison,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,EXPERTISE,first,-3.142859902354394,draw,,draw,draw,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,INFINITE_BLADES,first,1.6338034224801044,create shiv,create shiv,,create shiv,1.0,False
+silent,v0.99.1,v0.103.2,all offers,MIRAGE,first,-1.615907401969307,block_payoff poison,,poison,poison,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,NIGHTMARE,first,-1.728678657236791,create,create,,create,1.0,False
+silent,v0.99.1,v0.103.2,all offers,PHANTOM_BLADES,first,5.787065895759777,shiv,shiv,,shiv,1.0,False
+silent,v0.99.1,v0.103.2,all offers,POISONED_STAB,first,-4.377174044216572,poison,,poison,poison,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,PRECISE_CUT,first,-1.9678915005544806,,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,SHADOWMELD,first,1.8591071333756097,block_payoff,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,STRANGLE,first,-1.6120514483101822,,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,WELL_LAID_PLANS,first,3.8416001381548672,,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,ABRASIVE,first,-3.188294149306652,dexterity discard,,dexterity discard,dexterity discard,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,ACCELERANT,first,-2.1543430592997943,poison,,poison,poison,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,ADRENALINE,first,-2.448459138889899,draw,,draw,draw,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,BACKSTAB,first,-2.5222322061526263,,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,CLOAK_AND_DAGGER,first,2.5391573295500947,create shiv,create shiv,,create shiv,1.0,False
+silent,v0.99.1,v0.103.2,all offers,HAZE,first,-7.210602396844289,discard poison,,discard poison,discard poison,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,KNIFE_TRAP,first,2.760997797698639,shiv,shiv,,shiv,1.0,False
+silent,v0.99.1,v0.103.2,all offers,POUNCE,first,-2.5287046211920203,skill_play,,skill_play,skill_play,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,REFLEX,first,-10.987855963509842,discard draw,,discard draw,discard draw,-1.0,True
+silent,v0.99.1,v0.103.2,all offers,RICOCHET,first,-11.14050181619181,discard,,discard,discard,-1.0,True
+silent,v0.99.1,v0.103.2,all offers,AFTERIMAGE,first,1.2586798784816655,,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,BLUR,first,8.395844179265502,block_payoff,,,,0.0,True
+silent,v0.99.1,v0.103.2,all offers,BOUNCING_FLASK,first,-1.2896490149274846,poison,,poison,poison,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,DAGGER_SPRAY,first,1.1625208379640408,,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,FOOTWORK,first,9.396645811435025,dexterity,,dexterity,dexterity,-1.0,True
+silent,v0.99.1,v0.103.2,all offers,MALAISE,first,1.5226833146451455,debuff,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,SLICE,first,-5.851392625287839,,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,TACTICIAN,first,-11.067795392338036,discard,,discard,discard,-1.0,True
+silent,v0.99.1,v0.103.2,all offers,BACKFLIP,first,8.23129301076963,draw,,draw,draw,-1.0,True
+silent,v0.99.1,v0.103.2,all offers,DAGGER_THROW,first,-6.64627969062548,discard draw,,discard draw,discard draw,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,DASH,first,3.736792364354478,,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,ECHOING_SLASH,first,-2.428240227557647,,,,,0.0,False
+silent,v0.99.1,v0.103.2,all offers,FAN_OF_KNIVES,first,-1.3405579923710411,create shiv,create shiv,,create shiv,1.0,False
+silent,v0.99.1,v0.103.2,all offers,DEADLY_POISON,first,-2.1466945926452987,poison,,poison,poison,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,FLECHETTES,first,1.6743866651006734,skill_play,,skill_play,skill_play,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,UP_MY_SLEEVE,first,-2.5637009980517385,create shiv,create shiv,,create shiv,1.0,False
+silent,v0.99.1,v0.103.2,upgraded offers,ABRASIVE,first,1.01101663741027,dexterity discard,,dexterity discard,dexterity discard,-1.0,False
+silent,v0.99.1,v0.103.2,upgraded offers,ACCELERANT,first,-1.4812009207753907,poison,,poison,poison,-1.0,False
+silent,v0.99.1,v0.103.2,upgraded offers,AFTERIMAGE,first,-0.8015051820058281,,,,,0.0,False
+silent,v0.99.1,v0.103.2,upgraded offers,BLADE_DANCE,first,-0.46271560499915454,create shiv,create shiv,,create shiv,1.0,False
+silent,v0.99.1,v0.103.2,upgraded offers,BLUR,first,2.6779058376028946,block_payoff,,,,0.0,True
+silent,v0.99.1,v0.103.2,upgraded offers,BURST,first,-0.3195515037721957,skill_play,,skill_play,skill_play,-1.0,False
+silent,v0.99.1,v0.103.2,upgraded offers,DODGE_AND_ROLL,first,5.1615813147545015,,,,,0.0,True
+silent,v0.99.1,v0.103.2,upgraded offers,ENVENOM,first,1.6617718791908798,attack_play poison,,attack_play poison,attack_play poison,-1.0,False
+silent,v0.99.1,v0.103.2,upgraded offers,EXPOSE,first,-0.016349071875735824,debuff,,,,0.0,False
+silent,v0.99.1,v0.103.2,upgraded offers,FOOTWORK,first,2.418972141898927,dexterity,,dexterity,dexterity,-1.0,True
+silent,v0.99.1,v0.103.2,upgraded offers,HAZE,first,-3.7153891027004127,discard poison,,discard poison,discard poison,-1.0,False
+silent,v0.99.1,v0.103.2,upgraded offers,INFINITE_BLADES,first,-0.2923204316142949,create shiv,create shiv,,create shiv,1.0,False
+silent,v0.99.1,v0.103.2,upgraded offers,MALAISE,first,2.043931115603287,debuff,,,,0.0,False
+silent,v0.99.1,v0.103.2,upgraded offers,MIRAGE,first,-1.5702425949973093,block_payoff poison,,poison,poison,-1.0,False
+silent,v0.99.1,v0.103.2,upgraded offers,PIERCING_WAIL,first,4.923560430161445,,,,,0.0,True
+silent,v0.99.1,v0.103.2,upgraded offers,RICOCHET,first,-7.321618142186386,discard,,discard,discard,-1.0,True
+silent,v0.99.1,v0.103.2,upgraded offers,STORM_OF_STEEL,first,-0.6352853545652146,create discard shiv,create shiv,discard,create discard shiv,,False
+silent,v0.99.1,v0.103.2,upgraded offers,TACTICIAN,first,-4.570257269563435,discard,,discard,discard,-1.0,True
+silent,v0.99.1,v0.103.2,upgraded offers,THE_HUNT,first,-0.5241070104882747,,,,,0.0,False
+silent,v0.99.1,v0.103.2,upgraded offers,UP_MY_SLEEVE,first,0.8703602864103892,create shiv,create shiv,,create shiv,1.0,False
+silent,v0.99.1,v0.103.2,all offers,ACCURACY,first,4.5787995897274145,shiv,shiv,,shiv,1.0,False
+silent,v0.99.1,v0.103.2,all offers,NOXIOUS_FUMES,first,2.5608719954718007,poison,,poison,poison,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,TOOLS_OF_THE_TRADE,first,-5.474940295299648,discard draw,,discard draw,discard draw,-1.0,False
+silent,v0.99.1,v0.103.2,all offers,STORM_OF_STEEL,first,-4.488597080971598,create discard shiv,create shiv,discard,create discard shiv,,False
+regent,v0.99.1,v0.103.2,all offers,ASTRAL_PULSE,first,-0.37584965954029387,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,BLACK_HOLE,first,-3.7146091345856944,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,BULWARK,first,7.255072504082067,forge,forge,,forge,1.0,False
+regent,v0.99.1,v0.103.2,all offers,CHILD_OF_THE_STARS,first,-2.545678382929496,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,CLOAK_OF_STARS,first,-1.4135236457083546,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,COMET,first,-2.0846734222410155,debuff star,debuff star,,debuff star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,CONVERGENCE,first,5.232769632614879,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,COSMIC_INDIFFERENCE,first,5.472847418478129,,,,,0.0,False
+regent,v0.99.1,v0.103.2,all offers,GENESIS,first,-2.728668677348381,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,HEAVENLY_DRILL,first,-2.0678206659837293,,,,,0.0,False
+regent,v0.99.1,v0.103.2,all offers,KNOW_THY_PLACE,first,10.221282507215111,debuff,debuff,,debuff,1.0,True
+regent,v0.99.1,v0.103.2,all offers,LUNAR_BLAST,first,-4.643189074381106,skill_play,,,,0.0,False
+regent,v0.99.1,v0.103.2,all offers,MANIFEST_AUTHORITY,first,6.018979846601755,create,create,,create,1.0,False
+regent,v0.99.1,v0.103.2,all offers,MONARCHS_GAZE,first,-4.7098713612181475,,,,,0.0,False
+regent,v0.99.1,v0.103.2,all offers,PARTICLE_WALL,first,-3.3211822853046176,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,PHOTON_CUT,first,-4.381360379254218,draw,draw,,draw,1.0,False
+regent,v0.99.1,v0.103.2,all offers,RADIATE,first,-5.68782828347978,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,STARDUST,first,-1.2374565571267129,,,,,0.0,False
+regent,v0.99.1,v0.103.2,all offers,THE_SMITH,first,0.2280091701658685,forge star,forge star,,forge star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,TYRANNY,first,1.3808604085103895,draw,draw,,draw,1.0,False
+regent,v0.99.1,v0.103.2,all offers,CRASH_LANDING,first,4.637406275549568,create,create,,create,1.0,False
+regent,v0.99.1,v0.103.2,all offers,DECISIONS_DECISIONS,first,-0.36437624186623646,draw skill_play star,draw star,,draw star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,DYING_STAR,first,-4.218941567204283,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,FOREGONE_CONCLUSION,first,-2.2297549528866663,,,,,0.0,False
+regent,v0.99.1,v0.103.2,all offers,FURNACE,first,-0.8143985530528951,forge,forge,,forge,1.0,False
+regent,v0.99.1,v0.103.2,all offers,HIDDEN_CACHE,first,-1.0291844022986036,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,PILLAR_OF_CREATION,first,13.600038855557187,create,create,,create,1.0,True
+regent,v0.99.1,v0.103.2,all offers,RESONANCE,first,-5.623608989567091,star strength,star,,star strength,1.0,False
+regent,v0.99.1,v0.103.2,all offers,ROYAL_GAMBLE,first,1.5361858175336247,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,TERRAFORMING,first,1.9776753739799648,,,,,0.0,False
+regent,v0.99.1,v0.103.2,all offers,BEAT_INTO_SHAPE,first,-1.958879616653767,forge,forge,,forge,1.0,False
+regent,v0.99.1,v0.103.2,all offers,DEVASTATE,first,-8.84232848970299,star,star,,star,1.0,True
+regent,v0.99.1,v0.103.2,all offers,KNOCKOUT_BLOW,first,-5.37406642442781,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,MAKE_IT_SO,first,0.7182293760362514,skill_play,,,,0.0,False
+regent,v0.99.1,v0.103.2,all offers,MONOLOGUE,first,-3.2822811014788797,strength,,,strength,0.0,False
+regent,v0.99.1,v0.103.2,all offers,NEUTRON_AEGIS,first,-3.763317610500952,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,ORBIT,first,3.0483478453532835,,,,,0.0,False
+regent,v0.99.1,v0.103.2,all offers,QUASAR,first,4.252120018343697,create star,create star,,create star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,REFLECT,first,3.4339610870447737,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,SUMMON_FORTH,first,3.4402477897183856,forge,forge,,forge,1.0,False
+regent,v0.99.1,v0.103.2,all offers,CRESCENT_SPEAR,first,-10.711729498888891,star,star,,star,1.0,True
+regent,v0.99.1,v0.103.2,all offers,GLIMMER,first,-2.3170913136885547,draw,draw,,draw,1.0,False
+regent,v0.99.1,v0.103.2,all offers,ROYALTIES,first,-1.628163620989042,,,,,0.0,False
+regent,v0.99.1,v0.103.2,all offers,SEVEN_STARS,first,-4.353865785419677,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,SHINING_STRIKE,first,-5.5390321936385325,star,star,,star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,SPECTRUM_SHIFT,first,7.172465436183857,create,create,,create,1.0,False
+regent,v0.99.1,v0.103.2,all offers,CRUSH_UNDER,first,-1.0254761899548768,,,,,0.0,False
+regent,v0.99.1,v0.103.2,all offers,GUARDS,first,3.19800881098977,create,create,,create,1.0,False
+regent,v0.99.1,v0.103.2,all offers,HEGEMONY,first,-2.915782093236261,,,,,0.0,False
+regent,v0.99.1,v0.103.2,all offers,PROPHESIZE,first,-1.8667225134252894,draw,draw,,draw,1.0,False
+regent,v0.99.1,v0.103.2,all offers,SEEKING_EDGE,first,0.38897782800717445,forge,forge,,forge,1.0,False
+regent,v0.99.1,v0.103.2,all offers,BIG_BANG,first,3.4011938931150265,draw forge star,draw forge star,,draw forge star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,CONQUEROR,first,1.4317031460118776,forge,forge,,forge,1.0,False
+regent,v0.99.1,v0.103.2,all offers,GAMMA_BLAST,first,0.940454709680158,debuff star,debuff star,,debuff star,1.0,False
+regent,v0.99.1,v0.103.2,all offers,PALE_BLUE_DOT,first,4.619725019377728,draw,draw,,draw,1.0,False
+regent,v0.99.1,v0.103.2,all offers,SUPERMASSIVE,first,6.611275497833207,create,create,,create,1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,BURY,first,2.467355820478534,,,,,0.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,COUNTDOWN,first,0.9879390208698002,doom,,doom,doom,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,DEATHS_DOOR,first,2.2405436952024345,doom,,doom,doom,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,DEATH_MARCH,first,-7.261281307248977,draw,,,,0.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,DEMESNE,first,1.2202396209888624,draw ethereal,,ethereal,ethereal,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,DRAIN_POWER,first,-3.636893934230802,,,,,0.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,ERADICATE,first,2.5546550180187855,,,,,0.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,FLATTEN,first,-6.680583210545889,osty,,osty,osty,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,HAUNT,first,-9.898872853092183,soul,,soul,soul,-1.0,True
+necrobinder,v0.99.1,v0.103.2,all offers,HIGH_FIVE,first,1.9670749838932244,debuff osty,debuff,osty,debuff osty,,False
+necrobinder,v0.99.1,v0.103.2,all offers,MELANCHOLY,first,1.7961839800329364,,,,,0.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,NEGATIVE_PULSE,first,1.264524708804595,doom,,doom,doom,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,NO_ESCAPE,first,4.2366839353044625,doom,,doom,doom,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,OBLIVION,first,-3.130793539524212,doom,,doom,doom,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,PAGESTORM,first,0.7983588501687434,draw ethereal,,ethereal,ethereal,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,REAVE,first,-5.671808774584778,create soul,,create soul,create soul,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,SACRIFICE,first,-1.918447586706412,osty,,osty,osty,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,SHROUD,first,0.6901460246602364,doom,,doom,doom,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,SNAP,first,0.3996124004258546,osty,,osty,osty,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,SOW,first,-0.12977894650075517,,,,,0.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,AFTERLIFE,first,0.22655021732351896,osty,,osty,osty,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,BLIGHT_STRIKE,first,-3.8874445993603057,doom,,doom,doom,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,CALCIFY,first,-1.4062079546547264,osty,,osty,osty,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,DREDGE,first,2.926602017845211,,,,,0.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,EIDOLON,first,-2.966457141479842,exhaust,,,,0.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,ENFEEBLING_TOUCH,first,7.711251096642381,ethereal,,ethereal,ethereal,-1.0,True
+necrobinder,v0.99.1,v0.103.2,all offers,FETCH,first,-0.8074587205935667,draw osty,,osty,osty,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,INVOKE,first,-1.9944600525408813,osty,,osty,osty,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,LETHALITY,first,8.635742143361158,attack_play ethereal,,ethereal,ethereal,-1.0,True
+necrobinder,v0.99.1,v0.103.2,all offers,PARSE,first,-2.8802246909103353,draw ethereal,,ethereal,ethereal,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,REANIMATE,first,3.4278855769639027,osty,,osty,osty,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,RIGHT_HAND_HAND,first,-1.9791392575847848,osty,,osty,osty,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,SHARED_FATE,first,0.2974124230932473,,,,,0.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,THE_SCYTHE,first,-1.4149086824682149,,,,,0.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,TIMES_UP,first,0.5935688975821191,doom,,doom,doom,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,UNDEATH,first,2.661075971145028,create,,create,create,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,VEILPIERCER,first,0.7904451128238564,ethereal,,ethereal,ethereal,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,DEFILE,first,-2.5714681229573393,ethereal,,ethereal,ethereal,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,END_OF_DAYS,first,1.187714801484466,doom,,doom,doom,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,PULL_FROM_BELOW,first,2.587124509867517,ethereal,,ethereal,ethereal,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,REAP,first,5.485379070888705,,,,,0.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,SENTRY_MODE,first,-0.17109980198952432,create,,create,create,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,SEVERANCE,first,-2.5593606584706663,create soul,,create soul,create soul,-1.0,False
+necrobinder,v0.99.1,v0.103.2,all offers,SLEIGHT_OF_FLESH,first,5.324636973059715,debuff,debuff,,debuff,1.0,False
+ironclad,v0.99.1,v0.103.2,all offers,ANGER,first,2.176156842042906,create,,,create,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,ARMAMENTS,first,-0.43025689899269187,,,,,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,BATTLE_TRANCE,first,5.757612147434883,draw,,,,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,BLOODLETTING,first,11.095563391139333,hp_loss,hp_loss,,hp_loss,1.0,True
+ironclad,v0.99.1,v0.103.2,all offers,BLOOD_WALL,first,9.928637523476509,hp_loss,hp_loss,,hp_loss,1.0,True
+ironclad,v0.99.1,v0.103.2,all offers,BODY_SLAM,first,-2.839821451334537,block_payoff,,,,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,BREAKTHROUGH,first,8.420056168809605,hp_loss,hp_loss,,hp_loss,1.0,True
+ironclad,v0.99.1,v0.103.2,all offers,CRIMSON_MANTLE,first,3.5003780931163213,hp_loss,hp_loss,,hp_loss,1.0,False
+ironclad,v0.99.1,v0.103.2,all offers,DRUM_OF_BATTLE,first,-1.4994927094204964,draw exhaust,,,exhaust,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,INFERNAL_BLADE,first,-2.8104460618845004,attack_play create,,,attack_play create,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,IRON_WAVE,first,-4.977093201320475,,,,,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,OFFERING,first,2.8593325348831304,draw hp_loss,hp_loss,,hp_loss,1.0,False
+ironclad,v0.99.1,v0.103.2,all offers,PACTS_END,first,2.9936643137246177,exhaust,,,exhaust,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,PILLAGE,first,-7.210566111802821,attack_play draw,,,attack_play,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,POMMEL_STRIKE,first,-5.055314096391669,draw,,,,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,PRIMAL_FORCE,first,-0.21726520414117972,attack_play create,,,attack_play create,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,PYRE,first,-3.01427582683611,,,,,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,SECOND_WIND,first,-1.4612010460228073,attack_play exhaust,,,attack_play exhaust,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,THRASH,first,0.8004983180732259,attack_play exhaust,,,attack_play exhaust,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,UPPERCUT,first,4.9319246036658875,debuff,debuff,,debuff,1.0,False
+ironclad,v0.99.1,v0.103.2,all offers,BURNING_PACT,first,2.830804895292298,draw exhaust,,,exhaust,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,EVIL_EYE,first,3.294490454579342,exhaust,,,exhaust,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,FEED,first,-4.135326003046771,,,,,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,ONE_TWO_PUNCH,first,-2.671612289413207,attack_play,,,attack_play,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,PERFECTED_STRIKE,first,-5.589878652261808,,,,,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,RAGE,first,-5.092687004839175,attack_play,,,attack_play,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,RAMPAGE,first,-5.242524724904466,,,,,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,RUPTURE,first,2.226868312449441,hp_loss strength,hp_loss strength,,hp_loss strength,1.0,False
+ironclad,v0.99.1,v0.103.2,all offers,SETUP_STRIKE,first,-11.46109804145256,strength,strength,,strength,1.0,True
+ironclad,v0.99.1,v0.103.2,all offers,SHRUG_IT_OFF,first,2.380270846158968,draw,,,,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,STAMPEDE,first,-3.861589361544577,attack_play,,,attack_play,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,STONE_ARMOR,first,3.0374458197101495,,,,,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,THUNDERCLAP,first,-1.6293425156332442,debuff,debuff,,debuff,1.0,False
+ironclad,v0.99.1,v0.103.2,all offers,TRUE_GRIT,first,1.1944486643028975,exhaust,,,exhaust,0.0,False
+ironclad,v0.99.1,v0.103.2,all offers,WHIRLWIND,first,-0.26643209000961504,,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,BEAT_INTO_SHAPE,second,-2.885776618252711,forge,,,forge,0.0,False
+regent,v0.103.3,v0.107.1,all offers,CHARGE,second,7.306813556624696,create,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,COSMIC_INDIFFERENCE,second,-0.37286770150479726,,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,CRASH_LANDING,second,5.805468402228507,create,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,FOREGONE_CONCLUSION,second,-0.2897826279541465,,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,GLIMMER,second,0.6293180598355372,draw,,,draw,0.0,False
+regent,v0.103.3,v0.107.1,all offers,GUARDS,second,3.900937457067797,create,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,HEGEMONY,second,-0.6121162764672291,,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,HEIRLOOM_HAMMER,second,-1.2928584356918498,create,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,HIDDEN_CACHE,second,-2.9874481020410735,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,I_AM_INVINCIBLE,second,-1.6854200991968418,,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,MAKE_IT_SO,second,-2.165333844891463,skill_play,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,MONOLOGUE,second,-2.3303230731839215,strength,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,PHOTON_CUT,second,-3.2381179827756,draw,,,draw,0.0,False
+regent,v0.103.3,v0.107.1,all offers,PROPHESIZE,second,-0.024192209540163993,draw,,,draw,0.0,False
+regent,v0.103.3,v0.107.1,all offers,QUASAR,second,3.6918622239799976,create star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,REFINE_BLADE,second,-3.308765305150241,forge,,,forge,0.0,False
+regent,v0.103.3,v0.107.1,all offers,ROYAL_GAMBLE,second,0.4949940492291445,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,SHINING_STRIKE,second,-5.0754994616566425,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,VOID_FORM,second,-1.6146305336791866,,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,ARSENAL,second,3.9126652060190312,create strength,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,BIG_BANG,second,2.2784112564664873,draw forge star,,,draw forge star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,CELESTIAL_MIGHT,second,2.0680321377463136,,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,CLOAK_OF_STARS,second,-2.253979814863912,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,CONVERGENCE,second,4.4956162437259035,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,DECISIONS_DECISIONS,second,0.4893092423444616,draw skill_play star,,,draw star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,KINGLY_KICK,second,-1.9590886931671208,draw,,,draw,0.0,False
+regent,v0.103.3,v0.107.1,all offers,KINGLY_PUNCH,second,-1.6702423259957002,draw,,,draw,0.0,False
+regent,v0.103.3,v0.107.1,all offers,PALE_BLUE_DOT,second,2.4697490419289423,draw,,,draw,0.0,False
+regent,v0.103.3,v0.107.1,all offers,PARTICLE_WALL,second,-1.3229579711453194,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,PILLAR_OF_CREATION,second,10.46938144585532,create,,,,0.0,True
+regent,v0.103.3,v0.107.1,all offers,RADIATE,second,-4.530759881186244,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,RESONANCE,second,-1.9887479578507914,star strength,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,SEEKING_EDGE,second,-2.4316494626176057,forge,,,forge,0.0,False
+regent,v0.103.3,v0.107.1,all offers,BEGONE,second,8.552135870969396,create,,,,0.0,True
+regent,v0.103.3,v0.107.1,all offers,BUNDLE_OF_JOY,second,2.055916974963204,create,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,CRUSH_UNDER,second,-0.5702305081454248,,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,DEVASTATE,second,-4.389687368512225,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,GATHER_LIGHT,second,0.8556115616793917,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,GENESIS,second,-2.9305602759369442,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,GLITTERSTREAM,second,4.569383431394563,,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,KNOW_THY_PLACE,second,5.237913133940236,debuff,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,SOLAR_STRIKE,second,-7.174780946827984,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,SPOILS_OF_BATTLE,second,-4.613321220898273,draw forge,,,draw forge,0.0,False
+regent,v0.103.3,v0.107.1,all offers,TERRAFORMING,second,0.5842661827220536,,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,THE_SMITH,second,-1.57597101755479,forge star,,,forge star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,WROUGHT_IN_WAR,second,-7.716892844871872,forge,,,forge,0.0,True
+regent,v0.103.3,v0.107.1,all offers,COMET,second,-3.1931611330139145,debuff star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,NEUTRON_AEGIS,second,-0.2505663753190486,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,BOMBARDMENT,second,2.2169934111257725,,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,COLLISION_COURSE,second,5.47152001679713,create,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,GAMMA_BLAST,second,2.131101101606355,debuff star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,all offers,HEAVENLY_DRILL,second,0.12232174073792114,,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,ORBIT,second,2.4773864944500468,,,,,0.0,False
+regent,v0.103.3,v0.107.1,all offers,STARDUST,second,-2.207717506953789,,,,,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,BEAT_INTO_SHAPE,second,-1.3828545403049115,forge,,,forge,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,CELESTIAL_MIGHT,second,0.5565096670074836,,,,,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,CLOAK_OF_STARS,second,-1.359513515635612,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,COSMIC_INDIFFERENCE,second,1.270938758507425,,,,,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,DYING_STAR,second,0.9207714188094559,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,HEIRLOOM_HAMMER,second,-0.34362767017221446,create,,,,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,KINGLY_KICK,second,-1.5709336106678928,draw,,,draw,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,KNOW_THY_PLACE,second,2.375846377280864,debuff,,,,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,LUNAR_BLAST,second,-0.32305904899499677,skill_play,,,,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,MANIFEST_AUTHORITY,second,0.11222900598950081,create,,,,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,MONOLOGUE,second,-1.7728783215595039,strength,,,,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,ORBIT,second,1.4675766438831097,,,,,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,PARTICLE_WALL,second,0.23464823742501262,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,PILLAR_OF_CREATION,second,2.8522090914307543,create,,,,0.0,True
+regent,v0.103.3,v0.107.1,upgraded offers,PROPHESIZE,second,-0.676542872085705,draw,,,draw,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,ROYAL_GAMBLE,second,1.3130597935169328,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,SEEKING_EDGE,second,-2.2702528716526986,forge,,,forge,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,SOLAR_STRIKE,second,-2.8041383222780962,star,,,star,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,TERRAFORMING,second,-0.36837676565811606,,,,,0.0,False
+regent,v0.103.3,v0.107.1,upgraded offers,THE_SMITH,second,0.004778102550229201,forge star,,,forge star,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,BANSHEES_CRY,second,1.9669617240146755,ethereal,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,BLIGHT_STRIKE,second,-4.098491990875025,doom,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,BORROWED_TIME,second,4.539701145853584,,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,CAPTURE_SPIRIT,second,2.925931134347052,create soul,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,DEFILE,second,-1.6448677488604666,ethereal,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,DREDGE,second,2.6707568433050737,,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,ENFEEBLING_TOUCH,second,5.505195024317498,ethereal,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,ERADICATE,second,3.3585125716137245,,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,FLATTEN,second,-3.0821314132881845,osty,osty,,osty,1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,FRIENDSHIP,second,4.211978005416848,,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,GRAVE_WARDEN,second,1.051318231382079,create soul,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,HAUNT,second,-1.6670322741935484,soul,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,MELANCHOLY,second,-1.805081675683189,,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,POKE,second,-0.731234826426551,osty,osty,,osty,1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,PULL_FROM_BELOW,second,0.7361004611213819,ethereal,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,REAP,second,0.8298015607602763,,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,SCULPTING_STRIKE,second,-1.417612448827546,ethereal,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,SEANCE,second,2.3271483853854673,create ethereal soul,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,SOUL_STORM,second,-2.059614176705862,exhaust soul,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,WISP,second,-4.013145170721088,,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,DANSE_MACABRE,second,6.056994194190543,,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,DEMESNE,second,0.662730470499537,draw ethereal,draw,,draw,1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,END_OF_DAYS,second,0.08591949979992201,doom,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,HIGH_FIVE,second,0.034245484472771384,debuff osty,osty,debuff,debuff osty,,False
+necrobinder,v0.103.3,v0.107.1,all offers,NO_ESCAPE,second,-0.051726973845188214,doom,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,OBLIVION,second,-0.37410324633743575,doom,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,PARSE,second,-0.17721155155088825,draw ethereal,draw,,draw,1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,PUTREFY,second,4.453379686088598,debuff,,debuff,debuff,-1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,RATTLE,second,-1.6686858238468676,osty,osty,,osty,1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,RIGHT_HAND_HAND,second,-2.1178843235581515,osty,osty,,osty,1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,SHROUD,second,-2.288475597111909,doom,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,SPUR,second,-2.6233491080108964,osty,osty,,osty,1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,TIMES_UP,second,-1.7348517060701616,doom,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,UNDEATH,second,-0.631157818239669,create,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,CLEANSE,second,3.3149124921548365,exhaust osty,osty,,osty,1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,FEAR,second,-0.16634061568952288,debuff ethereal,,debuff,debuff,-1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,LETHALITY,second,0.49779233672672263,attack_play ethereal,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,MISERY,second,-1.090786232159733,debuff,,debuff,debuff,-1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,PULL_AGGRO,second,-0.11442206212354143,osty,osty,,osty,1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,REANIMATE,second,-0.2159587828653949,osty,osty,,osty,1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,SCOURGE,second,-2.6008768992504865,doom draw,draw,,draw,1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,SHARED_FATE,second,1.1183870019353832,,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,TRANSFIGURE,second,3.085250717569025,,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,BONE_SHARDS,second,0.5310883568717414,osty,osty,,osty,1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,DEATHS_DOOR,second,-2.5994341100680898,doom,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,DEFY,second,7.358845447674634,debuff ethereal,,debuff,debuff,-1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,DELAY,second,4.288365008675263,,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,DRAIN_POWER,second,-4.170416534550384,,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,EIDOLON,second,3.0756923311098383,exhaust,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,GRAVEBLAST,second,1.0959670272868507,,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,HANG,second,-0.3592012314240707,,,,,0.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,SACRIFICE,second,0.7469089759043399,osty,osty,,osty,1.0,False
+necrobinder,v0.103.3,v0.107.1,all offers,SLEIGHT_OF_FLESH,second,2.7000584301514614,debuff,,debuff,debuff,-1.0,False
+defect,v0.103.3,v0.107.1,all offers,BALL_LIGHTNING,second,-2.101945345321344,lightning orb,lightning,,lightning orb,1.0,False
+defect,v0.103.3,v0.107.1,all offers,BARRAGE,second,-0.76751139110013,orb,,,orb,0.0,False
+defect,v0.103.3,v0.107.1,all offers,CHAOS,second,-5.472044665422234,orb,,,orb,0.0,False
+defect,v0.103.3,v0.107.1,all offers,COLD_SNAP,second,-0.08699016459479768,frost orb,,,orb,0.0,False
+defect,v0.103.3,v0.107.1,all offers,COMPACT,second,5.547229002444176,create status,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,DARKNESS,second,0.4314887173878519,dark orb,,,orb,0.0,False
+defect,v0.103.3,v0.107.1,all offers,ECHO_FORM,second,0.6693455874498272,,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,FERAL,second,2.5189333607270386,zero_cost,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,GUNK_UP,second,1.8865566431462641,create status,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,ICE_LANCE,second,-0.5775575712455456,frost orb,,,orb,0.0,False
+defect,v0.103.3,v0.107.1,all offers,ITERATION,second,6.443891600022778,draw status,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,LOOP,second,-3.330566907384197,orb,,,orb,0.0,False
+defect,v0.103.3,v0.107.1,all offers,NULL,second,3.927917347871889,dark debuff orb,,,orb,0.0,False
+defect,v0.103.3,v0.107.1,all offers,OVERCLOCK,second,5.277573458895454,create draw status,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,RAINBOW,second,-0.6579038464972053,dark frost lightning orb,lightning,,lightning orb,1.0,False
+defect,v0.103.3,v0.107.1,all offers,SPINNER,second,-2.6485807410595292,orb,,,orb,0.0,False
+defect,v0.103.3,v0.107.1,all offers,STORM,second,-0.8673138954535307,lightning orb power_play,lightning power_play,,lightning orb power_play,1.0,False
+defect,v0.103.3,v0.107.1,all offers,SUNDER,second,-0.537554850300638,,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,SWEEPING_BEAM,second,-2.919876095893912,draw,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,TURBO,second,3.624819127329806,create status,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,BEAM_CELL,second,-1.70935666042463,debuff,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,BOOST_AWAY,second,7.1395317166488095,create status,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,BULK_UP,second,1.735895679150417,orb,,,orb,0.0,False
+defect,v0.103.3,v0.107.1,all offers,CHARGE_BATTERY,second,-1.2565497648909416,,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,COOLANT,second,-1.1699252934986144,orb,,,orb,0.0,False
+defect,v0.103.3,v0.107.1,all offers,FIGHT_THROUGH,second,4.805039922935191,create status,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,FLAK_CANNON,second,5.099253626315043,status,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,HOLOGRAM,second,5.067121360387143,,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,LEAP,second,-3.7562575378487835,,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,LIGHTNING_ROD,second,0.6538144975282206,lightning orb,lightning,,lightning orb,1.0,False
+defect,v0.103.3,v0.107.1,all offers,MACHINE_LEARNING,second,1.1575426634265846,draw,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,REBOOT,second,-0.9129113203794164,draw,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,SMOKESTACK,second,-0.5336178487617173,create status,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,SYNCHRONIZE,second,-1.2862695724564401,focus orb,focus,,focus orb,1.0,False
+defect,v0.103.3,v0.107.1,all offers,TRASH_TO_TREASURE,second,0.692539614880893,create orb status,,,orb,0.0,False
+defect,v0.103.3,v0.107.1,all offers,CLAW,second,-0.7971638640454737,,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,FTL,second,0.49717842077974456,draw,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,HAILSTORM,second,1.4297768465384153,frost,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,HOTFIX,second,-4.829205399224595,focus,focus,,focus,1.0,False
+defect,v0.103.3,v0.107.1,all offers,MODDED,second,0.9404346408042522,draw orb,,,orb,0.0,False
+defect,v0.103.3,v0.107.1,all offers,SCRAPE,second,-1.5964228507937999,draw zero_cost,,,,0.0,False
+defect,v0.103.3,v0.107.1,all offers,THUNDER,second,-1.9802182010538902,lightning orb,lightning,,lightning orb,1.0,False
+defect,v0.103.3,v0.107.1,all offers,VOLTAIC,second,-0.19701249984779662,lightning orb,lightning,,lightning orb,1.0,False
+defect,v0.103.3,v0.107.1,all offers,WHITE_NOISE,second,-0.7072624512128709,create power_play,power_play,,power_play,1.0,False
+ironclad,v0.103.3,v0.107.1,all offers,ARMAMENTS,second,-1.6052066954677906,,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,BLOOD_WALL,second,-0.18030995592039592,hp_loss,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,CRIMSON_MANTLE,second,1.4573851092169787,hp_loss,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,DISMANTLE,second,-1.9495488188214045,debuff,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,FEEL_NO_PAIN,second,7.532594093732271,exhaust,exhaust,,exhaust,1.0,False
+ironclad,v0.103.3,v0.107.1,all offers,FIGHT_ME,second,2.886395926888771,strength,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,IRON_WAVE,second,-5.201666528759699,,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,JUGGLING,second,-3.5275278241811687,attack_play create,,,attack_play,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,MOLTEN_FIST,second,-1.9706243814145465,debuff,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,NOT_YET,second,-1.8312334216024235,,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,OFFERING,second,3.5302618049572896,draw hp_loss,,,draw,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,POMMEL_STRIKE,second,0.39440796642333087,draw,,,draw,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,RAGE,second,-2.9927700723871564,attack_play,,,attack_play,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,SECOND_WIND,second,8.634532246535597,attack_play exhaust,exhaust,,attack_play exhaust,1.0,True
+ironclad,v0.103.3,v0.107.1,all offers,SPITE,second,0.8865541411653958,hp_loss,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,STOKE,second,5.233732047224439,create exhaust,exhaust,,exhaust,1.0,False
+ironclad,v0.103.3,v0.107.1,all offers,TAUNT,second,4.80484126823435,debuff,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,TEAR_ASUNDER,second,0.8114660849791093,hp_loss,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,THRASH,second,1.6005512466938763,attack_play exhaust,exhaust,,attack_play exhaust,1.0,False
+ironclad,v0.103.3,v0.107.1,all offers,TREMBLE,second,2.3132735637273223,debuff,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,ASHEN_STRIKE,second,2.385926210050398,exhaust,exhaust,,exhaust,1.0,False
+ironclad,v0.103.3,v0.107.1,all offers,BARRICADE,second,-0.38867729061616113,block_payoff,block_payoff,,block_payoff,1.0,False
+ironclad,v0.103.3,v0.107.1,all offers,BATTLE_TRANCE,second,3.870725342230539,draw,,,draw,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,BULLY,second,1.6370534789055582,debuff,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,CASCADE,second,-0.0592860155588724,,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,CINDER,second,-0.12831548727885003,exhaust,exhaust,,exhaust,1.0,False
+ironclad,v0.103.3,v0.107.1,all offers,DARK_EMBRACE,second,2.2843344696247656,draw exhaust,exhaust,,draw exhaust,1.0,False
+ironclad,v0.103.3,v0.107.1,all offers,FIEND_FIRE,second,3.223662756905102,exhaust,exhaust,,exhaust,1.0,False
+ironclad,v0.103.3,v0.107.1,all offers,FLAME_BARRIER,second,1.7325467241705825,,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,FORGOTTEN_RITUAL,second,-1.2509138513062075,exhaust,exhaust,,exhaust,1.0,False
+ironclad,v0.103.3,v0.107.1,all offers,INFERNAL_BLADE,second,-2.487734243311061,attack_play create,,,attack_play,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,INFERNO,second,-1.6623138999676625,hp_loss,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,SETUP_STRIKE,second,-5.090446365290297,strength,,,,0.0,False
+ironclad,v0.103.3,v0.107.1,all offers,STAMPEDE,second,-3.326810297728704,attack_play,,,attack_play,0.0,False
+silent,v0.103.3,v0.107.1,all offers,ABRASIVE,second,5.327936940678975,dexterity discard,discard,,discard,1.0,False
+silent,v0.103.3,v0.107.1,all offers,ASSASSINATE,second,-0.8649859808520974,debuff,debuff,,debuff,1.0,False
+silent,v0.103.3,v0.107.1,all offers,BLUR,second,2.723500139798127,block_payoff,,,,0.0,False
+silent,v0.103.3,v0.107.1,all offers,ESCAPE_PLAN,second,2.5331810326756496,draw skill_play,skill_play,,draw skill_play,1.0,False
+silent,v0.103.3,v0.107.1,all offers,EXPOSE,second,4.496354940943567,debuff,debuff,,debuff,1.0,False
+silent,v0.103.3,v0.107.1,all offers,FAN_OF_KNIVES,second,-0.7924290814704175,create shiv,,create shiv,create shiv,-1.0,False
+silent,v0.103.3,v0.107.1,all offers,FLECHETTES,second,3.333455290767901,skill_play,skill_play,,skill_play,1.0,False
+silent,v0.103.3,v0.107.1,all offers,GRAND_FINALE,second,-2.9306669553470344,,,,,0.0,False
+silent,v0.103.3,v0.107.1,all offers,HIDDEN_DAGGERS,second,-0.18233919033301388,create discard shiv,discard,create shiv,create discard shiv,,False
+silent,v0.103.3,v0.107.1,all offers,MASTER_PLANNER,second,0.01476590358080792,discard skill_play,discard skill_play,,discard skill_play,1.0,False
+silent,v0.103.3,v0.107.1,all offers,OUTBREAK,second,-1.9188052817902947,poison,,,,0.0,False
+silent,v0.103.3,v0.107.1,all offers,PHANTOM_BLADES,second,0.6912033222085221,shiv,,shiv,shiv,-1.0,False
+silent,v0.103.3,v0.107.1,all offers,POISONED_STAB,second,-3.0591768141408315,poison,,,,0.0,False
+silent,v0.103.3,v0.107.1,all offers,RICOCHET,second,-0.9086991655471551,discard,discard,,discard,1.0,False
+silent,v0.103.3,v0.107.1,all offers,SHADOW_STEP,second,-1.9127002014808345,attack_play discard,discard,,discard,1.0,False
+silent,v0.103.3,v0.107.1,all offers,SKEWER,second,0.6001688946777322,,,,,0.0,False
+silent,v0.103.3,v0.107.1,all offers,SLICE,second,-5.211503196148866,,,,,0.0,False
+silent,v0.103.3,v0.107.1,all offers,SPEEDSTER,second,-3.5782874749681537,draw,,,draw,0.0,False
+silent,v0.103.3,v0.107.1,all offers,STRANGLE,second,-1.3909012921002843,,,,,0.0,False
+silent,v0.103.3,v0.107.1,all offers,TACTICIAN,second,0.8938311031809452,discard,discard,,discard,1.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,ACROBATICS,second,2.4949746572397857,discard draw,discard,,discard draw,1.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,ASSASSINATE,second,0.5799503184448661,debuff,debuff,,debuff,1.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,BLUR,second,0.8558325404236392,block_payoff,,,,0.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,BOUNCING_FLASK,second,-1.9193172319251022,poison,,,,0.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,DEADLY_POISON,second,-1.5858139258178234,poison,,,,0.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,ENVENOM,second,-0.4599376709069243,attack_play poison,,,,0.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,ESCAPE_PLAN,second,0.7843946862036909,draw skill_play,skill_play,,draw skill_play,1.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,EXPERTISE,second,-2.1531597418447332,draw,,,draw,0.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,FAN_OF_KNIVES,second,0.8017445332675674,create shiv,,create shiv,create shiv,-1.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,FLECHETTES,second,1.6858277183781887,skill_play,skill_play,,skill_play,1.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,FOOTWORK,second,2.4972693580081105,dexterity,,,,0.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,HIDDEN_DAGGERS,second,-0.5129215802190774,create discard shiv,discard,create shiv,create discard shiv,,False
+silent,v0.103.3,v0.107.1,upgraded offers,MALAISE,second,2.028406014803377,debuff,debuff,,debuff,1.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,PIERCING_WAIL,second,4.073030460204373,,,,,0.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,PRECISE_CUT,second,0.06799801768470054,,,,,0.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,PREPARED,second,1.1640348201533168,discard draw,discard,,discard draw,1.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,REFLEX,second,1.1310012432172685,discard draw,discard,,discard draw,1.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,SHADOWMELD,second,0.1588070964640167,block_payoff,,,,0.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,SPEEDSTER,second,-0.0042470105488670775,draw,,,draw,0.0,False
+silent,v0.103.3,v0.107.1,upgraded offers,TRACKING,second,1.1650584976628195,attack_play debuff,debuff,,debuff,1.0,False

@@ -1555,3 +1555,16 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
   `export`, with the new `PLACEBO_FACTORS_ALL`: `site_figures` needs pyfixest, which the export
   doesn't, and it imports them back, so `scripts/site_publish.sh` is unchanged. The factors are
   the rounded ones the site uses; the test checks them against `numbers.json`.
+- Spillover diagnostics (triage M, exploratory; CC's choices, open to review, 2026-11-06): no
+  factor, number or headline changes. Signed dose is direction × log_ratio, because `direction`
+  is +1 on every row of `tweak_sizes.csv`, so direction × |log_ratio| would be unsigned. The
+  "clean" Defect window has no numeric tweak but three substantive changes (Hotfix, Voltaic,
+  Rocket Punch) and three wording changes; all six stay out of the fits. A robust sd between 2
+  and the factor counts as unresolved, which is where the declared 2.73 [0.81, 4.14] landed.
+  Outputs go to `triage/out_final/` since they use the final tables.
+- Drift diagnostics (triage N, exploratory; CC's choices, open to review, 2026-11-06): no factor,
+  number or headline changes. Builds v0.99.1, v0.103.2, v0.107.1, chosen from a listing before any
+  drift number; v0.103.3 has 2 full weeks. Rarity is derived from offer tiers (95 of 97 on file
+  match), since `reference/raw/` stays closed; card type is not computed in the sandbox. Test 4's
+  declared rule, using a corrected SE, turned out to reward noise, so a noise-only benchmark was
+  added post hoc and the reading rests on it. Detrending is not a calibration option.

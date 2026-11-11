@@ -1571,3 +1571,534 @@ estimates before any new fit. Inferred: every "reading" paragraph; the substitut
 interpretation of L's per-character shifts; the beta-channel explanation of the 06-18 trickle;
 the claims about selection in G5. Unverified: the rarity outcome (not computed), whether the
 token is opt-in, and why the second patch did less.
+
+---
+
+# Part 3 (section M)
+
+## M. Spillover and the placebo spread — EXPLORATORY
+
+**EXPLORATORY.** Proposed by Phil after the placebo results were seen. Nothing in this section
+changes the calibration factors, the numbers module, the guide or any headline result. Script:
+`triage/scripts/m_spillover.py`; tables in `triage/out_final/m_*.csv`.
+
+**Inputs.** Unlike Parts 1 and 2 (1,873 pages), this section uses the final tables and fits:
+`data/runs/runs.duckdb` (read-only, 2,071 pages, parser 1.7.0) and
+`data/analysis/placebo_h3.parquet` (weeks 0–3, same-color controls, one row per (window, pseudo
+card); 463 pairs; `min_offers` 51; factors 4.10 / 2.67). So the C numbers (4.33 / 2.09) are not
+the comparison here; the 4.10 is. Aggregates and card-level estimates only. Card colors come
+from `db.use_derived_colors()`, since `reference/raw/` stays closed.
+
+### Interpretation rule, written before running
+
+Declared 2026-11-06, before any exposure or clean-placebo number was computed. Git writes are
+blocked in this session, so no commit timestamps this order; the claim rests on this note.
+
+Phil's rule for test 3, as given: **test 3 robust sd near the patch factor → spillover is not
+the main cause; near 1–2 → contamination is a large part.** The patch factor is the first
+patch's 4.10.
+
+Added by me, also before running:
+- The rule names two outcomes. A robust sd between 2 and the factor, or a confidence interval
+  that spans both, counts as unresolved. No cutoff for "near" was declared, so the estimate is
+  reported with its interval and not forced into either reading.
+- Test 2 predictions: corr(z, signed exposure) < 0 and corr(z², exposure) > 0.
+
+Known limits of test 3, seen in the reference tables before running:
+- **"Zero changes" holds for numeric tweaks only.** `tweak_sizes.csv` lists numeric tweaks.
+  `card_versions.csv` shows six Defect cards changed in v0.99.1 → v0.103.2: Hotfix (rework),
+  Voltaic (cost 2 → 3), Rocket Punch (text-only, labeled `mechanic`: its cost reduction now
+  lasts until played) and three `wording` changes (Flak Cannon, Iteration, Trash to Treasure).
+  All six leave the pseudo cards and the controls, as `windows.csv` excludes them. Defect is
+  the least changed window, not an unchanged one.
+- It is one character in one window. A Defect result can't separate "no spillover" from
+  "Defect drifted differently".
+- Changes outside cards (relics, enemies, colorless cards) are in every window and are not
+  removed by this test.
+
+Choice forced by the data: `direction` is +1 on all 50 rows of `tweak_sizes.csv` (it means "a
+bigger number is stronger"), and the sign of a change lives in `log_ratio`. So "direction ×
+|log_ratio|" would be unsigned and would equal sum |log_ratio|. Signed dose here is direction ×
+log_ratio, the `x` of the dose line (`common.all_tweaks`).
+
+### Answer
+
+**Spillover from changed cards is not shown to explain the placebo spread, and it is not
+ruled out.** Test 3 is unresolved under the rule. Test 2 finds no signed spillover, and the
+spread does not track exposure once the patch contrast is removed. [inferred]
+
+### Checks before reading anything [computed]
+
+- `placebo_h3` gives 463 pairs and first-patch robust sd 4.10; the script stops otherwise.
+- `--check`: the script's sampling and fit, with derived colors, reproduce the saved placebo
+  fits for Hemokinesis (first patch) and Uproar (second): same pseudo cards, same `n_eligible`,
+  max |Δz| 1.1e-07.
+- Exposures recomputed from `did.load_block_data` for 4 Ironclad cards: after block within
+  0.002. Before block, the SQL is about 0.02 higher on screen exposure, because it also counts
+  changed cards outside the color map. Grapple is the large one: 9,569 Ironclad offers before,
+  9 after (removed), and it is a changed card. Not reconciled to the digit.
+
+Added after the first run, so they are not part of the declared design: the `*_subst` exposures,
+intervals on window spreads and within-window correlations, the partial correlations, and the
+all-eligible Defect fit. The first run's results had been seen. The declared numbers did not
+change.
+
+### 1. Spread by character-window [computed]
+
+Tables: `m_windows.csv`, `m_window_spearman.csv`. Dose is direction × log_ratio over the
+window's numeric tweaks. "Changed" counts every kind of change in that color; "subst." leaves
+out wording-only changes. Upgrade-only tweaks without a log_ratio count as tweaks with no dose.
+Interval: 95%, resampling pairs.
+
+| Patch | Color | Tweaks | Line | Changed | Subst. | Sum \|log_ratio\| | Net signed dose | Pairs | Robust sd z [95%] | Plain sd z | Mean z |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| first | Ironclad | 2 | 2 | 14 | 12 | 0.47 | +0.47 | 35 | 4.83 [3.32, 6.77] | 4.90 | −0.06 |
+| first | Necrobinder | 3 | 3 | 10 | 10 | 0.76 | +0.76 | 44 | 3.15 [2.05, 4.40] | 3.70 | +0.03 |
+| first | Regent | 12 | 11 | 25 | 24 | 2.56 | +2.56 | 56 | 4.26 [2.94, 5.88] | 4.63 | −0.12 |
+| first | Silent | 10 | 8 | 15 | 14 | 2.78 | −1.91 | 82 | 3.79 [2.91, 4.93] | 4.60 | −0.26 |
+| second | Defect | 3 | 3 | 6 | 6 | 0.41 | +0.41 | 44 | 2.13 [1.45, 3.58] | 2.98 | +0.43 |
+| second | Ironclad | 2 | 2 | 6 | 6 | 0.34 | +0.34 | 34 | 3.37 [2.06, 4.49] | 3.27 | +0.63 |
+| second | Necrobinder | 4 | 4 | 5 | 4 | 1.39 | +0.58 | 53 | 2.73 [1.72, 3.77] | 2.70 | +0.49 |
+| second | Regent | 6 | 4 | 14 | 13 | 0.83 | +0.19 | 75 | 2.79 [2.00, 3.61] | 3.28 | +0.02 |
+| second | Silent | 2 | 1 | 6 | 6 | 0.15 | +0.15 | 40 | 1.92 [1.18, 3.02] | 2.24 | +0.27 |
+
+Spearman of robust sd z. **n = 9 windows pooled, 4 first patch, 5 second.** With n = 4 the
+smallest possible two-sided p is 0.083, so the within-patch rows can't reach 0.05.
+
+| Against | Pooled (9) | First (4) | Second (5) |
+|---|---|---|---|
+| n tweaks | +0.21 | −0.20 | +0.21 |
+| n line tweaks | +0.31 | −0.20 | +0.36 |
+| n changed, every kind | +0.72 | +0.40 | +0.22 |
+| n changed, substantive | +0.68 | +0.40 | +0.22 |
+| sum \|log_ratio\| | +0.45 | −0.40 | +0.30 |
+| sum \|log_ratio\|, line tweaks | +0.48 | −0.20 | +0.30 |
+
+Reading. [inferred] The pooled +0.72 mostly restates that the first patch changed more and
+spread more; those are the same two groups as the factors. Within the first patch the size of
+the change does not order the spread: Ironclad has 2 tweaks and the largest spread, Regent 12
+and less. Nine points can't separate spillover from anything else that differs by patch.
+
+### 2. Exposure of each placebo pair [computed]
+
+Tables: `m_exposure_pairs.csv`, `m_exposure_corr.csv`. After block is weeks 0–3, before block is
+as the fit keeps it. Screens are the fit's `screen_id`; lists that couldn't be split count as one
+screen (about 1% of combat offers). "Took" means picked from a reward screen, so shop purchases
+don't count. Exposure uses all of a window's changed cards, including the real treated cards the
+placebo fit leaves out.
+
+Pearson with 95% bootstrap intervals (2,000 draws, resampling pseudo cards), after block.
+Before-block values are within 0.05 of these; all are in the CSV. 463 pairs, 312 cards pooled;
+217 and 199 first; 246 and 222 second.
+
+| Test (prediction) | Pooled | First | Second |
+|---|---|---|---|
+| z, signed exposure (< 0) | +0.01 [−0.13, +0.15] | +0.00 [−0.16, +0.17] | +0.05 [−0.07, +0.17] |
+| z², screen exposure (> 0) | +0.22 [+0.13, +0.30] | +0.11 [−0.01, +0.23] | +0.01 [−0.13, +0.14] |
+| z², run exposure (> 0) | +0.17 [+0.10, +0.23] | −0.05 [−0.18, +0.08] | +0.03 [−0.11, +0.16] |
+| z², screen, substantive | +0.23 [+0.15, +0.31] | +0.12 [−0.01, +0.24] | +0.04 [−0.11, +0.17] |
+| z², run, substantive | +0.16 [+0.10, +0.23] | −0.05 [−0.19, +0.08] | +0.04 [−0.10, +0.16] |
+
+The same on deviations from each window's mean (post hoc), and then with log offers partialled
+out as well:
+
+| Test | Pooled | First | Second | Pooled, offers out | First, offers out | Second, offers out |
+|---|---|---|---|---|---|---|
+| z, signed exposure | −0.04 [−0.14, +0.07] | −0.05 [−0.18, +0.07] | +0.07 [−0.04, +0.17] | −0.04 | −0.05 | +0.08 |
+| z², screen, substantive | +0.18 [+0.11, +0.25] | +0.25 [+0.17, +0.32] | −0.11 [−0.20, −0.02] | +0.12 | +0.07 | −0.05 |
+| z², run, substantive | −0.22 [−0.27, −0.16] | −0.27 [−0.35, −0.19] | −0.19 [−0.28, −0.11] | −0.11 | −0.12 | −0.12 |
+
+Mean exposure, after block (every change / substantive):
+
+| Window | Screen | Run |
+|---|---|---|
+| First: Ironclad | 0.27 / 0.25 | 0.77 / 0.74 |
+| First: Necrobinder | 0.25 / 0.25 | 0.80 / 0.80 |
+| First: Regent | 0.64 / 0.62 | 0.97 / 0.97 |
+| First: Silent | 0.40 / 0.40 | 0.90 / 0.90 |
+| Second: Defect | 0.14 / 0.14 | 0.41 / 0.41 |
+| Second: Ironclad | 0.11 / 0.11 | 0.38 / 0.38 |
+| Second: Necrobinder | 0.09 / 0.07 | 0.35 / 0.28 |
+| Second: Regent | 0.30 / 0.29 | 0.85 / 0.84 |
+| Second: Silent | 0.16 / 0.16 | 0.51 / 0.51 |
+
+Correlation of each exposure between the blocks: screen 0.995, run 0.990, signed 0.996.
+
+Reading. [inferred]
+- **Signed test: no support.** The sign spillover predicts does not appear in either patch, and
+  the intervals exclude anything beyond about −0.17.
+- **Variance test: the pooled positive is the patch contrast.** Within each patch the intervals
+  include zero. Inside windows the first and second patches take opposite signs, and offer
+  volume absorbs most of that. Run exposure inside windows has the wrong sign.
+- **The before block is not a real contrast.** Exposure is almost the same in both blocks, so it
+  behaves as a fixed property of a card (rarity, when it's offered), not as something the patch
+  did. That is why the before-block correlations match, and it means test 2 can't tell exposure
+  from anything else tied to those card properties.
+- **Run exposure is saturated** in the first patch (0.74–0.97), so it has little range there.
+- **L is not contradicted.** L's shift of about 1 pp is shared across a character's cards, and
+  same-color controls cancel a shared shift. Test 2 looks for card-by-card spillover, which is
+  what would widen z.
+
+### 3. Clean placebo [computed]
+
+Tables: `m_clean_placebo.csv`, `m_clean_summary.csv`, `m_clean_exposure.csv`. Across the ten
+character-windows, one has no row in `tweak_sizes.csv`: Defect v0.99.1 → v0.103.2. It has enough
+offers: all 74 unchanged Defect cards pass `min_offers` 51 in both blocks. Fits use `did.load_block_data`
+and `did.placebo_fit` with the window row of a Defect card-patch, seed 0, weeks 0–3, same-color
+controls, 73 controls per fit, all offers. Intervals resample cards.
+
+| Design | Fits | Robust sd z [95%] | Plain sd z | Mean z | Share \|z\| > 2 | First-patch factor |
+|---|---|---|---|---|---|---|
+| **Declared: 20 cards** | 20 | **2.73 [0.81, 4.14]** | 3.35 | −0.24 | 0.50 | 4.10 |
+| Secondary, post hoc: all eligible | 74 | 3.24 [2.09, 4.18] | 3.75 | −0.18 | 0.57 | 4.10 |
+
+How clean the window is: pseudo cards' mean exposure to the three substantive changes (Hotfix,
+Voltaic, Rocket Punch), after block: screen 0.08, run 0.40. That is 3 to 7 times below the other
+first-patch windows on screens (0.25–0.62), and about half on runs (0.74–0.97). Exposure is
+reduced, not zero, and the pool has no large card added or removed.
+
+**Under the declared rule: unresolved.** The estimate sits between the two named outcomes, and
+its interval spans both.
+
+Reading. [inferred]
+- The all-eligible fit leans away from "contamination is a large part": its interval only just
+  excludes 2 and includes 4.10. It was not declared, its 20 declared cards are among the 74, and
+  the estimate is still below 4.10, so it's a lean and not a verdict.
+- Defect is more spread out in the first patch (3.24) than in the second (2.13 [1.45, 3.58])
+  despite less exposure (0.08 against 0.14 on screens, 3 substantive changes against 6). The
+  intervals overlap. The direction is the opposite of spillover and fits calendar-time drift,
+  C's hypothesis 1.
+- A first-patch-scale spread with few changed cards is what drift predicts, but one character
+  in one window can't show that, and Defect may simply have drifted differently.
+
+### What this does not settle
+
+- Spillover through channels with no card-level exposure measure here: relic, enemy and
+  colorless changes, and shop purchases.
+- Whether C's hypothesis 1 (card trends) is the cause. These tests look for spillover and don't
+  measure trends directly.
+- The size of any spillover share of the spread. Nothing here gives a share.
+
+---
+
+## N. Card-level drift and the placebo spread — EXPLORATORY
+
+**EXPLORATORY.** Proposed by Phil after the placebo results and section M were seen. Nothing in
+this section changes the calibration factors, the numbers module, the guide or any headline
+result. Script: `triage/scripts/n_drift.py`; tables in `triage/out_final/n_*.csv`. Inputs: the
+final tables (2,071 pages, read-only) and `data/analysis/placebo_h3.parquet`.
+
+### Predictions and rules, written before running
+
+Written 2026-11-06, before any drift number was computed. The only run-data query made first
+listed offers and dates per build, and ascension and act counts. Git writes are still blocked,
+so no commit timestamps this order; the claim rests on this note and on the order of the diff.
+
+**Population.** As the placebo fits: `offers_with_version`, known ascension, each card from its
+own character's runs, own-color cards, all offers (`picked`), with no adjustment in tests 1 and
+5's unstratified fit. Cards must be unchanged on both sides of the build: not in
+`window_changes` for the windows entering or leaving it. A card changed at a release is
+expected to settle, and the placebo pool leaves changed cards out anyway.
+
+**Builds, chosen from the listing alone.** Stable branch; only offers from the weeks the build
+was the current stable (from its release to the next stable's), counted in full weeks from
+release; at least 4 full weeks.
+
+| Build | Current stable | Full weeks | Use |
+|---|---|---|---|
+| v0.99.1 | 03-17 to 04-16 | 4 | yes |
+| v0.103.2 | 04-16 to 05-29 | 6 | yes |
+| v0.103.3 | 05-29 to 06-18 | 2 | no: too short for a slope |
+| v0.107.1 | 06-18 to 10-04 (snapshot end) | 15 | yes |
+
+Betas are out (a different population, and v0.111.0 is one despite its size). v0.98.x are out:
+one week or less. Week 0 stays in test 1 and is skipped in test 2's blocks (release-week
+transients). v0.107.1 is also reported on its first 6 weeks, so the builds compare at one
+horizon: a 15-week slope and a 4-week slope aren't the same quantity under a random walk.
+
+**Definitions fixed here.**
+- Slope: weighted linear fit of weekly logit pick rate (empirical logit, +0.5) on week, weights
+  n p(1−p); the pp version weights n / p(1−p). Each card needs at least 51 offers (`min_offers`)
+  in every week it's fit on. Slopes are compared to the mean of the same build and character, so
+  a shift shared by a character's cards doesn't count, as the DiD's controls remove it.
+- sigma_g² = Var(g) − mean(SE²). SE is binomial. Weekly shocks that aren't a trend also inflate
+  Var(g), so lack of fit (chi²/df around the line) is reported, with a version scaling SE² by it.
+- Rarity is derived from offer counts and checked against the rarities on file. Card type exists
+  only in `reference/raw/`, so the split stays blank here unless `TRIAGE_COLORS=reference` is set.
+- Test 2 blocks are 1 week long. Gap = weeks from the start of one block to the start of the
+  next, which is also center to center: gap 1 is adjacent blocks. The first block starts at week
+  1. v0.107.1 also runs a second scan from week 8, to compare early and late. Possible gaps:
+  v0.99.1 1, 2; v0.103.2 1, 2, 4; v0.107.1 1, 2, 4, 6 in each scan. Same 20 pseudo cards per
+  character across a scan's gaps, seed 0. Controls: the character's unchanged cards.
+- log(excess sd) on log(gap) has a free intercept per scan, so gap is not confounded with build.
+  Excess variance = Var(β) − mean(SE²). The interval resamples pseudo cards.
+- Test 3 uses each window's actual offer-time distribution (stragglers included) and each pair's
+  SE. Trend: Δ² from the blocks' mean times. Other shapes: the variance of a fractional Brownian
+  path, averaged over the two blocks, so block length is respected.
+- Test 4: the slope is fit per card on before-block offers with week < 0 (stragglers played
+  after the release would have extreme leverage), demeaned by card × upgraded. The line is
+  removed from every offer of every card in the fit. One fit per pair, using the pair's first
+  tweak, against that tweak's saved z. The projected slope has its own error, which the clustered
+  SE doesn't know: Δ² Var(slope). So z is reported with both SEs, and the corrected SE is primary.
+- Test 5 bands: A0, A1–4, A5–8, A9–10, about equal in offers. Fixed mix: each card's own
+  band × act mix over the build, by direct standardization.
+
+**Predictions and what each outcome means.** "Near" is defined here so nothing lands undefined,
+as test 3 of section M did. An interval spanning two outcomes counts as unresolved.
+
+| Test | If drift | Outcomes |
+|---|---|---|
+| 1. sigma_g | > 0 clearly; larger in earlier builds | Interval above 0: within-build drift exists. Includes 0: none detected. Order across builds v0.99.1 > v0.103.2 > v0.107.1 (6 weeks): supports early-access settling; any other order counts against it. |
+| 2. Gap slope | Near 1 (steady) or 0.5 (random walk) | ≥ 0.75 steady trend; 0.25–0.75 random walk; < 0.25 not drift. |
+| 3. Budget | Predicted sd z near 4.10 / 2.67 | Share = (predicted² − 1) / (actual² − 1). ≥ 0.7 drift is sufficient; 0.3–0.7 part of the spread; < 0.3 minor. Reported per patch. |
+| 4. Detrended | Robust sd falls toward 1–1.5 | ≤ 1.5: linear trend explains it. 1.5 to 80% of the factor: part. Above 80%: linear pre-trends don't explain it. |
+| 5. Mix | sigma_g about unchanged | Within 25% of the unstratified value: drift isn't player mix. Falls by more: mix is a large part. |
+
+Limits known before running:
+- **Test 4 can fail with drift present.** A random walk has no trend to project, so a pre-slope
+  says nothing about what comes next. "No fall" rules out persistent linear trends, not drift.
+  Read it with test 2.
+- **Test 1 can't see steps.** A shift at a release (relics, enemies, a meta change, spillover)
+  isn't within-build drift, so test 3's gap between predicted and actual holds any such step
+  along with everything else. A shortfall doesn't identify a cause.
+- Test 2's 1-week blocks are noisier than the real blocks, so excess variance may be small
+  against SE² at short gaps and its log undefined. Such cells are reported, not dropped silently.
+- Second-patch budget: v0.103.3 has no slope of its own, so its neighbors stand in.
+- Weekly shocks that don't persist look like drift in test 1 and like slope 0 in test 2.
+
+### Answer
+
+**Drift accounts for part of the placebo spread, not all of it, and it isn't a steady trend.**
+Unchanged cards do move within a build, by about 0.7 pp per week early on. That movement fades
+later in a build, it doesn't carry across a release, and removing pre-trends removes nothing. The
+budget puts drift at about a third to two thirds of the excess variance, with more left over in
+the first patch. So the placebo factors stay as they are, and linear detrending is not a fix.
+[inferred]
+
+### Declared outcomes [computed]
+
+| Test | Result | Declared outcome |
+|---|---|---|
+| 1. sigma_g | 0.69 pp/week [0.64, 0.73]; 0.035 logit [0.033, 0.037] | **Drift exists.** Build order tied, not as predicted (see test 1) |
+| 2. Gap slope | **0.18 [0.02, 0.47]** | **Unresolved:** spans "not drift" and "random walk". Excludes steady trend |
+| 3. Budget | Share 0.66 / 0.70 from test 1; 0.12 / 0.20 from test 2's shape | **Part** from test 1, **minor** from test 2 |
+| 4. Detrended | Corrected robust sd 2.11 / 1.40 | Rule says **part** / **explains**. **Both readings are wrong; see test 4** |
+| 5. Mix | sigma_g 0.030 against 0.035 (−13%) | **Not player mix**, overall |
+
+### Checks and changes after the predictions [computed]
+
+- `--check`: the model path returns saved placebo β and SE for 4 pairs across both patches, directly
+  and through a fake window (|Δβ| ≤ 2e-13). `block_var` and `lines` pass known-answer checks.
+- Rarity is derived from offers. My first attempt failed validation (27 of 35 Uncommons wrong: the
+  cards on file are nearly all changed cards, and I had already dropped their changed builds).
+  Counted before exclusions, offers are tri-modal and 95 of 97 cards on file match. This was fixed
+  before any drift number was computed.
+- **Card type: not computed.** It exists only in `reference/raw/`. Set `TRIAGE_COLORS=reference`
+  and rerun `--part 1` to fill the split.
+- Choice made while coding, not in the note: in test 4, stragglers' time is capped at week 4, so a
+  line isn't projected months out.
+- **Part 6 is post hoc, added after reading tests 1–5:** stretches of a build, scans one by one,
+  test 4's noise-only benchmark, the direct budget. Everything marked post hoc below comes from it.
+
+### Builds [computed]
+
+Offers in the weeks each build was the current stable, own-color unchanged cards:
+
+| Build | Weeks | Offers | Cards |
+|---|---|---|---|
+| v0.99.1 | 4 | 3,225,024 | 332 |
+| v0.103.2 | 6 | 3,505,381 | 333 |
+| v0.107.1 | 15 | 9,740,796 | 365 |
+
+### 1. Within-build drift [computed]
+
+Tables: `n_sigma.csv`, `n_sigma_pooled_character.csv`, `n_slopes.csv`. Slopes are relative to the
+build × character mean. "Lack of fit" is chi²/df around the line (1 if binomial noise were all
+there is). The last column scales SE² by it. v0.107.1 is at 6 weeks unless marked.
+
+| Split | Level | Slopes | sigma_g pp/week [95%] | sigma_g logit/week [95%] | Lack of fit | sigma_g pp, lack-of-fit SE |
+|---|---|---|---|---|---|---|
+| Overall | all | 1,028 | 0.69 [0.64, 0.73] | 0.035 [0.033, 0.037] | 1.68 | 0.61 |
+| Build | v0.99.1 | 332 | 0.72 [0.63, 0.80] | 0.037 [0.033, 0.041] | 1.52 | 0.62 |
+| Build | v0.103.2 | 332 | 0.73 [0.66, 0.79] | 0.037 [0.034, 0.040] | 1.65 | 0.69 |
+| Build | v0.107.1 | 364 | 0.62 [0.56, 0.67] | 0.031 [0.029, 0.034] | 1.80 | 0.56 |
+| Build | v0.107.1, 15 weeks | 364 | 0.27 [0.25, 0.30] | 0.013 [0.012, 0.014] | 2.06 | 0.26 |
+| Character | Defect | 222 | 0.57 [0.49, 0.64] | 0.029 [0.026, 0.033] | 1.64 | 0.48 |
+| Character | Ironclad | 208 | 0.73 [0.63, 0.83] | 0.038 [0.032, 0.043] | 1.70 | 0.67 |
+| Character | Necrobinder | 215 | 0.63 [0.53, 0.74] | 0.031 [0.026, 0.035] | 1.79 | 0.54 |
+| Character | Regent | 179 | 0.74 [0.64, 0.86] | 0.039 [0.034, 0.043] | 1.52 | 0.69 |
+| Character | Silent | 204 | 0.75 [0.64, 0.85] | 0.038 [0.033, 0.043] | 1.76 | 0.69 |
+| Rarity | Common | 248 | 0.55 [0.49, 0.62] | 0.033 [0.030, 0.037] | 2.51 | 0.51 |
+| Rarity | Uncommon | 457 | 0.73 [0.66, 0.79] | 0.037 [0.033, 0.040] | 1.48 | 0.69 |
+| Rarity | Rare | 323 | 0.72 [0.62, 0.81] | 0.034 [0.029, 0.039] | 1.31 | 0.66 |
+| Card type | — | | not computed | | | |
+
+Partially pooled per character (pp; shrunk toward 0.69, between-character variance 0.007): Defect
+0.60, Necrobinder 0.66, Ironclad 0.71, Regent 0.72, Silent 0.72. On the logit scale the
+between-character variance is about zero, so most of the pp difference is base rates. Defect has
+the lowest drift, which bears on section M's clean window.
+
+Stretches of a build, post hoc (`n_posthoc_sigma.csv`, pp/week):
+
+| Stretch | sigma_g [95%] | Lack-of-fit SE |
+|---|---|---|
+| v0.107.1 weeks 1–7 | 0.49 [0.44, 0.53] | 0.43 |
+| v0.107.1 weeks 8–14 | 0.29 [0.23, 0.34] | 0.20 |
+| All three builds, release week out | 0.70 [0.64, 0.75] | 0.51 |
+
+Reading. [inferred]
+- Drift exists: the interval is far from 0.
+- **The predicted order failed as written.** v0.99.1 and v0.103.2 tie and v0.107.1 is a little
+  lower. At a fixed mix the order does hold (test 5), but that view wasn't the declared one.
+- **It fades within a build.** On equal 7-week stretches of v0.107.1, sigma_g falls from 0.49 to
+  0.29, intervals clear of each other. The 15-week slope (0.27) against the 6-week one (0.62) has
+  a ratio of 0.44, close to the 0.40 expected if movement stopped after week 6; a random walk would
+  give 0.63. One build shows this, so "early in a build" and "early in the summer" can't be told
+  apart.
+- Lack of fit of 1.7 means there are also weekly shocks of about 1 pp that aren't a trend.
+
+### 2. Gap scan [computed]
+
+Tables: `n_gap_fits.csv`, `n_gap_summary.csv`, `n_gap_slope.csv`. 1-week blocks, 20 pseudo cards
+per character, placebo model and clustering. Excess variance in pp².
+
+| Scan | Gap | Fits | Robust sd z | Plain sd z | sd β (pp) | Mean SE (pp) | Excess var |
+|---|---|---|---|---|---|---|---|
+| v0.99.1 from week 1 | 1 | 100 | 1.43 | 1.24 | 1.84 | 1.51 | 0.86 |
+| | 2 | 100 | 1.37 | 1.46 | 2.28 | 1.56 | 2.51 |
+| v0.103.2 from week 1 | 1 | 100 | 1.29 | 1.22 | 2.32 | 1.81 | 1.73 |
+| | 2 | 100 | 1.40 | 1.24 | 2.45 | 1.90 | 1.95 |
+| | 4 | 100 | 1.66 | 1.81 | 2.94 | 1.77 | 5.12 |
+| v0.107.1 from week 1 | 1 | 100 | 1.50 | 1.56 | 2.46 | 1.48 | 3.59 |
+| | 2 | 100 | 1.81 | 1.85 | 2.76 | 1.57 | 4.85 |
+| | 4 | 100 | 2.01 | 1.97 | 2.89 | 1.61 | 5.44 |
+| | 6 | 100 | 1.91 | 1.85 | 3.01 | 1.71 | 5.76 |
+| v0.107.1 from week 8 | 1 | 100 | 1.08 | 1.23 | 2.70 | 2.15 | 2.15 |
+| | 2 | 100 | 0.95 | 1.01 | 2.27 | 2.18 | −0.18 |
+| | 4 | 100 | 0.97 | 1.13 | 2.65 | 2.18 | 1.74 |
+| | 6 | 100 | 1.24 | 1.30 | 2.86 | 2.18 | 2.89 |
+
+**log(excess sd) on log(gap), free intercept per scan: 0.18 [0.02, 0.47]**, 12 of 13 cells (one has
+negative excess, so no log). Excess sd at gap 1: 1.44 pp. Scan by scan, post hoc
+(`n_posthoc_scans.csv`): v0.103.2 0.39 [0.11, 0.89]; v0.107.1 early 0.13 [−0.01, 0.29]; v0.107.1
+late 0.04 [−0.31, 0.63]. v0.99.1 has two gaps, so no slope.
+
+Reading. [inferred] Steady trend is out: the interval stops at 0.47. Random walk and "not drift"
+are both inside it. The main feature is that excess is already large at gap 1 and grows slowly, as
+weekly shocks would. Late in v0.107.1 robust sd z is about 1 and robust excess about 0, though plain
+excess still reaches 2.9 pp², so a few cards do move. That is the clearest single result here:
+**well after a release, most unchanged cards behave as the errors say they should.** Note that
+1-week blocks have large SEs, so a z near 1 there is a weaker statement than it would be at the
+real blocks' precision.
+
+### 3. Budget [computed]
+
+Tables: `n_budget.csv`, `n_budget_windows.csv`, `n_budget_posthoc.csv`, `n_budget_direct.csv`.
+Mean distance between blocks, from the actual offers: 3.96 weeks (first), 3.00 (second). Each row
+predicts robust sd z with each pair's own SE. Actual: 4.10 / 2.67. Share as declared.
+
+| Drift assumed | First: predicted, share | Second: predicted, share |
+|---|---|---|
+| Steady trend, sigma_g pp | 3.37, 0.66 | 2.30, 0.70 |
+| Same, upper end of sigma_g | 3.57, 0.74 | 2.41, 0.78 |
+| Same, sigma_g logit × p(1−p) | 3.23, 0.60 | 2.23, 0.64 |
+| Same, neighbouring builds' sigma_g | 3.53, 0.72 | 2.27, 0.67 |
+| Same, lack-of-fit SE | 3.06, 0.53 | 2.12, 0.57 |
+| Post hoc: release week out, lack-of-fit SE | 2.63, 0.37 | 1.88, 0.41 |
+| Test 2's scale, random walk | 2.95, 0.49 | 2.25, 0.66 |
+| **Test 2's scale and fitted exponent** | **1.70, 0.12** | **1.50, 0.20** |
+| Test 2's scale, steady trend | 6.75, 2.81 | 4.30, 2.85 |
+
+The last row overshoots because it treats gap 1's excess, mostly weekly shocks, as a weekly
+trend. It is a bound, not an estimate.
+
+Direct comparison, post hoc: real placebo excess variance is 11.8 pp² (first) and 6.7 (second).
+The within-build scans at gap 4, the nearest to the real blocks' distance, give 4.07 pooled, 5.12
+and 5.44 in early scans, and 1.74 late. So early-scan shares are 0.43–0.46 (first) and 0.76–0.81
+(second), and the pooled ones 0.35 and 0.61. These flatter drift: 1-week blocks keep shocks that
+the real multi-week blocks average out.
+
+Reading. [inferred]
+- Test 1's budget assumes the steady trend that test 2 rejects, so 0.66 / 0.70 is an upper
+  reading. Test 2's 0.12 / 0.20 is low, because its fit mixes in the late scan and measures no
+  release. The defensible range is about **0.35–0.7**: part, not all.
+- **First patch has the larger shortfall:** at least 6 pp² isn't reached by anything within a
+  build. Test 1 can't see a step at a release, so that's where any step would sit, along with
+  spillover and everything else. A shortfall doesn't identify a cause, as declared.
+- Block timing alone goes some way to the factors' difference: the same sigma_g gives 3.37 and 2.30
+  (ratio 1.47; actual 1.53) because the first window's blocks are about a week further apart. That
+  relies on the steady trend, so it's suggestive only. On test 2's shape the ratio is 1.14.
+
+### 4. Detrended placebo [computed]
+
+Tables: `n_detrended_pairs.csv`, `n_detrended.csv`, `n_detrended_bench.csv`. 463 fits, one per pair.
+
+| | First | Second |
+|---|---|---|
+| Saved robust sd z (factor) | 4.10 | 2.67 |
+| Detrended, clustered SE | 5.01 | 4.47 |
+| **Detrended, corrected SE (declared primary)** | **2.11** | **1.40** |
+| **Noise-only benchmark, post hoc** | **1.98** | **1.28** |
+| sd β before → after detrending (pp) | 3.80 → 5.32 | 3.28 → 7.42 |
+| Median SE before → corrected (pp) | 0.82 → 1.93 | 0.95 → 3.18 |
+
+Would the pre-slope have predicted the placebo β, post hoc? All-offers pairs only: 197 first, 206
+second. The 60 upgraded-offers pairs have so few offers that they swamp the noise term.
+
+| | First | Second |
+|---|---|---|
+| Coefficient of β on the projection [95%] | +0.08 [−0.06, +0.23] | −0.02 [−0.12, +0.10] |
+| Expected if pre-trends carried on (reliability of the pre-slope) | 0.68 | 0.20 |
+| R² | 0.006 | 0.000 |
+
+Reading. [inferred]
+- **The declared rule gives the wrong answer here, and the fault is in the rule I wrote.** The
+  corrected robust sd falls to 2.11 / 1.40, which reads as "part" and "explains". But detrending
+  made β noisier, not tighter, and the fall comes entirely from the larger SE in the denominator.
+  The benchmark shows it: pure noise in place of the pre-slope gives 1.98 / 1.28, as low as or
+  lower than the real thing. **Detrending removed nothing.**
+- **Linear pre-trends don't carry across a release.** In the first patch the pre-slope is well
+  measured, and its coefficient is far below 0.68. The second patch's is less sharp, but its
+  interval also stops short of 0.20.
+- As declared, this doesn't rule out drift: a pre-slope says nothing about a random walk or about
+  movement that starts at a release. It does fit the fading in tests 1 and 2.
+
+### 5. Mix check [computed]
+
+Table: `n_mix.csv`. sigma_g, logit per week, at matched horizons.
+
+| View | sigma_g [95%] | Lack-of-fit SE |
+|---|---|---|
+| Unstratified | 0.035 [0.033, 0.037] | 0.031 |
+| **Fixed band × act mix** | **0.030 [0.028, 0.033]** | 0.027 |
+| Within A0 | 0.028 [0.023, 0.032] | 0.011 |
+| Within A1–4 | 0.035 [0.032, 0.038] | 0.028 |
+| Within A5–8 | 0.045 [0.040, 0.049] | 0.034 |
+| Within A9–10 | 0.059 [0.053, 0.064] | 0.042 |
+
+| Build | Unstratified | Fixed mix | Change |
+|---|---|---|---|
+| v0.99.1 | 0.037 | 0.040 | +9% |
+| v0.103.2 | 0.037 | 0.028 | −24% |
+| v0.107.1 | 0.031 | 0.020 | −35% |
+
+Reading. [inferred]
+- Overall −13%, within the declared 25%: drift isn't mostly player mix.
+- **That average hides a pattern:** mix accounts for nothing in the earliest build and about a third
+  of v0.107.1's. At a fixed mix the predicted order appears, 0.040 > 0.028 > 0.020, with clear
+  intervals. So settling over early access may be real and partly masked by changes in who plays.
+  This view is the mix check's, not test 1's declared one.
+- Within-band sigma_g is not lower than the overall value, which also argues against mix. Don't read
+  the rise with ascension as a finding: bands are smaller, SEs are binomial while weekly noise is
+  over-dispersed, and the lack-of-fit column moves a lot (A0 0.028 → 0.011).
+
+### What this does and doesn't settle
+
+- **Settled, within limits:** unchanged cards drift within builds; it isn't a steady trend; linear
+  pre-trends don't continue across a release. Detrending shouldn't be used for calibration.
+- **Fits but not shown:** movement in the weeks after a release that settles by about week 8. Only
+  v0.107.1 is long enough to show this. Section I's fake patch, on the 1,873-page tables, is
+  consistent: spread of the placebo's size across a release that changed no cards.
+- **Not settled:** what fills the rest of the spread, especially at least 6 pp² in the first patch.
+  Section M didn't find spillover there, and nothing here measures a step at a release directly.
+- The factors are unaffected: they measure the spread and don't depend on its cause.

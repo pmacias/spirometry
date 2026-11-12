@@ -307,6 +307,16 @@ run on the final tables, exploratory, outputs in `triage/out_final/r_*.csv`; no 
 or headline changes. Results in `triage/TRIAGE.md`; SPIROMETRY.md's open question 8 is updated
 with R's line and a revised Q passage, at Phil's direction (2026-11-11). Not committed (git
 not attempted, as instructed). Next: Phil reviews the section.*
+*Status (CC, 2026-11-11): triage section S (an additive calibration of the DiD errors, a
+declared sensitivity check, `triage/scripts/s_additive.py`) run on the saved tables, outputs
+in `triage/out_final/s_*.csv`; no factor, number or headline changes. The additive model
+fails its declared test on the placebos in both patches, so its counts (8 of 26, 0 of 17)
+are descriptive only and the calibrated counts stay 13 of 26 and 2 of 17. Results in
+`triage/TRIAGE.md`. On Phil's instruction (2026-11-11) the range is now stated where the
+counts are: README finding 1 and SPIROMETRY.md, "Placebo calibration of the DiD errors",
+give the first-patch count as between about 8 (additive) and 13 (multiplicative, the
+declared headline) and the second-patch count as between 0 and 2. Not committed (git not
+attempted, as instructed).*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -1646,3 +1656,25 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
   dropped; the "(triage R tests this)" clause replaced by what R found; Q's leading reading
   (re-evaluation when a character's cards change) replaced by R's; and Phil's inferred
   random-walk sentence added.
+- Additive calibration (triage S, a declared sensitivity check; CC's choices, open to review,
+  2026-11-11): no factor, number or headline changes; SPIROMETRY.md not edited (proposed text
+  only). Phil's rules as given; mine where the prompt left a choice. The pass rule is applied
+  per patch and the model passes only if both do. τ is refit without the pair's character
+  (three other characters in the first patch, four in the second). Bins are by rank of offers
+  within the patch. Declared before running, because the band [0.8, 1.25] is strict for bins
+  of about 40 pairs: a benchmark simulating the additive model as exactly true (it passes all
+  six bins about one time in five). Rarity of a pseudo card is R's; of a tweak card, the one
+  in `offer_rate.parquet`. Tweak offers are the weeks 0–3 fit's (`did_h3.parquet`), not the
+  all-weeks column in `pick_rate_did.csv`. The empirical rule (e) pools both kinds of fit and
+  uses k / n. For the dose-response, "the existing calibrated version" is `se_inflation.csv`'s
+  weeks 0–3 rows, which use the all-weeks factors (4.52, 2.07); the weeks 0–3 factors are
+  added beside them, and the additive error is built in pp and converted to log-odds per
+  tweak, with τ on the log-odds scale as a secondary. Outcome: the additive model fails in
+  both patches (too wide for the most-offered cards, all Commons), so no sensitivity row is
+  proposed for the guide or README; a one-sentence caveat on the headline count is offered
+  for Phil to decide. Added after the rules: Q and df in the dose table.
+- Count range stated beside the headline (Phil, 2026-11-11, after reading triage S): README
+  finding 1 and SPIROMETRY.md ("Placebo calibration of the DiD errors") now say the
+  first-patch count is between about 8 (additive) and 13 (multiplicative, the declared
+  headline) and the second-patch count between 0 and 2, the difference coming from heavily
+  offered Commons. The headline, factors, numbers module, guide and `results/` are unchanged.

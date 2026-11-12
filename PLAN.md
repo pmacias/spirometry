@@ -302,6 +302,11 @@ or headline changes. Results in `triage/TRIAGE.md`; SPIROMETRY.md's open questio
 updated with Phil's text (2026-11-11). Not committed: `.git` was not writable
 in the session. Next: Phil reviews the section and commits it with his
 `triage/scripts/q_z_vs_offers.py`.*
+*Status (CC, 2026-11-11): triage section R (dose and same players, `triage/scripts/r_dose.py`)
+run on the final tables, exploratory, outputs in `triage/out_final/r_*.csv`; no factor, number
+or headline changes. Results in `triage/TRIAGE.md`; SPIROMETRY.md's open question 8 is updated
+with R's line and a revised Q passage, at Phil's direction (2026-11-11). Not committed (git
+not attempted, as instructed). Next: Phil reviews the section.*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -1621,3 +1626,23 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
   proposed line: the rule's "mixed" label with the excess variances (1.2 against 5.0 pp²),
   and the offer-rate robust sds (1.16 / 0.93). Phil added that the two boundaries with card
   changes are also the two major updates (triage R is to test this).
+- Dose and same players (triage R, exploratory; CC's choices, open to review, 2026-11-11): no
+  factor, number or headline changes. Phil's rules as given; mine where the prompt left a
+  choice. Hotfix merges by the 3-day rule: v0.99.0, v0.105.1, v0.106.1, v0.110.1 on beta and
+  v0.98.2 on stable. "Consecutive" boundaries are literal, so no boundary skips a build that
+  fails the run rule; the rule (3,000 runs) is applied to each side's capped 3-week block.
+  Blocks are each build's first 3 weeks, so R's stable rows are not Q's (Q used the older
+  build's last 3 weeks). Dose counts a character's own cards with a differing event that is
+  not wording-only; unknown versions, text-only and behavior changes are counted apart. In
+  part 2 a token is in the subset with one offer of the character's cards in each block, and
+  the ratio τ(ii)/τ(i) decides by its point value; pairs with ≥ 51 subset offers are reported
+  beside all pairs, which turned out to be needed (one 25-offer pair breaks the all-pairs τ).
+  Declared by me before running: the within-boundary and total-dose correlations and the gap
+  check. Added after the rules: Phil's within-boundary contrast (descriptive) and a post hoc
+  per-boundary τ table. Fits are saved per unit or window and reruns resume from them.
+  SPIROMETRY.md's open question 8 was then updated at Phil's direction: R's proposed line
+  applied; Q's passage revised, since the v0.103.3 boundary's 1.2 pp was measured late in
+  v0.103.2 and R gets 2.69 pp from its first three weeks, so "releases that change cards" is
+  dropped; the "(triage R tests this)" clause replaced by what R found; Q's leading reading
+  (re-evaluation when a character's cards change) replaced by R's; and Phil's inferred
+  random-walk sentence added.

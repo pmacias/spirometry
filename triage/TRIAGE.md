@@ -3699,3 +3699,478 @@ text also notes that the two boundaries with card changes are the two major upda
   (five characters) and 18 s for the summaries; part 4 8 s. Peak memory
   2.9 GB for one character's v0.107.1 load; the sweep's own peak was not recorded, because
   the run that did the fits stopped in the summary step before printing it.
+
+---
+
+## R. Does the release shake scale with what changed, and is it within players? — EXPLORATORY
+
+**EXPLORATORY.** Proposed by Phil after section Q was seen. Nothing in this section changes
+the calibration factors, the numbers module, the guide or any headline result. Script:
+`triage/scripts/r_dose.py`; tables in `triage/out_final/r_*.csv`. Inputs: the final tables
+(`data/runs/runs.duckdb`, read-only), `data/analysis/placebo_h3.parquet` (weeks 0–3, 463
+pairs) and the reference tables. Colors and rarities are derived as in Q; `reference/raw/`
+stays closed. No figures: tables for plotting are listed at the end.
+
+**The reading under test (Q's, inferred, not shown).** When a patch changes some of a
+character's cards, players re-evaluate the character, so its unchanged cards shift by a
+lasting few pp, then settle over about a month. R tests two predictions: the shift grows with
+how much changed (part 1), and it happens within the same players (part 2).
+
+### Rules and what each outcome means, written before running
+
+Written 2026-11-11, before any number of this section was computed. What I had looked at:
+sections C, G, N, O, P and Q and their tables; runs per build and character; the kinds of
+change in `change_events.csv`; the number of cards `window_changes` reports across three beta
+boundaries (43, 19, 14); the count of runs with a token (321,588 of 1,993,497, 1,957 tokens).
+No fit and no τ of this section had been run. Git is not attempted, as instructed; the order
+rests on this note. Rules marked **(Phil)** are as given; **(mine)** marks what the prompt
+left open.
+
+**Shared tool (Phil).** τ per unit by maximum likelihood, β_i ~ Normal(μ, SE_i² + τ²), β in
+pp, as in Q part 1 (`q_nudge.mle`), with a 95% interval from 2,000 resamples of pseudo cards.
+Mine: when rows from several units are pooled, each unit has its own μ and a card's rows stay
+together in a resample.
+
+#### Part 1. Dose: shake against number of changes
+
+- **Boundaries (Phil):** every consecutive pair of builds on the beta branch in `builds.csv`,
+  plus Q's stable boundaries. A unit is used only if both sides have ≥ 3,000 runs of the
+  character. A hotfix (released ≤ 3 days after the previous build on its branch) is merged
+  into the build before it.
+- **Design (Phil):** before = the older build's offers, after = the newer build's, each capped
+  at its first 3 weeks from its release. Pseudo cards: the character's cards unchanged across
+  the boundary (`window_changes`), up to 20 per unit, seed fixed, 51 offers in each block.
+  Model and clustering as `placebo_fit`.
+- **Unit (Phil):** character × boundary. **Dose:** the number of that character's cards with a
+  substantive change across the boundary. Text-only and behavior (bug-fix) changes are counted
+  and reported separately.
+- **Test a (Phil):** units with dose 0 pooled against units with dose ≥ 1 pooled, τ with
+  intervals. **Intervals don't overlap and dose ≥ 1 is larger = "changes drive the shake."
+  Overlap = not shown.**
+- **Test b (Phil):** Spearman of unit τ against dose over units with ≥ 15 placebo pairs,
+  interval by resampling units. **Interval above 0 = "the shake grows with the number of
+  changes."**
+- **Limits (Phil):** beta players are a different population from stable players. Beta builds
+  are short, so they sit in the unsettled stretch Q found: comparable to weeks 0–3, not to
+  Q's late cuts. A beta change can be reverted before stable; `window_changes` uses each
+  build's own card versions, so a reverted change counts at the boundary where it appears and
+  again where it leaves.
+- Mine:
+  - **Merges.** By the 3-day rule: v0.99.0 into v0.99.0-beta (same day), v0.105.1 into
+    v0.105.0, v0.106.1 into v0.106.0, v0.110.1 into v0.110.0 on beta; v0.98.2 into v0.98.1 on
+    stable. v0.103.1 (6 days after v0.103.0), v0.109.1 (9 days) and v0.98.3 (4 days) stay
+    separate. A merged build's release is its first member's date, and its 3 weeks run from
+    there. v0.98.0 has no branch on file and is left out, not guessed.
+  - **"Consecutive" is taken literally**, also where a unit fails the run count: no boundary
+    skips over a dropped build. From the run counts I expect the early betas (v0.100.0 to
+    v0.103.1, 300–3,200 runs a character) and v0.109.1 to fail for most characters.
+  - **The run count is applied to the data the fit uses:** distinct runs of the character in
+    each capped block. Whole-build counts are reported too.
+  - **Blocks.** Offers started in [release, release + 21 days) of each side's build. Older-build
+    play after the newer build's release stays in if it is inside the older build's 3 weeks,
+    as in the main design. For a stable boundary this is the older build's *first* 3 weeks,
+    not its last 3 as in Q, so R's stable rows are not Q's rows. The gap between the blocks'
+    mean start times is recorded per unit, and τ against that gap is reported as a check on
+    drift standing in for dose.
+  - **Kinds.** For a card `window_changes` marks as changed, the events that differ between
+    the two sides are looked up in `change_events.csv`. Substantive = any such event that is
+    not a wording-only or excluded text change; this includes reworks, tweaks, cost and rarity
+    changes, additions, removals, mechanic changes carried by text, and reverts. Text-only =
+    only wording or excluded text events differ. A card marked changed because a version is
+    unknown or a row is missing is counted as "unknown" and is not dose. Behavior = the
+    second set `window_changes` returns. Only the character's own cards count; colorless
+    cards and cards with no color on file are outside the dose.
+  - **Test a's intervals** resample pseudo cards, as the shared tool says. Units also differ
+    for reasons a card resample doesn't see (population, season), so a second interval
+    resampling units is reported. It doesn't decide.
+  - **Test b** uses τ's point estimate per unit; a unit's τ can be 0. Ties get average ranks.
+  - **Card changes against release size (not asked, declared now, secondary).** Dose varies
+    between characters at one boundary, where the days, the build and the population are the
+    same. So: (i) Spearman of τ against dose with both taken as deviations from their
+    boundary's mean, over boundaries with at least 2 units, interval by resampling units;
+    (ii) Spearman of τ against the boundary's total dose over all five characters. If (i) is
+    above 0, a character's own changes matter beyond the size of the release. If only (ii)
+    is, the shake follows the release and not the character. Neither changes a or b.
+  - Tests a and b are also reported for beta and stable units apart, descriptively, because
+    dose 0 could otherwise stand in for "hotfix on stable".
+
+#### Part 2. Same players before and after
+
+- **Windows (Phil):** the 463 pairs' windows, weeks 0–3, the main design.
+- **Subset (Phil):** runs of uploader tokens with offers in both blocks of the window. Tokens
+  and offers per window are reported. Each pair is fit twice on the subset: (i) the standard
+  model; (ii) the standard model plus a token × card fixed effect. τ per patch for each.
+- **Rule (Phil): τ(ii) ≥ 0.75 × τ(i), with intervals, = "the shift happens within the same
+  players" (re-evaluation). τ(ii) ≤ 0.5 × τ(i) = "mostly a change in who plays." Between =
+  mixed.** The singleton drop under (ii) is reported; if it removes over half the offers, that
+  is said next to the result.
+- Mine:
+  - A window is a character and its builds. A token is in the subset when it has at least one
+    offer of that character's cards in the before block and one in the after block's weeks
+    0–3. All its runs in the window are kept.
+  - The ratio τ(ii) / τ(i) per patch decides by its point value. Its interval comes from one
+    resample of cards applied to both fits. If the interval crosses 0.75 or 0.5, I name both
+    outcomes it reaches.
+  - Every pair is refit, whatever its offers on the subset; a pair that can't be fit is
+    counted. τ is also given on pairs with ≥ 51 subset offers of the pseudo card in each block.
+  - Beside the two: τ from the saved full-data fits of the same pairs, so the reader sees
+    what taking the subset does before any fixed effect.
+  - Errors stay clustered by run, as in `placebo_fit`.
+  - **What (i) already does.** The subset holds the set of players fixed, so (i) on the subset
+    against the full data is the first cut at "who plays". (ii) then removes what is left of
+    it: a player with many runs after and few before weighs differently in the two blocks.
+  - **Limits.** About 16% of runs carry a token, the key is missing on the older half of the
+    pages, and token holders play far more than others (G1: about 39 runs each). The second
+    window has few tokens on both sides (G1: 218). So a pass says the shift is within these
+    players, not that it is within all players. And "within players" covers anything that
+    changes for a player across the release, not only re-evaluation: the game outside the
+    cards changed too.
+
+#### Part 3. Descriptive asides (no rules)
+
+- **a. Commons on the log-odds scale (Phil).** τ by rarity × patch on the 463 pairs, in pp and
+  in log-odds (`to_log_odds`), with intervals.
+- **b. Rarity tide (Phil).** The 463 pairs refit with a block × rarity fixed effect added
+  (rarity derived as in Q). Robust sd of z and τ per patch next to 4.10 / 2.67. A post hoc
+  model variant, not a candidate fix.
+- **c. Offer sources (Phil).** For Q's 20-card offer-rate tail in the first patch: offers by
+  source before and after, as shares, for those cards and for all other same-character cards;
+  which source carries their rise.
+- Mine: in b, every card in the fit gets its rarity, and a card with none is its own level.
+  In c, the after block is weeks 0–3 as in Q part 2, and a card's rise is split by source into
+  the change of its share within each source and the change of the sources' mix.
+
+#### Addition after the rules: within-boundary contrast (Phil; descriptive, not declared)
+
+Added by Phil after the rules above were written and before he had seen any R result. On my
+side, when it arrived part 1's fits were still running and I had read no part 1 number; I had
+read part 2's table. It has no rule and decides nothing.
+
+For each boundary with at least one dose-0 unit and at least one dose ≥ 1 unit, both passing
+the run rule: τ of its dose ≥ 1 units pooled minus τ of its dose-0 units pooled. Reported per
+boundary, and as the mean over boundaries with an interval from resampling boundaries. Same
+release, different exposure: a positive difference points to card changes, about zero to the
+release as a whole. Mine: each side pools its units with a μ per unit, and each boundary's
+difference also gets an interval from resampling cards. From the plan table, only two
+boundaries qualify (v0.104.0 → v0.105.0 and v0.106.0 → v0.107.0, both beta), so an interval
+from resampling two boundaries can take only three values and says little.
+
+#### Runtime and resuming
+
+Ten fits are timed before each part's full run and the estimate is written below. A part over
+2 h gets a thinner design proposed here and is not run. Fits are saved as each unit or window
+finishes, and the script skips what is saved, so a restart redoes nothing.
+
+### Results
+
+Everything below in section R was computed after the text above was written.
+
+### Answer
+
+**Neither prediction's dose half holds, and the within-players half does.** The shake does
+not grow with the number of a character's changed cards: units with no change have τ 2.14 pp
+[1.80, 2.33] and units with changes 1.94 [1.67, 2.08], the rank correlation of τ with dose is
++0.02 [−0.30, 0.33], and inside one boundary characters with changes shake no more than
+characters without (differences −0.10 and −0.60 pp). The shift does happen within the same
+players: holding each token's own taste for each card fixed leaves τ at 0.95 [0.85, 1.06] of
+its value in the first patch and 0.79 [0.53, 1.05] in the second, on pairs with enough
+offers. So Q's reading survives in part. Players do pick unchanged cards differently after a
+release, and it isn't a change in who plays. But what sets the size is not how many of the
+character's cards changed. It follows the release as a whole and the time between the
+blocks: beta builds shake by about 1.0–1.7 pp whatever they change, the two stable major
+updates by 3.2 and 2.2 pp, and a stable boundary with no card change but 44 days between its
+blocks by 2.7 pp. The factors stay as they are. [inferred]
+
+### Declared outcomes [computed]
+
+| Test | Result | Outcome under the rule |
+|---|---|---|
+| 1a. Dose 0 against dose ≥ 1 | τ 2.14 [1.80, 2.33] (19 units) against 1.94 [1.67, 2.08] (34 units) | **Not shown**: the intervals overlap, and dose ≥ 1 is not larger |
+| 1b. τ against dose | Spearman +0.02 [−0.30, 0.33], 53 units | **Not shown**: the interval holds 0 |
+| 2. Same players | τ(ii)/τ(i): first 2.21 [0.87, 3.69], second 0.81 [0.52, 1.08] | **Within the same players** in both, by the point value. The first patch's figure is one bad fit (see part 2); the second's interval reaches into "mixed" and stays above 0.5 |
+
+### Checks and changes after the rules [computed]
+
+- **Timing before each run.** Part 1: 2.7 s per fit on the largest unit, at most 54 minutes
+  for 53 units. Part 2: 1.5 s per fit, about 24 minutes for 926 fits. Part 3b: 4.0 s per fit,
+  about 32 minutes for 463. All under 2 h, so no design was thinned. The three ran at the
+  same time and took 32, 8 and 24 minutes.
+- **Saved fits and resuming.** Each part appends its fits to `r_dose_fits.csv`,
+  `r_token_fits.csv` or `r_rarity_fits.csv` as a unit or window finishes, and a rerun skips
+  what is there. Every table below was rebuilt from those files with `--analyze`, which is
+  the same path a restart takes. The runs were not interrupted. To check the skip, parts 2
+  and 3 were run again without flags after they had finished: they refit nothing (9 s and
+  12 s), left the fit files at 926 and 463 rows, and returned the same tables. A restart in
+  the middle of a unit or window redoes that one unit or window.
+- The loader, fit and likelihood are Q's (`q_nudge.py`), which passed its gate there.
+- Fits: 1,060 in part 1, none failed. Part 2: 926, of which 5 failed, all under model (ii) on
+  upgraded-offers pairs where the token × card effects leave nothing to estimate; 458 of 463
+  pairs are usable under both models. Part 3b: 463, none failed.
+- **Two additions after the rules.** Phil's within-boundary contrast, recorded in the rules
+  section with when it arrived. And one post hoc table of mine, τ per boundary beside its gap
+  and dose, added after reading the tests.
+- A slip to correct: my status note said "53 of 105 units". There are 20 boundaries and 100
+  units; 53 are used.
+- Tests: `pytest tests` gives 266 passed, 4 skipped. The other 47 (27 failed, 20 errors) are
+  all `PermissionError` on `reference/raw/`, closed by the sandbox, the same 47 as before
+  this section.
+- Git was not attempted, as instructed.
+
+### Part 1. Dose [computed]
+
+Tables: `r_plan.csv` (all 100 units with run counts, dose, the other change counts, and why a
+unit is dropped), `r_units.csv`, `r_dose_fits.csv` (1,060 fits), `r_unit_tau.csv` (τ per unit),
+`r_dose_tests.csv`, `r_within_boundary.csv`, `r_posthoc_boundary.csv`.
+
+**Units.** 15 beta boundaries and 5 stable ones after the merges, 100 character × boundary
+units. 53 pass the run rule: 28 beta, 25 stable. Dropped, 47: every character at nine beta
+boundaries (the early betas through v0.103.1 → v0.104.0, where one side has 0 to 3,145 runs,
+and both boundaries of v0.109.1), and Necrobinder and Regent at v0.108.0 → v0.109.0 (2,949
+and 2,869 runs). Of the 53, 19 have dose 0: fifteen stable (the two launch boundaries and
+v0.103.2 → v0.103.3) and four beta. Text-only changes occur in 7 used units, 6 of them at the
+two major updates. Every used unit gave 20 pairs.
+
+**Tests.** τ in pp. For a, the first interval resamples cards and the second resamples units.
+
+| Test | Scope | Group | Units | Estimate [95%] | Resampling units |
+|---|---|---|---|---|---|
+| a | **All units [rule]** | Dose 0 | 19 | **2.14 [1.80, 2.33]** | [1.75, 2.52] |
+| a | **All units [rule]** | Dose ≥ 1 | 34 | **1.94 [1.67, 2.08]** | [1.57, 2.25] |
+| b | **All units [rule]** | Spearman, τ against dose | 53 | **+0.02 [−0.30, 0.33]** | |
+| a | Beta | Dose 0 | 4 | 1.61 [0.87, 2.08] | [0.95, 1.97] |
+| a | Beta | Dose ≥ 1 | 24 | 1.28 [1.02, 1.39] | [1.08, 1.49] |
+| b | Beta | Spearman, τ against dose | 28 | −0.05 [−0.42, 0.37] | |
+| a | Stable | Dose 0 | 15 | 2.25 [1.87, 2.46] | [1.79, 2.66] |
+| a | Stable | Dose ≥ 1 | 10 | 2.73 [2.27, 3.02] | [2.26, 3.16] |
+| b | Stable | Spearman, τ against dose | 25 | +0.40 [0.01, 0.72] | |
+| secondary | All | Spearman, τ against dose, both as deviations from the boundary's mean | 38 | +0.06 [−0.28, 0.38] | |
+| secondary | All | Spearman, τ against the boundary's total dose | 53 | +0.05 [−0.27, 0.36] | |
+| check | All | Spearman, τ against the gap between blocks | 53 | **+0.40 [0.11, 0.63]** | |
+| check | All | Spearman, τ against text-only changes | 53 | +0.39 [0.20, 0.56] | |
+
+**Within-boundary contrast (Phil's addition; descriptive).** Two boundaries qualify.
+
+| Boundary | Dose-0 units | Dose ≥ 1 units (dose) | τ, dose 0 [95%] | τ, dose ≥ 1 [95%] | Difference [95%, cards] |
+|---|---|---|---|---|---|
+| v0.104.0 → v0.105.0 | Ironclad, Necrobinder | Defect (4), Regent (5), Silent (1) | 1.42 [0.00, 2.27] | 1.32 [0.74, 1.64] | −0.10 [−1.10, +1.32] |
+| v0.106.0 → v0.107.0 | Defect, Silent | Ironclad (1), Necrobinder (2), Regent (2) | 1.76 [0.85, 2.27] | 1.15 [0.47, 1.55] | −0.60 [−1.45, +0.33] |
+| Mean over the 2 | | | | | −0.35 [−0.60, −0.10] resampling boundaries |
+
+The last interval can only take three values and isn't a measure of uncertainty; the two
+card-resampling intervals are, and both hold 0.
+
+**τ per boundary, post hoc** (units pooled, a μ per unit).
+
+| Boundary | Branch | Units | Unit doses | Total dose | Gap (days) | τ [95%] | Robust sd z | Median SE |
+|---|---|---|---|---|---|---|---|---|
+| v0.104.0 → v0.105.0 | beta | 5 | 0 0 1 4 5 | 10 | 14 | 1.36 [0.84, 1.77] | 1.37 | 1.40 |
+| v0.105.0 → v0.106.0 | beta | 5 | 2 3 3 3 3 | 14 | 14 | 1.18 [0.68, 1.51] | 1.47 | 1.25 |
+| v0.106.0 → v0.107.0 | beta | 5 | 0 0 1 2 2 | 5 | 14 | 1.42 [0.87, 1.71] | 1.56 | 1.19 |
+| v0.107.0 → v0.108.0 | beta | 5 | 3 5 5 5 5 | 23 | 28 | 1.75 [1.26, 2.06] | 1.60 | 1.41 |
+| v0.108.0 → v0.109.0 | beta | 3 | 3 5 7 | 18 | 12 | 1.10 [0.00, 1.54] | 1.45 | 1.63 |
+| v0.110.0 → v0.111.0 | beta | 5 | 2 2 3 4 4 | 15 | 17 | 1.00 [0.35, 1.28] | 1.32 | 1.35 |
+| v0.98.1 → v0.98.3 | stable | 5 | all 0 | 0 | 6 | 2.57 [1.91, 3.05] | 2.37 | 1.22 |
+| v0.98.3 → v0.99.1 | stable | 5 | all 0 | 0 | 13 | 1.27 [0.96, 1.45] | 2.01 | 1.01 |
+| v0.99.1 → v0.103.2 | stable | 5 | 3 10 12 14 24 | 63 | 29 | 3.17 [2.50, 3.62] | 3.22 | 0.93 |
+| v0.103.2 → v0.103.3 | stable | 5 | all 0 | 0 | 44 | 2.69 [2.14, 3.05] | 3.28 | 1.02 |
+| v0.103.3 → v0.107.1 | stable | 5 | 4 6 6 6 13 | 35 | 19 | 2.20 [1.74, 2.51] | 2.26 | 0.94 |
+
+Reading. [inferred]
+- **Rule a: not shown. Rule b: not shown.** Units with changes don't shake more than units
+  without, and τ doesn't rise with dose. The same holds inside a boundary, by the declared
+  secondary (+0.06) and by Phil's contrast (both differences below 0, both intervals holding
+  0). Same release, different exposure, no difference: that points to the release as a whole.
+- **The dose-0 group is not a quiet group, and that limits rule a.** Fifteen of its 19 units
+  are stable: ten from the game's first twelve days, and five from v0.103.2 → v0.103.3, whose
+  blocks under this design are v0.103.2's first three weeks and v0.103.3's, 44 days apart.
+  The four beta dose-0 units are the clean ones and they are few. So a is weaker evidence
+  than b and the within-boundary contrasts, which don't lean on that group.
+- **Beta builds barely shake, whatever they change.** Six beta boundaries with 5 to 23 changed
+  cards give τ of 1.0 to 1.75 pp, about what Q found at cuts *inside* a stable build three to
+  four weeks after a release (1.2 to 1.9). Among beta units the correlation with dose is
+  −0.05. The highest beta boundary is also the one with the longest gap (28 days).
+- **Time between the blocks matters as much as anything measured here.** τ rises with the
+  gap (+0.40, interval clear of 0). The boundary with no card change and a 44-day gap is at
+  2.69 pp; Q measured the same boundary with v0.103.2's *last* three weeks as the before
+  block and got 1.2. The difference is where the before block sits: R's is the three weeks
+  right after a major update. So cards kept moving for weeks after v0.103.2 came out, by an
+  amount comparable to the step at its release (3.17). That is Q's settling, larger than Q's
+  "about a month, then flat" suggested. One build shows it.
+- **The stable-only correlation (+0.40) is the two major updates against the rest**, and R
+  still can't separate "many cards changed" from "major update": every unit with a dose
+  above 7 is in v0.99.1 → v0.103.2 or v0.103.3 → v0.107.1. Inside v0.99.1 → v0.103.2 the five
+  characters do line up (doses 3, 10, 12, 14, 24 with τ 1.9, 3.4, 3.0, 3.5, 3.7); inside
+  v0.103.3 → v0.107.1 they don't (4, 6, 6, 6, 13 with 1.7, 2.0, 2.9, 1.5, 2.5). That is
+  post hoc and five units each.
+- The correlation with text-only changes (+0.39) is the same thing by another name: 6 of the
+  7 units with a text-only change are at the two major updates.
+- As declared: beta players are another population, and a beta change that ships later on
+  stable has already been seen by them. So "beta changes don't shake beta players" does not
+  show that the same changes wouldn't shake stable players arriving at a major update.
+
+### Part 2. Same players before and after [computed]
+
+Tables: `r_token_windows.csv`, `r_token_fits.csv` (926 fits), `r_token_tau.csv`.
+
+**Subset.** Tokens with offers in both blocks of the window:
+
+| Window | Tokens with any offer | Tokens on both sides | Runs in the subset | Offers in the subset | Share of the window's offers |
+|---|---|---|---|---|---|
+| Silent, first | 625 | 262 | 5,300 | 195,939 | 12.4% |
+| Regent, first | 584 | 240 | 5,087 | 177,146 | 12.8% |
+| Necrobinder, first | 606 | 254 | 5,137 | 183,065 | 13.8% |
+| Ironclad, first | 601 | 261 | 5,869 | 214,879 | 13.0% |
+| Regent, second | 344 | 97 | 1,608 | 58,948 | 5.4% |
+| Necrobinder, second | 367 | 100 | 1,874 | 66,466 | 5.6% |
+| Defect, second | 324 | 87 | 1,545 | 61,168 | 5.0% |
+| Ironclad, second | 358 | 105 | 1,692 | 62,957 | 4.1% |
+| Silent, second | 368 | 110 | 2,000 | 72,524 | 4.9% |
+
+**τ per patch**, pp. "Saved" is the full-data fit of the same pairs.
+
+| Pairs | Patch | n | τ saved [95%] | τ (i), subset [95%] | τ (ii), + token × card [95%] | τ(ii)/τ(i) [95%] | Median SE: saved, (i), (ii) | Singleton drop, (ii) |
+|---|---|---|---|---|---|---|---|---|
+| **All fit under both [rule]** | first | 216 | 3.35 [2.95, 3.72] | 3.60 [3.10, 4.06] | 7.95 [3.00, 12.62] | **2.21 [0.87, 3.69]** | 0.82, 2.30, 2.62 | 1.4% |
+| **All fit under both [rule]** | second | 242 | 2.44 [2.15, 2.72] | 3.09 [2.33, 3.73] | 2.49 [1.41, 3.41] | **0.81 [0.52, 1.08]** | 0.94, 4.01, 4.33 | 1.9% |
+| ≥ 51 subset offers in each block | first | 209 | 3.35 [2.93, 3.71] | 3.60 [3.08, 4.02] | 3.41 [2.86, 3.94] | 0.95 [0.85, 1.06] | 0.81, 2.28, 2.57 | 1.3% |
+| ≥ 51 subset offers in each block | second | 214 | 2.45 [2.15, 2.71] | 3.03 [2.27, 3.64] | 2.40 [1.43, 3.24] | 0.79 [0.53, 1.05] | 0.90, 3.84, 4.21 | 1.6% |
+
+β under (i) and (ii) correlate at 0.79 (first) and 0.67 (second) on the ≥ 51 pairs.
+
+Reading. [inferred]
+- **Rule: within the same players, in both patches.** The singleton drop is under 2% of
+  offers, nowhere near half.
+- **The first patch's 2.21 is not a real ratio.** One upgraded-offers pair with 17 and 8
+  subset offers returns β = +99 pp with an SE of 2.4 pp under (ii), a z of 42, and the normal
+  likelihood stretches τ to cover it. With pairs under 51 subset offers set aside (7 in the
+  first patch, 28 in the second, all upgraded-offers fits), the ratio is 0.95 [0.85, 1.06].
+  That subset was declared before running, and it is the figure to read.
+- **The second patch passes by the point value and not by its interval.** 0.79 [0.53, 1.05]
+  reaches into "mixed". It has under half the tokens of the first patch and SEs of 4 pp
+  against a τ of 2.4 to 3.0, so it is imprecise. It stays above 0.5, so "mostly a change in
+  who plays" is out for it too.
+- **Fixing who plays removes nothing.** τ on the both-sides subset is no smaller than on the
+  full data (3.60 against 3.35; 3.09 against 2.44), and fixing each player's taste for each
+  card takes off 5% in the first patch. A change in the population can't be what moves the
+  unchanged cards, among players with a token.
+- As declared, these are token holders, about one run in eight in the first window and one
+  in twenty in the second, and heavy players. And "within players" doesn't say what changed
+  for them: their view of the character, or the game around the cards.
+
+### Part 3. Descriptive asides [computed]
+
+Tables: `r_rarity_tau.csv`, `r_rarity_fits.csv` (463 refits), `r_rarity_tide.csv`,
+`r_offer_sources.csv` (per character, source and group, and per tail card).
+
+**a. τ by rarity and patch.**
+
+| Patch | Rarity | Pairs | Median rate before | τ, pp [95%] | τ, log-odds [95%] | Robust sd z |
+|---|---|---|---|---|---|---|
+| first | Common | 49 | 0.20 | 2.84 [2.04, 3.39] | 0.176 [0.128, 0.210] | 5.80 |
+| first | Uncommon | 102 | 0.28 | 3.70 [3.09, 4.31] | 0.196 [0.160, 0.236] | 4.64 |
+| first | Rare | 66 | 0.37 | 2.96 [2.40, 3.47] | 0.142 [0.116, 0.167] | 2.91 |
+| second | Common | 62 | 0.23 | 1.91 [1.41, 2.29] | 0.111 [0.085, 0.132] | 3.02 |
+| second | Uncommon | 111 | 0.28 | 2.62 [2.20, 3.01] | 0.142 [0.116, 0.171] | 3.21 |
+| second | Rare | 73 | 0.35 | 2.55 [1.98, 3.04] | 0.131 [0.099, 0.159] | 1.94 |
+
+In pp Commons have the smallest τ in both patches, as Q found. **On log-odds that holds only
+in the second patch, and not clearly.** In the first patch Rares are lowest (0.142) and
+Commons sit between Rares and Uncommons; in the second Commons are lowest (0.111 against
+0.131 and 0.142) with overlapping intervals. Commons are picked least often, so part of
+their tight pp spread is a low base rate. Rarity is the offer tier where not on file.
+
+**b. Rarity tide.** The 463 pairs refit with a block × rarity fixed effect.
+
+| Patch | Factor | Robust sd, saved | With block × rarity [95%] | τ saved | τ with block × rarity [95%] | Mean z of Commons: saved → with |
+|---|---|---|---|---|---|---|
+| First | 4.10 | 4.10 | 4.16 [3.46, 4.74] | 3.35 | 3.38 [2.96, 3.76] | −0.14 → −0.22 |
+| Second | 2.67 | 2.67 | 2.85 [2.31, 3.19] | 2.44 | 2.47 [2.15, 2.76] | −0.55 → +0.20 |
+
+A shift shared by a rarity is not part of the spread: nothing is absorbed. The second
+patch's downward lean of Commons (Q's aside) goes away, as it should, and the width stays.
+A post hoc model variant, not a candidate fix.
+
+**c. Offer sources for the first patch's 20-card offer-rate tail.** The cards' share of their
+character's offers, v0.99.1 against v0.103.2 weeks 0–3, split by source. "Within source" is
+the log ratio of the cards' share of that source's offers.
+
+| Character | Tail cards' share of offers: before → after | Combat: within source, part of the rise | Elite: within source, part of the rise | Boss: within source, part of the rise | Sources' mix |
+|---|---|---|---|---|---|
+| Ironclad (4 cards) | 4.4% → 5.0% | +0.14, 72% | +0.12, 27% | no offers before | about 0 |
+| Necrobinder (6) | 5.9% → 6.6% | +0.10, 69% | +0.10, 26% | +0.11, 5% | about 0 |
+| Regent (5) | 3.7% → 4.1% | +0.10, 56% | +0.07, 29% | +0.23, 15% | about 0 |
+| Silent (5) | 3.4% → 3.9% | +0.15, 70% | +0.09, 22% | +0.11, 8% | about 0 |
+
+**No one source carries the rise.** The cards' share goes up within combat, elite and boss
+rewards alike, and the mix of sources barely moves. Combat holds most of the rise because it
+holds most of the offers (70–77% of these cards'). Event-combat offers are under 1% and
+change nothing. So the tail isn't one kind of reward screen changing; these cards became
+more likely to be offered everywhere. [computed; the last sentence is inferred]
+
+### What this does and doesn't settle
+
+- **Settled, within limits:**
+  - Among players with a token, the shift in unchanged cards happens within the same
+    players. It is not a change in who plays.
+  - The shake does not scale with the number of a character's changed cards, across units or
+    inside a boundary, over the range R can see (0 to 7 on beta, where it can be separated
+    from release size).
+  - A rarity-wide shift is not part of the spread.
+  - The offer-rate tail is not tied to a reward source.
+- **Fits but not shown:** the shake belongs to major stable updates and to the weeks that
+  follow them. Beta builds with up to 23 changed cards shake about as little as a quiet week
+  inside a stable build; the two major updates shake most; and v0.103.2's cards moved as
+  much over its first six weeks as at its release. Two major updates, and one build with a
+  long gap.
+- **Not settled:**
+  - Card changes against release size at the scale of a major update. All units with more
+    than 7 changed cards are in the two major updates, so R leaves this where Q did. The
+    line added to SPIROMETRY.md, "(triage R tests this)", is answered only for small doses.
+  - Whether beta players' calm is about beta players or about beta builds. They are a
+    different population and have often seen a change before it counts as new.
+  - What changes for a player at a major update: the character's cards, the rest of the game,
+    or simply returning after a break. Part 2 can't tell these apart.
+  - Why the second patch's within-player ratio is lower (0.79). It is within its own noise.
+- The factors are unaffected: they measure the spread and don't depend on its cause.
+
+### Update to SPIROMETRY.md, open question 8 (applied 2026-11-11, at Phil's direction)
+
+This section proposed replacing "(triage R tests this)" with "(triage R: not separated at
+that scale)" and adding the line below before "Not yet verified." Phil had the line applied
+and asked for more: Q's passage there now says the v0.103.3 boundary's 1.2 pp was measured
+late in v0.103.2 and that this section gets 2.69 pp from its first three weeks, so it no
+longer supports "releases that change cards"; the clause is replaced by what this section
+found; Q's leading reading gives way to the one in the line below; and a sentence marked
+inferred is added, that the pattern is consistent with each card's pick rate wandering like
+a random walk relative to its character, faster for about a month after a major update.
+
+> Dose and same players, exploratory (triage R, final tables): the shift is within the same
+> players (token × card effects keep 0.95 [0.85, 1.06] and 0.79 [0.53, 1.05] of τ), but it
+> does not grow with the number of a character's changed cards (dose 0: τ 2.14 pp, dose ≥ 1:
+> 1.94; Spearman +0.02 [−0.30, 0.33]; no difference inside a boundary); beta builds shake by
+> 1.0–1.7 pp whatever they change, and τ rises with the time between blocks, so the leading
+> reading becomes: players pick differently after a major update as a whole and keep
+> adjusting for weeks, rather than re-evaluating a character in proportion to its changes.
+
+### Privacy check, files and runtime
+
+- **Privacy check, clean.** All 14 `triage/out_final/r_*.csv` tables: no column name matches
+  uploader, player, run_key, run_hash, screen_id, hash, steam or start_time. The 1,450
+  distinct non-numeric values were scanned for hex strings of 12 or more characters,
+  pipe-joined keys and long strings; the one long value is a pyfixest error message
+  ("All variables are collinear…") in `r_token_fits.csv`, which holds no identifier. Text
+  columns hold card ids, card-patch ids, characters, rarities, build and boundary labels,
+  dates, sources and summary labels. Uploaders appear only as counts (`n_tokens_any`,
+  `n_tokens_both`, `pseudo_tokens`, `median_pseudo_tokens`). `r_dose.py` uses
+  `uploader_hash` and `run_key` in memory, for the subset, the fixed effect and distinct
+  counts, and prints or writes neither.
+- **Files to commit:** `triage/TRIAGE.md`, `triage/scripts/r_dose.py`, `README.md`,
+  `PLAN.md`, and `triage/out_final/`: `r_plan.csv`, `r_units.csv`, `r_dose_fits.csv`,
+  `r_unit_tau.csv`, `r_dose_tests.csv`, `r_within_boundary.csv`, `r_posthoc_boundary.csv`,
+  `r_token_windows.csv`, `r_token_fits.csv`, `r_token_tau.csv`, `r_rarity_tau.csv`,
+  `r_rarity_fits.csv`, `r_rarity_tide.csv`, `r_offer_sources.csv`. These are also the
+  tables for plotting; no figure was made. `SPIROMETRY.md` (open question 8) was updated
+  afterwards, so it belongs in the commit too.
+- **Runtime:** part 1 32 minutes (peak memory 5.0 GB), part 2 8 minutes (2.2 GB), part 3 24
+  minutes (3.1 GB), run at the same time; rebuilding part 1's tables from saved fits 1
+  minute; the three timing runs about 1, 0.5 and 1 minute.

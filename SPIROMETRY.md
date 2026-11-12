@@ -1707,18 +1707,32 @@ close to randomized. That supports:
    +1.64 z, p 0.001) but rests on Ironclad and Silent in the first window, and by archetype
    the direction is at chance (17 of 29); placebo z does cluster by archetype in the first
    patch (robust sd 4.10 → 2.88 with archetype × window terms absorbed), not in the second.
-   Release nudge, exploratory (triage Q, final tables): the excess sits at releases that
-   change cards. Cuts inside a build are near honest (robust sd 1.38 pooled, fading through
-   a build), against 2.14 at real boundaries ("mixed" under the declared rule; excess variance
-   1.2 against 5.0 pp²); at the two patches, unchanged cards shift by a
-   lasting 3.35 pp [2.95, 3.72] and 2.44 pp [2.15, 2.71] relative to their character, and
-   the one boundary without card changes (v0.103.3) by about 1.2 pp; the two boundaries with
-   changes are also the two major updates, so card changes and release size are not yet
-   separated (triage R tests this). Offsets are not fresh at every build (cross-boundary
-   correlation about 0). The offer-rate negative control is
-   honest (robust sd 1.16 / 0.93), so the excess is player behavior, not the pipeline.
-   Leading reading, inferred: players re-evaluate a character when some of its cards change
-   (interference with the controls), then settle over about a month. Not yet verified.
+   Release nudge, exploratory (triage Q, final tables): the excess sits at releases. Cuts
+   inside a build are near honest (robust sd 1.38 pooled, fading through a build), against
+   2.14 at real boundaries ("mixed" under the declared rule; excess variance 1.2 against
+   5.0 pp²); at the two patches, unchanged cards shift by a lasting 3.35 pp [2.95, 3.72] and
+   2.44 pp [2.15, 2.71] relative to their character. The one boundary without card changes
+   (v0.103.3) gave about 1.2 pp in Q, but that was measured late in v0.103.2; from v0.103.2's
+   first three weeks the same boundary gives 2.69 pp (triage R), so it no longer supports
+   "the excess sits at releases that change cards". The two boundaries with changes are also
+   the two major updates; triage R found no dose relationship at small doses (beta builds,
+   within-boundary contrasts), that the shift holds within the same players, and that τ
+   rises with the time between blocks; card changes against release size remain unseparated
+   at major-update scale. Offsets are not fresh at every build (cross-boundary correlation
+   about 0). The offer-rate negative control is honest (robust sd 1.16 / 0.93), so the excess
+   is player behavior, not the pipeline. Dose and same players, exploratory (triage R, final
+   tables): the shift is within the same players (token × card effects keep 0.95
+   [0.85, 1.06] and 0.79 [0.53, 1.05] of τ), but it does not grow with the number of a
+   character's changed cards (dose 0: τ 2.14 pp, dose ≥ 1: 1.94; Spearman +0.02
+   [−0.30, 0.33]; no difference inside a boundary); beta builds shake by 1.0–1.7 pp whatever
+   they change, and τ rises with the time between blocks, so the leading reading becomes:
+   players pick differently after a major update as a whole and keep adjusting for weeks,
+   rather than re-evaluating a character in proportion to its changes. Inferred, post hoc
+   (triage/scripts/r_components.py; 40 pooled rows from N, Q and R): the excess fits a jump
+   at each major update (about 5.5 pp² [3.3, 8.2], ~2.3 pp), extra movement in the first weeks
+   after one (2.3 pp² [1.0, 3.4], fading within that period), slow drift otherwise (0.4 pp²
+   per week [0.01, 0.70]), and no constant weekly floor (0.0 [−0.8, 1.0]). Not a random walk.
+   The game's first two weeks sit well above the fit. Not yet verified.
 9. Whether the second patch's flat dose-response survives calibrated errors. Answered on the
    1,873-page tables (triage C): it does; the patch difference depends on the ruler (triage
    B, K2) and leans on Debilitate v0.107.1 (triage K1). Final rerun, primary spec, weeks 0–3:

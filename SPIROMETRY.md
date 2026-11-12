@@ -1727,9 +1727,12 @@ close to randomized. That supports:
    [−0.30, 0.33]; no difference inside a boundary); beta builds shake by 1.0–1.7 pp whatever
    they change, and τ rises with the time between blocks, so the leading reading becomes:
    players pick differently after a major update as a whole and keep adjusting for weeks,
-   rather than re-evaluating a character in proportion to its changes. Inferred: consistent
-   with each card's pick rate wandering like a random walk relative to its character, faster
-   for about a month after a major update. Not yet verified.
+   rather than re-evaluating a character in proportion to its changes. Inferred, post hoc
+   (triage/scripts/r_components.py; 40 pooled rows from N, Q and R): the excess fits a jump
+   at each major update (about 5.5 pp² [3.3, 8.2], ~2.3 pp), extra movement in the first weeks
+   after one (2.3 pp² [1.0, 3.4], fading within that period), slow drift otherwise (0.4 pp²
+   per week [0.01, 0.70]), and no constant weekly floor (0.0 [−0.8, 1.0]). Not a random walk.
+   The game's first two weeks sit well above the fit. Not yet verified.
 9. Whether the second patch's flat dose-response survives calibrated errors. Answered on the
    1,873-page tables (triage C): it does; the patch difference depends on the ruler (triage
    B, K2) and leans on Debilitate v0.107.1 (triage K1). Final rerun, primary spec, weeks 0–3:

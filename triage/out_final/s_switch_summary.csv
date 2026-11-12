@@ -1,0 +1,5 @@
+patch,b_vs_c,n,median_offers,median_se_pp,n_c_wider
+first,loses under c,5,37928.0,0.394076,5
+first,same,21,16237.0,0.621678,17
+second,loses under c,2,24094.5,0.5851075,2
+second,same,15,11044.0,0.89889,8

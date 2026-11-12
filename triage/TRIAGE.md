@@ -4174,3 +4174,525 @@ a random walk relative to its character, faster for about a month after a major 
 - **Runtime:** part 1 32 minutes (peak memory 5.0 GB), part 2 8 minutes (2.2 GB), part 3 24
   minutes (3.1 GB), run at the same time; rebuilding part 1's tables from saved fits 1
   minute; the three timing runs about 1, 0.5 and 1 minute.
+
+---
+
+## S. An additive calibration of the DiD errors — SENSITIVITY CHECK
+
+**A declared sensitivity check, proposed by Phil after sections Q and R.** The headline stays
+the multiplicative calibration (`clearly_nonzero_h_cal`: 13 of 26, 2 of 17). Nothing in this
+section changes the factors, the numbers module, the guide, `results/` or any headline
+result. Script: `triage/scripts/s_additive.py`; tables in `triage/out_final/s_*.csv`. Inputs,
+all saved tables, read-only: `results/pick_rate_did.csv`, `data/analysis/did_h3.parquet`,
+`data/analysis/placebo_h3.parquet` (weeks 0–3, 463 pairs), `triage/out_final/q_tau.csv`,
+`r_rarity_tau.csv` and `r_rarity_fits.csv`, `data/analysis/offer_rate.parquet`,
+`data/analysis/writeup/calibrated_counts.csv` and `se_inflation.csv`. No run-level data, no
+database, no refit of any DiD. No figures: tables for plotting are listed at the end.
+
+**Why (Phil's reasoning, after Q and R).** The multiplicative rule (SE × factor) assumes the
+noise the clustered SE misses is proportional to each card's SE. Q found it is roughly a fixed
+amount in pp added in quadrature, β_i ~ Normal(0, SE_i² + τ²), and that the width of the
+placebo z grows with offers. If so, SE × factor under-corrects well-measured cards and
+over-corrects thin ones, and SE_add = √(SE² + τ²) matches better.
+
+**What both rules assume.** Both take the placebo spread, measured on unchanged cards, and
+apply it to changed cards. So both assume a changed card gets the same release movement as an
+unchanged one, on top of whatever its change does. Neither rule tests that, and S doesn't
+either.
+
+### Rules and what each outcome means, written before running
+
+Written 2026-11-11, before any number of this section was computed. What I had looked at:
+sections C, O, Q and R and `r_components.py`; `placebo_pairs`, `placebo_vs_real`, `_real`
+and the export's calibrated rule; `q_tau.csv` and `r_rarity_tau.csv`; `calibrated_counts.csv`
+and `se_inflation.csv`; the column names of the saved files; and the 43 rows of
+`pick_rate_did.csv` with β_h, se_h and the existing flags, printed to learn the columns. No
+z_add, no τ leaving a character out, no count under rules c to f and no refit of the
+dose-response had been run. Git is not attempted, as instructed; the order rests on this note.
+Rules marked **(Phil)** are as given; **(mine)** marks what the prompt left open.
+
+Throughout **(Phil)**: weeks 0–3; β and SE in pp; the 463 pairs as `placebo_pairs` saves them
+(β, SE and z are means over the tweaks sharing a pair); the threshold is the export's `CAL_Z`
+(2), with a strict "greater than" as there. Two different things are called τ in this
+project. Here **τ** is Q's placebo spread in pp. The dose-response model's own heterogeneity
+is written "between-tweak τ²".
+
+Startup gates (mine): the pairs must number 463 with robust sds 4.10 and 2.67; Q's likelihood
+(`q_nudge.mle`) on all pairs must return `q_tau.csv`'s τ (3.35 and 2.44 pp), and by patch ×
+rarity `r_rarity_tau.csv`'s. The script stops otherwise.
+
+#### Part 1. Validation on the placebos (the test of the additive model)
+
+- **(Phil)** z_add = β / √(SE² + τ²), with τ estimated without the pair's own character: τ
+  refit per patch on the other characters, same likelihood as Q part 1. z_mult = z / factor
+  (4.10, 2.67).
+- **(Phil)** Per patch: the robust sd (1.4826 × MAD) of z_add and of z_mult in six bins of
+  `n_treated_offers` with equal counts; Spearman of |z| against offers, with a 95% interval
+  from resampling cards.
+- **Rule (Phil): the additive model passes if every bin's robust sd of z_add is in
+  [0.8, 1.25] and its Spearman interval includes 0.** The multiplicative rule is expected to
+  fail the trend part, rising with offers; whether it does is reported. If the additive model
+  fails, the section says which bins and in which direction, and Part 2's additive counts are
+  descriptive only.
+- **Secondary (Phil):** the same with τ by patch × rarity, leaving the character out too if
+  the rarity groups allow.
+- What each outcome means:
+  - Additive passes: on unchanged cards, √(SE² + τ²) is an honest error at every level of
+    offers. Rows c and d of Part 2 are then a valid sensitivity row.
+  - Additive fails in the bins: the additive error is too wide (robust sd under 0.8) or too
+    narrow (over 1.25) for cards of that size. Fails on the trend: a fixed τ still leaves a
+    dependence on offers, so the extra noise is neither proportional to the SE nor fixed.
+  - Multiplicative fails the trend: Q's observation holds on the calibrated z, and the factor
+    is right on average only. It does not change the headline; a factor fixes the patch's
+    overall width by construction.
+- Mine:
+  - **The rule is applied per patch, and the model passes only if both patches pass.** If
+    they differ, each is reported and the failing patch's additive counts are descriptive.
+  - **Leaving a character out.** The first patch has pairs from four characters, so its τ is
+    refit on the other three; the second on the other four. z_add divides β as it is; the
+    fitted μ (−0.13 and +0.41 pp in Q) is not subtracted, as the formula is given. The robust
+    sd doesn't depend on it.
+  - **Bins** by rank of offers within the patch, ties in file order, so counts differ by at
+    most one (about 36 pairs a bin in the first patch, 41 in the second).
+  - **Spearman interval:** 2,000 resamples of pseudo cards within the patch, a card's
+    all-offers and upgraded-offers pairs together, percentile interval. z is held as
+    computed; τ is not refit in each resample.
+  - **The bin rule is strict for bins this small, and I say so now.** A robust sd from about
+    40 values has a relative standard error near 0.18. So even if the additive model were
+    exactly true, one bin would land inside [0.8, 1.25] about three times in four, and all
+    six about one time in five, by a normal approximation. The rule decides as given. Beside
+    it I report a benchmark: 2,000 simulated sets of β_i ~ Normal(0, SE_i² + τ²) at each
+    pair's own SE and the patch's τ, run through the same steps (τ refit without each
+    character, same bins), giving the 95% range of each bin's robust sd and the share of
+    simulations in which all six bins are in range. Each observed bin also gets an interval
+    from resampling cards. A fail whose bins sit inside the benchmark's range is a fail I
+    can't tell from sampling noise, and I will say which kind it is.
+  - **Whole-patch figures, descriptive:** robust sd, plain sd and the share of |z| > 2 for
+    z_add and z_mult (honest errors: 1, 1, 0.046). The share over 2 is the false-alarm rate
+    on unchanged cards at Part 2's threshold, which is what the counts rest on. O found tails
+    heavier than a normal's, so the plain sd and the share can exceed what the robust sd says.
+  - **The τ Part 2 uses** is Q's, fit on all characters. z_add with that τ is reported beside
+    the leave-one-out version, so the reader sees what the circularity is worth.
+  - **Upgraded-offers pairs** (60 of 463) stay in, as in Q's "all pairs". They have the fewest
+    offers, so they sit in the lowest bins. The same tables on the 403 all-offers pairs are
+    reported as a check.
+  - **"Fails the trend"** for either rule means the Spearman interval excludes 0. The
+    multiplicative z's bins are reported against the same band.
+  - **Secondary, by rarity.** Rarity of a pseudo card is R's (`r_rarity_fits.csv`: on file
+    where present, else the offer tier). τ is refit per patch × rarity without the pair's
+    character when every such refit has at least 20 pairs; if any has fewer, the rarity
+    version uses τ from all characters (`r_rarity_tau.csv`) and says so. Same bins, same rule
+    read descriptively: the secondary doesn't decide.
+
+#### Part 2. Counts on the real tweaks, side by side
+
+Per patch: the count of clearly nonzero tweaks, and of those with one direction, the count
+that moved toward the change (the export's `toward_change`; mixed-direction and upgrade-only
+tweaks have no single direction, as in the existing counts).
+
+- **(Phil)** The rules:
+  - a. Uncalibrated: |β_h| > 2 se_h. Existing; must reproduce 21 of 26 and 8 of 17.
+  - b. Multiplicative: |β_h| > 2 se_h × factor. Existing; must reproduce 13 of 26 and 2 of 17.
+  - c. Additive, τ per patch: |β_h| > 2 √(se_h² + τ²), τ from `q_tau.csv` (pp, all pairs).
+  - d. Additive, τ per patch × rarity (`r_rarity_tau.csv`), by the tweak card's rarity.
+  - e. Empirical, per patch: p = the share of the patch's placebo pairs whose
+    |β| / √(SE² + τ²) is at least the tweak's |β_h| / √(se_h² + τ²); clearly nonzero if
+    p < 0.05. Pooled per patch, so p has a resolution near 1/200 and not 1/20.
+  - f. The existing `placebo_vs_real` (per window, empirical p < 0.05), recomputed at weeks
+    0–3; its resolution is about 1/20.
+- **Gate (Phil): a and b must reproduce the existing counts before anything else is
+  reported.**
+- **(Phil)** Per-tweak table: card, patch, rarity, offers, β_h (pp), se_h, the calibrated SE
+  under b, c and d, and the flag under each rule. Every tweak whose verdict differs between b
+  and c is listed with its offers.
+- **Declared expectation (Phil; to be checked, not assumed):** overall counts close to b's;
+  tweaks with many offers more likely to lose "clearly nonzero" under c, thin ones more
+  likely to gain it.
+- Mine:
+  - **The gate is per tweak as well as per count:** a's and b's flags must equal the file's
+    `clearly_nonzero_h` and `clearly_nonzero_h_cal` for all 43, and the three counts per patch
+    (clearly nonzero, with a direction, toward) must equal `calibrated_counts.csv`'s weeks
+    0–3 rows (21, 20, 17 and 8, 7, 5; 13, 12, 12 and 2, 2, 2). The factors and `CAL_Z` are
+    imported from `spirometry.export` (4.10, 2.67, 2), not retyped.
+  - **Offers** are `n_treated_offers` of the weeks 0–3 fit (`did_h3.parquet`). The column of
+    that name in `pick_rate_did.csv` belongs to the all-weeks fit.
+  - **A tweak card's rarity** is the one on file in `offer_rate.parquet`, which has all 43
+    and is where Q's derivation looks first.
+  - **Where c is stricter than b is arithmetic, not a finding.** √(se² + τ²) exceeds
+    se × factor when se < τ / √(factor² − 1): 0.84 pp in the first patch, 0.99 pp in the
+    second. A tweak measured more precisely than that gets a wider error under c, a thinner
+    one a narrower error. From the se_h column I have seen, most all-offers tweaks are below
+    the crossover in both patches, so I expect c to be the stricter rule for most tweaks. I
+    have not computed a verdict. The check on the expectation is the list of switches with
+    their offers and SEs, and the median offers of tweaks that lose, gain and keep their
+    verdict.
+  - **e:** the placebo pairs of the tweak's patch, both kinds of fit pooled; p = k / n with
+    no continuity correction, as `placebo_vs_real` computes its p; (k + 1) / (n + 1) is
+    reported beside it. τ is Q's per-patch value on both sides. Neither side is centered.
+  - **f:** `did.placebo_vs_real(did_h3, placebo_h3)`, unchanged. The number of placebo pairs
+    in each tweak's window is reported; with 20 pairs, p < 0.05 requires that no placebo in
+    the window moved as much as the tweak.
+  - If Part 1 fails for a patch, rows c, d and e of that patch are marked descriptive in the
+    table.
+
+#### Part 3. Dose-response under the additive errors
+
+- **(Phil)** The weeks 0–3 slopes per patch and the patch difference, refit as the existing
+  calibrated version does, with each tweak's error √(se_h² + τ²) in place of se_h × factor.
+  Reported next to the existing calibrated slopes and the patch-difference z. No rule.
+- Mine:
+  - **"The existing calibrated version"** is `se_inflation.csv`, weeks 0–3, settings "none"
+    and "robust sd by patch" (`sensitivity.se_inflation_table`: slope per patch, a shared
+    between-tweak τ² by method of moments, and a separate-τ² check). Those rows use the
+    all-weeks factors (4.52, 2.07), as SPIROMETRY.md notes. **Gate:** the script must
+    reproduce those rows from `did_h3.parquet` before adding its own. It also adds the
+    multiplicative fit with the weeks 0–3 factors (4.10, 2.67), which is the like-for-like
+    comparison for τ from weeks 0–3 placebos.
+  - **Scale.** The dose line is in log-odds and τ is in pp. Primary: the additive error is
+    built in pp and converted as the SE is, se_lo_add = √(se_h² + τ²) / (p(1 − p)), p the
+    tweak's pick rate before. Secondary: τ on the log-odds scale from `q_tau.csv` (0.180,
+    0.133), √(se_lo² + τ_lo²); and τ by rarity in pp.
+  - **Specs:** primary (the one the numbers module reports), triage, and primary with
+    Debilitate at its table dose, as the existing file has.
+  - What to expect, from C: the between-tweak τ² absorbs most of any inflation, so the
+    slopes' errors should move little. Reported either way.
+
+#### Outputs and resuming
+
+Each part writes its tables when it finishes (`--part 1`, `2`, `3`); nothing here takes more
+than a few minutes, so there are no saved fits to resume from. Every new table gets the
+privacy check before it is listed.
+
+### Results
+
+Everything below in section S was computed after the text above was written.
+
+### Answer
+
+**The additive model fails its own test, so the headline has no rival here, and the additive
+counts are descriptive only.** A fixed τ over-corrects the most-offered cards in both patches:
+in the top sixth by offers (all Commons, 30,000 to 46,000 offers) the robust sd of z_add is
+0.67 and 0.60, where honest errors give 1. The multiplicative rule fails the other way, as
+expected: its z widens with offers (Spearman +0.29 in both patches), and in the first patch's
+top sixth a quarter of unchanged cards pass |z| > 2. So neither rule is honest across the
+range of offers. Taken as they are, the additive rules would count **8 of 26 and 0 of 17**
+against the headline's 13 of 26 and 2 of 17. All seven tweaks that change verdict lose it,
+six of them Commons with many offers, which is the region where the additive error is too
+wide and the multiplicative one too narrow. The dose-response conclusion does not depend on
+the choice: the patch difference has z between −2.8 and −4.6 under every error model tried.
+[computed; the reading is inferred]
+
+### Declared outcomes [computed]
+
+| Part | Result | Outcome under the rule |
+|---|---|---|
+| 1. Additive, first patch | 3 of 6 bins outside [0.8, 1.25] (0.72, 1.28, 0.67); Spearman −0.14 [−0.25, −0.02] | **Fails**, on the bins and on the trend (falls with offers) |
+| 1. Additive, second patch | 2 of 6 bins outside (1.27, 0.60); Spearman −0.11 [−0.23, +0.02] | **Fails**, on the bins. The trend part passes |
+| 1. Multiplicative | Spearman +0.29 [0.17, 0.40] in each patch; 2 and 3 bins outside | **Fails the trend, as expected** (rises with offers) |
+| 1. Secondary, τ by rarity | First: 2 bins outside (0.77, 1.40), Spearman −0.14 [−0.25, −0.02]. Second: 2 outside (1.32, 0.76), −0.05 [−0.17, +0.08] | Closer in the top bin, still outside the band |
+| 2. Gate | a and b reproduce all 43 flags and the counts | **Passed** |
+| 2. Counts | c: 8 of 26, 0 of 17. b: 13 of 26, 2 of 17 | **Descriptive only**, since Part 1 failed in both patches |
+| 2. Expectation | Counts not close to b's; 7 tweaks lose under c, none gains | Half met: many-offer tweaks lose; no thin tweak gains |
+| 3. Dose-response | Patch-difference z −4.62 (additive, pp) against −3.11 (existing calibrated row) | No rule. The difference survives every version |
+
+### Checks and changes after the rules [computed]
+
+- **Gates passed:** 463 pairs with robust sds 4.10 and 2.67; Q's τ (3.35, 2.44 pp) and R's six
+  rarity τ reproduced to 1e-3; a's and b's flags equal the file's for all 43 tweaks, and the
+  counts equal `calibrated_counts.csv` (21, 20, 17 and 8, 7, 5; 13, 12, 12 and 2, 2, 2); the
+  six weeks 0–3 rows of `se_inflation.csv` (none and robust sd by patch, three specs)
+  reproduced to 1e-6.
+- **The first run stopped at the startup gate**, before any number of S existed: one pair had
+  no rarity. The Defect card is named `NULL`, which pandas reads as a missing value. The
+  rarity file is now read with the card id kept as text. Anyone plotting from
+  `s_placebo_z.csv` needs the same (`converters={"pseudo_card": str}`).
+- **Leaving a character out by rarity was allowed:** the smallest refit has 32 pairs (first
+  patch, Commons without Silent), above the 20 I set.
+- **f's resolution is finer than the 1/20 the prompt and my rules said.** Tweaks sharing a
+  window pool their pseudo cards, so a first-patch window holds 35 to 62 pairs and a
+  second-patch one 34 to 55. Only the upgraded-offers windows and Silent's second-patch
+  window have 20.
+- **Added after reading Part 3:** the Q statistic and degrees of freedom in `s_dose.csv`,
+  to show why the between-tweak τ² goes to 0. Descriptive.
+- Two bugs in the script's own privacy scan were fixed after the tables existed (it skipped
+  text columns under this pandas version, then flagged my row label containing "|"; the
+  label is now "spearman abs z vs offers"). No table's numbers changed.
+- A full rerun from scratch returns byte-identical `s_trend.csv` and `s_counts.csv`.
+- Tests: `pytest tests` gives 266 passed, 4 skipped. The other 47 (27 failed, 20 errors) are
+  all `PermissionError` on `reference/raw/`, closed by the sandbox, the same 47 as in Q and
+  R. Collection from the repository root stops on `.spirometry_salt` for the same reason, so
+  the run names `tests` and ignores the closed paths. `s_additive.py` has no tests of its
+  own; its gates are its checks.
+- Git was not attempted, as instructed.
+
+### Part 1. Validation on the placebos [computed]
+
+Tables: `s_placebo_z.csv` (the 463 pairs with every z, the τ used and the bin),
+`s_loco_tau.csv`, `s_bins.csv`, `s_trend.csv`, `s_benchmark.csv`.
+
+**τ without each character** (pp; Q's τ on all characters is 3.35 and 2.44):
+
+| Patch | Left out: τ |
+|---|---|
+| First | Ironclad 3.44, Necrobinder 3.49, Regent 3.34, Silent 3.05 |
+| Second | Defect 2.48, Ironclad 2.46, Necrobinder 2.55, Regent 2.20, Silent 2.47 |
+
+**Robust sd by bin of offers**, all 463 pairs. z_add uses τ without the pair's character.
+Starred values are outside [0.8, 1.25]. Intervals resample cards.
+
+| Patch | Bin | Pairs | Offers (median) | Median SE | Upgraded-offers fits | Rarities | z_add [95%] | z_mult [95%] | Share \|z\| > 2: add, mult |
+|---|---|---|---|---|---|---|---|---|---|
+| First | 1 | 37 | 6,244 | 1.27 | 16 | 29 Rare, 8 Uncommon | 0.72* [0.45, 1.44] | 0.57* [0.40, 0.83] | 0.08, 0.03 |
+| First | 2 | 36 | 7,446 | 1.14 | 4 | 32 Rare, 4 Common | 1.28* [0.75, 1.57] | 0.96 [0.57, 1.19] | 0.03, 0.00 |
+| First | 3 | 36 | 13,166 | 0.85 | 0 | 31 Uncommon, 5 Rare | 0.92 [0.56, 1.36] | 0.92 [0.49, 1.33] | 0.06, 0.08 |
+| First | 4 | 36 | 13,993 | 0.80 | 0 | 35 Uncommon, 1 Common | 1.11 [0.55, 1.80] | 1.25 [0.52, 1.92] | 0.14, 0.14 |
+| First | 5 | 36 | 16,604 | 0.69 | 0 | 28 Uncommon, 8 Common | 0.85 [0.47, 1.10] | 1.02 [0.65, 1.35] | 0.03, 0.06 |
+| First | 6 | 36 | 43,157 | 0.43 | 0 | 36 Common | 0.67* [0.42, 1.16] | 1.35* [0.82, 2.14] | 0.00, 0.25 |
+| Second | 1 | 41 | 1,638 | 2.31 | 37 | 21 Uncommon, 15 Rare, 5 Common | 0.93 [0.68, 1.51] | 0.51* [0.32, 0.84] | 0.07, 0.00 |
+| Second | 2 | 41 | 5,391 | 1.36 | 2 | 39 Rare, 2 Common | 1.02 [0.67, 1.52] | 0.76* [0.53, 1.21] | 0.07, 0.02 |
+| Second | 3 | 41 | 10,657 | 0.98 | 1 | 21 Uncommon, 19 Rare, 1 Common | 1.03 [0.65, 1.52] | 1.05 [0.64, 1.45] | 0.12, 0.05 |
+| Second | 4 | 41 | 11,847 | 0.93 | 0 | 41 Uncommon | 1.09 [0.65, 1.41] | 1.20 [0.70, 1.56] | 0.00, 0.10 |
+| Second | 5 | 41 | 15,081 | 0.73 | 0 | 28 Uncommon, 13 Common | 1.27* [0.83, 1.57] | 1.58* [1.00, 2.04] | 0.07, 0.17 |
+| Second | 6 | 41 | 33,257 | 0.50 | 0 | 41 Common | 0.60* [0.37, 0.75] | 1.01 [0.65, 1.38] | 0.00, 0.05 |
+
+**Whole patch and trend.**
+
+| Patch | z | Robust sd | Plain sd | Share \|z\| > 2 | Spearman, \|z\| against offers [95%] | Bins in band |
+|---|---|---|---|---|---|---|
+| First | Multiplicative | 1.00 | 1.09 | 0.092 | **+0.29 [0.17, 0.40]** | 4 of 6 |
+| First | **Additive, τ without the character [rule]** | 0.96 | 1.04 | 0.055 | **−0.14 [−0.25, −0.02]** | **3 of 6** |
+| First | Additive, Q's τ (Part 2's) | 0.93 | 1.01 | 0.051 | −0.14 [−0.25, −0.02] | 4 of 6 |
+| First | Additive, τ by rarity, without the character | 0.98 | 1.06 | 0.065 | −0.14 [−0.25, −0.02] | 4 of 6 |
+| First | Additive, R's τ by rarity | 0.97 | 1.02 | 0.046 | −0.14 [−0.25, −0.02] | 3 of 6 |
+| Second | Multiplicative | 1.00 | 1.10 | 0.065 | **+0.29 [0.17, 0.40]** | 3 of 6 |
+| Second | **Additive, τ without the character [rule]** | 1.04 | 1.04 | 0.057 | **−0.11 [−0.23, +0.02]** | **4 of 6** |
+| Second | Additive, Q's τ (Part 2's) | 1.04 | 1.01 | 0.053 | −0.10 [−0.23, +0.03] | 5 of 6 |
+| Second | Additive, τ by rarity, without the character | 1.07 | 1.06 | 0.065 | −0.05 [−0.17, +0.08] | 4 of 6 |
+| Second | Additive, R's τ by rarity | 1.06 | 1.02 | 0.057 | −0.04 [−0.17, +0.09] | 4 of 6 |
+
+With τ by rarity the top bin moves to 0.83 (first) and 0.76 (second) from 0.67 and 0.60; bins
+2 (first, 1.40) and 5 (second, 1.32) stay high.
+
+**Benchmark: the additive model exactly true**, 2,000 simulated sets through the same steps.
+
+| Patch | All six bins in band | Observed bins outside the simulated 95% range | Spearman: observed, simulated range |
+|---|---|---|---|
+| First | 17% of simulations | none (each bin's range is about 0.63 to 1.38) | −0.14, outside [−0.13, +0.14] |
+| Second | 21% | bin 6: 0.60, below [0.66, 1.35] | −0.11, inside [−0.12, +0.13] |
+
+**The 403 all-offers pairs** (bins redrawn). Additive: first patch bins 4 and 6 outside (0.67,
+0.73), Spearman −0.11 [−0.25, +0.03]; second bins 1, 2 and 6 outside (1.42, 0.69, 0.59),
+−0.12 [−0.25, +0.02]. Multiplicative: +0.23 [0.08, 0.36] and +0.18 [0.04, 0.31].
+
+Reading. [inferred]
+- **Rule: the additive model fails in both patches.** In the first, three bins are outside
+  the band and the trend interval excludes 0. In the second, two bins are outside and the
+  trend part passes.
+- **How it fails: the top bin, low, in both patches.** The most-offered sixth has a robust sd
+  of 0.67 and 0.60, and none of its 77 pairs reaches |z_add| > 2. Those bins are entirely
+  Commons, and R found Commons have the smallest τ in pp (2.84 and 1.91 against 3.35 and
+  2.44). So one τ per patch is too large for exactly the cards with the smallest SEs. The
+  other misses are small and go the other way: 1.28 and 1.27, just over the band, and the
+  first patch's thinnest bin at 0.72, where 16 of 37 fits are on upgraded offers.
+- **How much of this is noise.** As said before running, the band is strict for bins of
+  about 40: a true model passes all six one time in five. By the benchmark, each first-patch
+  bin is inside what a true model would show, and the first patch's failure that noise
+  doesn't cover is the trend (−0.14 against a range ending at −0.13), which on the
+  all-offers pairs alone no longer excludes 0. The second patch's top bin (0.60) is outside
+  the benchmark's range. Put together: the bin failures other than the top bin look like
+  noise; the top bin is low in both patches, by the same amount, for a reason R already
+  measured. I read that one as real.
+- **τ by rarity repairs about half of it.** The top bin rises to 0.83 and 0.76. It is still
+  under 1, so even a Common's own τ is somewhat too large for the most-offered Commons, or τ
+  is not constant within a rarity.
+- **The multiplicative rule fails the trend, as expected.** Its z widens with offers in both
+  patches, from 0.57 and 0.51 in the thinnest bin to 1.35 (first, top bin) and 1.58 (second,
+  bin 5). The factor is right on average and wrong at both ends: too wide an error for thin
+  cards, too narrow for well-measured ones.
+- **False alarms on unchanged cards at |z| > 2**, which is what a count rests on: 9.2% and
+  6.5% under the multiplicative rule, 5.5% and 5.7% under the additive one, against 4.6% for
+  honest errors. Under the multiplicative rule they concentrate where offers are many: 25% in
+  the first patch's top bin (9 of 36) and 17% in the second patch's bin 5. Under the additive
+  rule the top bins have none. Over a whole patch the additive rule is closer to honest; bin
+  by bin, neither is.
+- Using Q's τ in place of the leave-one-out τ changes little (bins 0.73 and 0.65; 0.61), so
+  the circularity the rule guarded against is small.
+
+### Part 2. Counts on the real tweaks [computed]
+
+Tables: `s_counts.csv`, `s_tweaks.csv` (the per-tweak table), `s_switches.csv`,
+`s_switch_summary.csv`. **Rows c, d and e are descriptive only: Part 1 failed in both
+patches.**
+
+| Rule | First patch: clearly nonzero, with one direction, toward | Second patch | Status |
+|---|---|---|---|
+| a. Uncalibrated | 21 of 26, 20, 17 | 8 of 17, 7, 5 | Existing, reproduced |
+| **b. Multiplicative (headline)** | **13 of 26, 12, 12** | **2 of 17, 2, 2** | Existing, reproduced |
+| c. Additive, τ per patch | 8 of 26, 7, 7 | 0 of 17 | Descriptive only |
+| d. Additive, τ per patch × rarity | 7 of 26, 6, 6 | 0 of 17 | Descriptive only |
+| e. Empirical, pooled per patch | 7 of 26, 6, 6 | 0 of 17 | Descriptive only |
+| f. `placebo_vs_real`, per window, weeks 0–3 | 6 of 26, 5, 5 | 0 of 17 | Existing method |
+
+For f at all weeks, SPIROMETRY.md has 9 of 26 and 2 of 17.
+
+**Who is clearly nonzero under each rule.**
+- c, first patch: Corrosive Wave, Parry, Leading Strike, Untouchable, Danse Macabre, Fight
+  Me, Pinpoint, Flick Flack. Leading Strike is the mixed-direction tweak; the other seven all
+  moved toward the change.
+- d drops Pinpoint (z 1.994 with the Uncommon τ of 3.70). e drops Flick Flack (p = 0.051). f
+  keeps Corrosive Wave, Parry, Fight Me, Danse Macabre (p 0.045), Leading Strike and
+  Untouchable (both 0.048).
+- Second patch: nothing passes c to f. The headline's two, Uproar and Unrelenting, have z
+  0.91 and 1.70 under c.
+
+**Every tweak whose verdict differs between b and c.** All seven lose "clearly nonzero" under
+c; none gains it. All seven moved toward the change.
+
+| Tweak | Patch | Rarity | Offers, weeks 0–3 | β_h (pp) | se_h | SE under b | SE under c | SE under d | z under b | z under c | z under d |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Anticipate | first | Common | 43,370 | −4.01 | 0.37 | 1.50 | 3.37 | 2.86 | −2.68 | −1.19 | −1.40 |
+| Collision Course | first | Common | 38,226 | +5.70 | 0.36 | 1.47 | 3.37 | 2.86 | +3.87 | +1.69 | +1.995 |
+| Glitterstream | first | Common | 37,893 | +3.57 | 0.39 | 1.62 | 3.37 | 2.86 | +2.21 | +1.06 | +1.25 |
+| Refine Blade | first | Common | 37,928 | +4.56 | 0.45 | 1.85 | 3.38 | 2.87 | +2.47 | +1.35 | +1.59 |
+| Patter | first | Common | 25,839 | +5.25 | 0.54 | 2.21 | 3.39 | 2.89 | +2.37 | +1.55 | +1.82 |
+| Uproar | second | Common | 33,021 | +2.25 | 0.41 | 1.10 | 2.48 | 1.95 | +2.06 | +0.91 | +1.15 |
+| Unrelenting | second | Uncommon | 15,168 | +4.35 | 0.76 | 2.03 | 2.56 | 2.72 | +2.14 | +1.70 | +1.60 |
+
+Median offers: tweaks that lose 37,928 against 16,237 for the rest (first); 24,095 against
+11,044 (second). The error under c is wider than under b for 22 of 26 first-patch tweaks and
+10 of 17 second-patch ones, the ones with se_h under 0.84 and 0.99 pp.
+
+Close calls: Flick Flack keeps its verdict under c by a hair (z −2.003). Collision Course
+misses under d by as little (1.995), and Pinpoint likewise (1.994).
+
+Reading. [inferred]
+- **The declared expectation is half met.** Tweaks with many offers do lose under c: four of
+  the five first-patch losers have 38,000 to 43,000 offers and all but one of the seven are
+  Commons. But no thin tweak gains, and the counts are not close to b's (8 against 13, 0
+  against 2). The thin tweaks whose error narrows under c have small effects; the largest z
+  among them that wasn't already clear is 1.30 (Reflect).
+- **The seven sit where Part 1 says neither rule can be trusted.** Six are Commons with
+  26,000 to 43,000 offers. For unchanged cards of that size the additive error is too wide
+  (robust sd 0.67 and 0.60, no false alarms in 77) and the multiplicative one too narrow in
+  the first patch (1.35, a quarter false alarms). So "13" leans on cards for which the
+  headline rule lets one unchanged card in four through, and "8" comes from a rule that lets
+  none through. The honest figure for these six is between the two, and S can't say where.
+  d, whose top bin is closer to honest (0.83, 0.76), still drops all seven, two of them by
+  under 0.01 in z.
+- **Seven of the headline's 13 first-patch tweaks have 37,893 to 43,579 offers**, the range
+  of the top bin: four of the Common losers above plus Flick Flack, Leading Strike and
+  Untouchable, which pass c and d (Flick Flack misses e).
+- **Unrelenting is the one loser outside that region.** It is an Uncommon with 15,168
+  offers, where the additive z's robust sd is 1.27, if anything too narrow an error. Its z
+  falls from 2.14 to 1.70. It was an edge case under b too.
+- **The second patch has nothing that survives any placebo-based rule except b**, and b's two
+  are at 2.06 and 2.14.
+- e and f agree with c and d to within one or two tweaks, though they make no normal
+  assumption. e's p for the two marginal cases: Flick Flack 0.051, Pinpoint 0.041.
+
+### Part 3. Dose-response under the additive errors [computed]
+
+Table: `s_dose.csv` (three specs × six error models, with the separate-τ² check). Slopes in
+log-odds per unit ln(new/old). Primary spec, weeks 0–3, 24 and 14 tweaks:
+
+| Errors | Slope, first | Slope, second | Difference (z) | Between-tweak τ² | Q (34 df) | z, separate τ² |
+|---|---|---|---|---|---|---|
+| Clustered, as is [existing] | 1.40 ± 0.19 | 0.09 ± 0.40 | −1.31 ± 0.44 (−2.97) | 0.051 | 1,076 | −3.95 |
+| Multiplicative, 4.52 / 2.07 [existing calibrated row] | 1.18 ± 0.18 | 0.11 ± 0.29 | −1.07 ± 0.34 (−3.11) | 0.020 | 74 | −3.40 |
+| Multiplicative, 4.10 / 2.67 (weeks 0–3 factors) | 1.20 ± 0.18 | 0.11 ± 0.34 | −1.09 ± 0.38 (−2.86) | 0.024 | 73 | −3.49 |
+| **Additive, τ per patch in pp** | **1.28 ± 0.17** | **−0.02 ± 0.22** | **−1.29 ± 0.28 (−4.62)** | 0.000 | 34 | −4.50 |
+| Additive, τ per patch in log-odds | 1.41 ± 0.23 | 0.09 ± 0.42 | −1.31 ± 0.48 (−2.76) | 0.039 | 82 | −3.57 |
+| Additive, τ per patch × rarity in pp | 1.20 ± 0.17 | 0.06 ± 0.24 | −1.14 ± 0.29 (−3.92) | 0.003 | 37 | −4.06 |
+
+Patch-difference z in the other specs, same order: triage −3.72, −3.81, −3.55, −5.09, −3.42,
+−4.52; primary with Debilitate at its table dose −4.01, −4.12, −3.85, −5.48, −3.70, −4.91.
+
+Reading. [inferred]
+- **"The second patch differs from the first" survives every error model**: z from −2.76 to
+  −4.62 in the primary spec. The slopes themselves barely move (first 1.18 to 1.41, second
+  −0.02 to 0.11).
+- **The additive error in pp leaves no between-tweak scatter to explain** (Q equals its
+  degrees of freedom), so the model's τ² goes to 0. The second patch's points then stop
+  carrying heterogeneity estimated mostly from the first patch, its slope's error falls from
+  0.40 to 0.22, and z grows. This is C's mechanism with the sign reversed: there the
+  inflation moved into τ² and little changed; here the added variance replaces τ² and is
+  smaller for the second patch (τ 2.44 against 3.35 pp).
+- **That Q is not evidence that real tweaks sit on the line.** Part 1 found the additive
+  error too wide for the most-offered cards, which would also push Q down. And with τ put on
+  the log-odds scale the picture is the ordinary one (τ² 0.039, z −2.76). The size of z
+  depends on which scale the fixed noise is assumed to live on; R's aside a found neither
+  scale clearly better.
+- The existing calibrated row uses the all-weeks factors on weeks 0–3 fits, as SPIROMETRY.md
+  already notes. With the weeks 0–3 factors z is −2.86 in place of −3.11.
+
+### What this does and doesn't settle
+
+- **Settled, within limits:**
+  - One fixed τ per patch is not an honest error across the range of offers. It is too wide
+    for the most-offered cards in both patches: their z comes out about a third too small.
+  - The multiplicative factor is not either. Its z widens with offers in both patches; it is
+    too wide for thin cards and too narrow for well-measured ones.
+  - Over a whole patch, the additive rule's false-alarm rate on unchanged cards (5.5%, 5.7%)
+    is closer to the nominal 4.6% than the multiplicative rule's (9.2%, 6.5%).
+  - The existing counts and the existing calibrated dose-response rows reproduce exactly.
+  - The patch difference in the dose-response does not depend on the error model.
+- **Fits but not shown:** the true extra noise is neither proportional to the SE nor one
+  fixed amount: smaller for Commons than a patch-wide τ, and perhaps with a part that does
+  scale with the SE (C's fit of β² on SE² found both). τ by rarity goes part of the way.
+- **Not settled:**
+  - How many first-patch tweaks are clearly nonzero. The two rules bracket it, 8 and 13, and
+    they disagree on cards where both are miscalibrated in opposite directions. In the
+    second patch the bracket is 0 and 2.
+  - Whether a two-part error (a factor and a τ, or a τ that depends on offers) would pass
+    Part 1's test. Not tried here: it would be a new model chosen after seeing these bins,
+    and it belongs in its own declared check.
+  - Whether changed cards get the same release movement as unchanged ones. Both rules assume
+    it.
+- The factors, the numbers module, the guide and `results/` are untouched.
+
+### Proposed text (not applied when written; applied later)
+
+*Added 2026-11-11, after Phil read the section: on his instruction the SPIROMETRY.md line
+below was applied with the range added (first patch between about 8 and 13, second between
+0 and 2), and README finding 1 got a three-sentence version. The guide, `results/` and the
+numbers module are still untouched. The text below is as first written.*
+
+**SPIROMETRY.md, "Placebo calibration of the DiD errors", after the weeks 0–3 paragraph:**
+
+> Additive calibration, sensitivity check (triage S, weeks 0–3): an error of √(SE² + τ²) with
+> Q's τ per patch (3.35, 2.44 pp) **fails** its declared test on the placebos. Across six
+> bins of offers its z has robust sd 0.72, 1.28, 0.92, 1.11, 0.85, 0.67 (first) and 0.93,
+> 1.02, 1.03, 1.09, 1.27, 0.60 (second), against a band of 0.8–1.25: it is too wide for the
+> most-offered cards (all Commons). The multiplicative z fails the other way, widening with
+> offers (Spearman +0.29 [0.17, 0.40] in each patch; |z| > 2 in 9.2% and 6.5% of placebo
+> pairs, 25% in the first patch's most-offered sixth; the additive rule gives 5.5% and
+> 5.7%). The additive rule would count 8 of 26 and 0 of 17 (descriptive only, since it
+> failed); the calibrated counts stay 13 of 26 and 2 of 17. The seven tweaks that differ are
+> six Commons with 26,000–43,000 offers and Unrelenting. The dose-response patch difference
+> holds under every error model (z −2.8 to −4.6, primary spec). No reported count changes.
+
+**Guide and README.** The condition for proposing a sensitivity row (the additive model
+passing Part 1) is not met, so I propose none. What Part 1 does support, and what Phil may
+or may not want said, is a caveat on the headline count itself, in one sentence where the 13
+of 26 and 2 of 17 are reported: the placebo factor is right on average but too narrow for
+the most-offered cards, and under an additive alternative, which errs the other way for
+those cards, the counts would be 8 and 0. That is Phil's decision; nothing was edited.
+
+### Privacy check, files and runtime
+
+- **Privacy check, clean.** All 10 `triage/out_final/s_*.csv` tables pass the export's
+  `check_output` (no identifier column, no value that looks like a hashed id). No column
+  name matches uploader, player, run_key, run_hash, screen_id, hash, steam, start_time,
+  token or seed. The 574 distinct text values were scanned for hex strings of 12 or more
+  characters, pipe-joined keys and long strings: none. Text columns hold card ids,
+  card-patch ids, characters, rarities, patch and rule labels and yes/no flags. The script
+  reads no run-level table.
+- **Tables for plotting** (no figure was made): `s_placebo_z.csv` (z against offers, per
+  pair), `s_bins.csv` (robust sd per bin, every z, both subsets, with intervals),
+  `s_trend.csv`, `s_benchmark.csv`, `s_loco_tau.csv`, `s_tweaks.csv` (β with the three
+  calibrated SEs and every flag), `s_counts.csv`, `s_switches.csv`, `s_switch_summary.csv`,
+  `s_dose.csv`.
+- **Files to commit:** `triage/TRIAGE.md`, `triage/scripts/s_additive.py`, `README.md`,
+  `PLAN.md`, and the ten `triage/out_final/s_*.csv` tables above.
+- **Runtime:** 18 seconds for the whole script (Part 1's bootstrap and benchmark are 17 of
+  them). `pytest tests` took 3 minutes.

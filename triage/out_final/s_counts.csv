@@ -1,0 +1,13 @@
+patch,rule,rule_name,n_tweaks,n_clearly_nonzero,n_clearly_nonzero_with_direction,n_toward,status
+first,a,uncalibrated (se_h),26,21,20,17,existing
+first,b,multiplicative (se_h x factor),26,13,12,12,existing
+first,c,"additive, tau per patch",26,8,7,7,descriptive only (part 1 failed)
+first,d,"additive, tau per patch x rarity",26,7,6,6,descriptive only (part 1 failed)
+first,e,"empirical, pooled per patch (p < 0.05)",26,7,6,6,descriptive only (part 1 failed)
+first,f,"placebo_vs_real, per window (p < 0.05)",26,6,5,5,"existing method, weeks 0-3"
+second,a,uncalibrated (se_h),17,8,7,5,existing
+second,b,multiplicative (se_h x factor),17,2,2,2,existing
+second,c,"additive, tau per patch",17,0,0,0,descriptive only (part 1 failed)
+second,d,"additive, tau per patch x rarity",17,0,0,0,descriptive only (part 1 failed)
+second,e,"empirical, pooled per patch (p < 0.05)",17,0,0,0,descriptive only (part 1 failed)
+second,f,"placebo_vs_real, per window (p < 0.05)",17,0,0,0,"existing method, weeks 0-3"

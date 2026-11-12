@@ -1370,6 +1370,23 @@ the by-feature table is `placebo_diagnostics_spread_by_feature.csv` now,
 weeks 0–3 counts ("Phase 5 results"). The se-inflation and spread tables still use the
 all-weeks factors (4.52, 2.07).
 
+**Additive calibration, sensitivity check** (triage S, weeks 0–3;
+`triage/scripts/s_additive.py`, `triage/out_final/s_*.csv`): an error of √(SE² + τ²) with
+triage Q's τ per patch (3.35, 2.44 pp) **fails** its declared test on the placebos. Across
+six bins of offers its z has robust sd 0.72, 1.28, 0.92, 1.11, 0.85, 0.67 (first) and 0.93,
+1.02, 1.03, 1.09, 1.27, 0.60 (second), against a band of 0.8–1.25: it is too wide for the
+most-offered cards (all Commons). The multiplicative z fails the other way, widening with
+offers (Spearman +0.29 [0.17, 0.40] in each patch; |z| > 2 in 9.2% and 6.5% of placebo
+pairs, 25% in the first patch's most-offered sixth; the additive rule gives 5.5% and 5.7%).
+The additive rule counts 8 of 26 and 0 of 17. So the first-patch count is between about 8
+(additive) and 13 (multiplicative, the declared headline), and the second-patch count
+between 0 and 2. The difference comes from heavily offered Commons: of the seven tweaks
+that differ, six are Commons with 26,000–43,000 offers (Anticipate, Collision Course,
+Glitterstream, Refine Blade, Patter v0.103.2, Uproar); the seventh is Unrelenting
+(Uncommon, 15,000 offers). The dose-response patch difference holds under every error
+model (z −2.8 to −4.6, primary spec). The headline, the factors and every reported count
+are unchanged.
+
 **Status: "the clustered standard errors are calibrated" is NOT met.** Why the placebo spread
 is so large is not yet verified (open question below). The results above use clustered
 errors; placebo-scaled versions of the dose-response are in `se_inflation.csv`

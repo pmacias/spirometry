@@ -4696,3 +4696,823 @@ those cards, the counts would be 8 and 0. That is Phil's decision; nothing was e
   `PLAN.md`, and the ten `triage/out_final/s_*.csv` tables above.
 - **Runtime:** 18 seconds for the whole script (Part 1's bootstrap and benchmark are 17 of
   them). `pytest tests` took 3 minutes.
+
+---
+
+## T. What changed around unchanged cards at the two major updates — EXPLORATORY
+
+**EXPLORATORY.** Proposed by Phil after he read the patch notes for v0.103.2 and v0.107.1,
+with sections P to S already seen (P's archetype z included). Nothing in this section changes
+the calibration factors, the numbers module, the guide, `results/` or any headline result.
+Script: `triage/scripts/t_around.py` (parts via `--part`); tables in
+`triage/out_final/t_*.csv`. Inputs: the final tables (`data/runs/runs.duckdb`, read-only),
+`data/analysis/placebo_h3.parquet` (weeks 0–3, 463 pairs), the reference tables, and the
+saved P, Q and R tables. Colors and rarities are derived as in Q; `reference/raw/` stays
+closed. No figures.
+
+**The question.** R's post hoc decomposition puts a "jump" of about 5.5 pp² at each major
+update. T asks whether things that changed *around* an unchanged card at those updates
+produced it: how runs are recorded (part 1), which offers a card appears in and what it
+competes with on a screen (part 2), and enablers of its archetype (part 3).
+
+**From the patch notes (Phil, post hoc).**
+- v0.103.2: Acrobatics Common → Uncommon; Colossus Rare → Uncommon; Follow Through Uncommon
+  → Common (rework); Rip and Tear → Event; Not Yet added (Ironclad Rare, heals); Grapple
+  deprecated; Regalite (Regent relic) and Arsenal now reward any created card; new Neow relic
+  Hefty Tablet ("choose one of three Rare cards"); Ascension 6 changed (Gloom → Inflation);
+  shop relic prices and pool changes; colorless pool and rarity shifts.
+- v0.107.1: Scare (was Follow Through) Common → Uncommon; Predator Uncommon → Common; new
+  Neow relic Kaleidoscope (2 card rewards from other characters); PRNG replaced
+  (xoshiro256**) after a seeding-correlation bug; enemy, boss and ascension HP changes.
+
+### Rules and what each outcome means, written before running
+
+Written 2026-11-11, before any number of this section was computed. What I had looked at:
+sections C, M, O, P, Q, R and S and their tables' headers; SPIROMETRY.md and
+`notes/run_schema.md` on offers, sources and the parser; the loaders and fits in `did.py`,
+`q_nudge.py`, `r_dose.py` and `p_archetype.py`; `build_info`; the column lists of the run
+tables; offers by `source` and floor type over all builds together, and by source in
+`primary_offers`; `schema_version` by build (8 through v0.100.0, 9 from v0.101.0 to
+v0.109.1, 10 from v0.110.0); screen sizes on v0.103.3; `r_plan.csv`'s run counts; the rarity,
+added and removed rows of `change_events.csv` and `card_changes.csv`; and the patch-note rows
+in `patch_notes_cards.csv` that name the cards above or sit under relics, ancients, events or
+general. No fit, no τ and no per-build rate of this section had been run. Git is not
+attempted, as instructed; the order rests on this note. Rules marked **(Phil)** are as given;
+**(mine)** marks what the prompt left open.
+
+**Three things the reading turned up that shape the rules (mine).**
+- **The main design already uses regular rewards only.** Every fit reads
+  `offers_with_version`, which is `primary_offers`: combat, elite and boss rewards plus
+  event-then-fight floors (183,362 of 39.4 million rows, 0.46%). Neow, shop, event and
+  rest-site offers were never in a placebo fit. So part 2a as given can only drop the
+  event-fight rows, and I expect it to change nothing. To give 2a something to test, I add a
+  stricter version (below).
+- **The run tables have no relic list.** A relic effect can't be read as a source. What can
+  be seen is its trace in a reward list: a 4-card screen (Lasting Candy), several screens on
+  one floor (Prayer Wheel, Driftwood, White Star), a list that couldn't be split.
+- **Relic lines are not in the reference tables.** `patch_notes_cards.csv` holds only lines
+  that name a card. Regalite, Hefty Tablet, Kaleidoscope, the shop changes and the ascension
+  changes are in `reference/raw/wiki/` only. So for part 3, the non-card items are Phil's
+  list above, taken as given, and their beta timing is left blank. **Needed to fill it:
+  the wiki pages for v0.100.0 to v0.103.2 and v0.104.0 to v0.107.1 under
+  `reference/raw/wiki/`.** Card text is not needed again: `p_archetypes.csv` saved every
+  card's archetypes in both windows.
+
+**Shared tools.** τ by Q's likelihood (`q_nudge.mle`), β in pp, 95% interval from 2,000
+resamples of pseudo cards. Robust sd is 1.4826 × MAD. Startup gate: 463 pairs, robust sds
+4.10 and 2.67, and Q's τ (3.35, 2.44) reproduced; the script stops otherwise.
+
+#### Part 1. Data format and recording at each release (declared artifact check)
+
+- **(Phil)** For each stable and beta build: run-file schema (fields per record type, parser
+  version if recorded), share of reward screens with a pick, cards per screen, offers per run
+  per act, share of offers per source, the card_id set (new ids, vanished ids, any id seen
+  under two names), and how skips are recorded. Flag any step change at v0.103.2 or v0.107.1.
+- **Rule (Phil): a field, id mapping or recording rule that changes at a major release and
+  touches pick or offer counting = artifact found; report its size. None = no artifact
+  found.**
+- What each outcome means. Artifact found: part of the jump may be the files and not the
+  players, and its size says how much of a placebo fit's data it reaches. None found: the
+  jump is not a recording change that these tables can show; Q's honest offer-rate z already
+  points that way, and this is the direct look.
+- Mine:
+  - **Population:** runs in the primary population (the runs with a row in
+    `primary_offers`), one copy per `run_key`. Sources outside the primary rewards come from
+    `card_offers_dedup` for those same runs.
+  - **What the tables can't give.** The raw field tree per build is in `sts2_snapshot/`,
+    which stays closed. From the tables: `schema_version` per build, and for every run-level
+    and offer-level column the share that is null or empty per build, which is where a
+    dropped or added field would show. The parser version is one value for the whole build
+    of the tables (1.7.0), not per record. Fields the parser doesn't read can't be checked
+    here; that is said in the result.
+  - **Sources:** combat, elite, boss, event-then-fight, event, Neow (ancient floor with
+    `EVENT.NEOW`), other ancients, shop, rest site, other. Relic effects as the three traces
+    above, as shares of reward lists.
+  - **Card ids.** An id counts as present in a build with at least 20 primary offers there
+    (mod cards without a marker reach the tables with a handful). New = first present in
+    that build, by release date within its branch; vanished = last present in the build
+    before. "Two names": the tables carry ids and no names, so the check is (i) every
+    removed-and-added pair on file at one build (`change_events.csv`), (ii) every vanished
+    id next to every new id of the same character at the same build, with their offer
+    shares. Whether the placebo fits ever load such an id is reported.
+  - **Rarity by build.** Each card's offer tier (its offers over its character's most
+    offered card, as N and Q derive rarity) in every stable build. A card whose tier
+    changes between builds without a rarity change on file is an id-mapping finding. This
+    also gives the list Phil asked for: every card whose rarity in a window differs from
+    today's.
+  - **Skips.** A skip is a screen with no pick; nothing else marks it. Per build: share of
+    screens with no pick, by source; screens with more than one pick; share of lists that
+    couldn't be split. A recording change would show as a step in the unsplit share, in
+    multi-pick screens, or in a no-pick share that moves in one source only.
+  - **Step changes.** For every per-build quantity: its change at each stable boundary,
+    computed on the blocks the fits use (the older build whole, the newer build's weeks
+    0–3). Flagged at a major update when the change there is larger in size than at both
+    quiet boundaries (v0.98.3 → v0.99.1 and v0.103.2 → v0.103.3). Then each flag is sorted
+    by hand, and I say which: **recording** (the same play would be written differently:
+    artifact under the rule), **game** (the game deals offers differently: goes to part 2,
+    not an artifact) or **play** (players choose differently: that is the outcome itself).
+    Pick shares and skip rates moving is play unless a recording trace moves with them.
+  - **Size of an artifact:** the share of offers in the two windows' fits that it touches,
+    and, if it can be undone or dropped, the placebo robust sd without those offers.
+  - A beta build's population differs from stable's, so a beta build is compared with the
+    beta build before it and never with a stable one.
+
+#### Part 2. Offer composition and screen competition (declared)
+
+**a. Source.**
+- **(Phil)** Refit the 463 pairs (weeks 0–3, main design) on regular card-reward offers only
+  (combat, elite, boss; no Neow, shop, event or relic-effect offers). τ per patch next to
+  Q's 3.35 and 2.44. **Rule: τ falls by ≥ 25% with intervals not overlapping =
+  offer-source composition is part of the jump.**
+- Otherwise: not part of it, as far as sources go.
+- Mine:
+  - **a1, as given:** drop event-then-fight offers. This is the rule's version.
+  - **a2, strict (mine, secondary):** keep only offers on a floor whose list is one screen
+    of three cards (`list_len` = 3, split). That drops 4-card screens, floors with several
+    screens and unsplit lists: every trace of a relic effect the tables hold. Read by the
+    same rule, descriptively. If a1 and a2 disagree I report both and say the rule's answer
+    is a1's.
+  - "Falls by ≥ 25%" is τ ≤ 0.75 × Q's τ; "not overlapping" is the refit's interval against
+    Q's ([2.95, 3.72], [2.15, 2.71]). The ratio's own interval, from one resample of cards
+    applied to both, is reported beside it and doesn't decide.
+  - Every pair is refit with its first tweak's window row, as R did; a pair that can't be
+    fit is counted. τ on pairs with ≥ 51 offers of the pseudo card in each block is given
+    too. Gate: with no filter the loader returns the saved z for three pairs to 1e-4.
+  - Share of offers dropped, per window and block, is reported: if the dropped share
+    doesn't differ between blocks, a composition effect has little to work with.
+
+**b. Competition.**
+- **(Phil)** For each pair: the mean before-block pick rate of the other cards it shared
+  reward screens with, in the before block and in the after block; the change is
+  delta_comp. **Declared: Spearman(β, delta_comp) < 0 with interval below 0 = stronger
+  competitors after the update lower a card's pick rate.** Per patch, and for character ×
+  rarity groups whose pool changed (added, removed, rarity in or out) against the rest.
+- Otherwise: not shown.
+- Mine:
+  - **Screens** are the fit's (`screen_id`), from every primary offer of the character on
+    the window's builds, any card id, after block weeks 0–3, runs with an ascension. An
+    unsplit list counts as one screen, as in M.
+  - **A competitor's strength** is its pick rate in the before block over all its offers
+    to that character, if it has at least 51 there. A card with fewer (added in the window,
+    or rare) takes its after-block rate if it has 51 there, and is flagged; with neither it
+    is left out. The declared number uses these; the same without the flagged cards is
+    reported. Strength is held at before-block values on both sides, so delta_comp moves
+    only when the *mix* of co-offered cards moves. That is what a pool change does, and it
+    keeps a card's own after-block picks out of its competitors' strength (one pick per
+    screen would otherwise tie them together by arithmetic).
+  - **comp** for a pair in a block is the mean of that strength over every (screen, other
+    card) row on the screens that hold the pseudo card. For an upgraded-offers pair: the
+    screens where it was offered upgraded.
+  - **The statistic:** Spearman over the patch's pairs, β in pp from the saved fits,
+    interval from 2,000 resamples of cards. The rule is read per patch, on all pairs.
+  - **A DiD already removes a window's shared shift,** so a delta_comp that is the same for
+    a whole character can't move β. Beside the declared number: the same Spearman with β
+    and delta_comp as deviations from their character-window's mean. If the two disagree
+    in sign or in whether the interval clears 0, I say so and call it not shown.
+  - **Pool-changed groups**, from `change_events.csv`, by the pseudo card's rarity in the
+    window: first window Ironclad Rare and Uncommon (Not Yet in, Colossus Rare → Uncommon),
+    Silent Common and Uncommon (Acrobatics out and in; Follow Through the other way).
+    Second window Silent Common and Uncommon (Predator, Follow Through out, Scare in).
+    Grapple, Follow Through and Rip and Tear have no color on file; their character and
+    tier are read from their offers before the change, not guessed, and a group is added if
+    that places one. The group Spearman pools the changed groups of a patch, and the
+    unchanged ones, each as deviations from the group's mean.
+  - Also reported, no rule: the size of delta_comp (its sd against the sd of comp across
+    cards), since a quantity that barely moves can't explain a 3 pp spread whatever its
+    correlation; and the slope of β on delta_comp with the variance of β it accounts for.
+
+**c. Within-screen check.**
+- **(Phil)** A screen-fixed-effect version of the placebo fit: a placebo card against the
+  other options on the same screen, before against after; on a fixed random 100 pairs per
+  patch if the full run is over 1 h. **Rule: τ(screen FE) ≤ 0.75 × τ(standard) =
+  competition on the screen carries a real share.**
+- Otherwise: the miss is the card's own, not its screen's.
+- Mine:
+  - **Model:** the placebo fit with `screen_id` as a fixed effect. Block, act, ascension
+    and block × group are constant within a screen and drop out; card × upgrade and
+    card × group stay. Same cards (pseudo card and its controls), same clustering by run.
+    A linear screen effect, not a conditional logit: it is the placebo fit with one term
+    added, so τ is on the same scale.
+  - A screen with one fit card left is a singleton and drops. The share dropped is
+    reported; over half is said next to the result.
+  - τ(standard) is the saved fits' τ on the same pairs. The ratio decides by its point
+    value; its interval comes from one resample of cards applied to both, and if it
+    crosses 0.75 I name both outcomes.
+  - **What the ratio should be if the miss is the card's own, said now.** One pick per
+    screen means a card picked more takes picks from its screen-mates. Inside a screen
+    that widens the gap: if a card gains δ and the loss falls on its two screen-mates, the
+    within-screen contrast is up to 1.5 δ; if the gain comes from skips, it is δ. So a
+    card's own shift predicts a ratio between 1 and about 1.5, and a shift that belongs to
+    the screen (a stronger or weaker competitor that takes from everything on it alike)
+    predicts a ratio near 0. 0.75 is therefore a demanding cutoff for "a real share", and a
+    ratio above 1 is not evidence against the card's own shift. `--check` plants both cases
+    in simulated screens and must return a ratio above 1 for the first and below 0.5 for
+    the second.
+  - Limit: a competitor that takes more from one screen-mate than another (a substitute
+    for this card in particular) is not absorbed by a screen effect. That is 2b's and P's
+    ground, not 2c's.
+
+#### Part 3. Enablers (POST HOC, descriptive)
+
+**Post hoc.** The mapping is Phil's, made after P's archetype z were seen. No rule, no test.
+
+- **(Phil) The three named enablers,** from the patch notes to P's three strongest
+  archetype moves in the first window: Regent `create` (Regalite and Arsenal now reward any
+  created card), Silent `discard` (Acrobatics to Uncommon), Ironclad `hp_loss` (Not Yet
+  added, heals). For each: the archetype's placebo z; the beta build the enabler first
+  appeared in (`change_events.csv`, `patch_notes_cards.csv`); and whether the archetype's
+  shift shows in the beta builds where the enabler first appeared, before the stable
+  release.
+- **(Phil) Every other change at the two major updates** (relic, keyword, added or removed,
+  rarity) with the archetypes it plausibly touches by P's text rules, written **without
+  reading their z first** and saved; then their z. The first list is labeled "post hoc",
+  the second "written before reading z".
+- **(Phil) Budget, descriptive:** robust sd and τ per patch with P's archetype × window
+  terms absorbed only for archetypes with a named enabler, next to P's all-archetype figure.
+- Mine:
+  - **What "before reading z" can mean here.** I read section P for this task, as
+    instructed. Its tables print the mean z of 37 archetype-windows. Of the seven on my
+    list below, five are among them (Silent `draw`, `debuff` and `skill_play` and Ironclad
+    `debuff` in the first window; Silent `debuff` in the second); two are not (Ironclad
+    `exhaust` in the first, Silent `draw` in the second). The list is written from the
+    patch notes and P's membership table with no z looked up for it, but only those two
+    rows are blind. Each row says which kind it is.
+  - **The second list, written now** (saved as `t_enabler_list.csv` before part 3 loads a
+    z). Direction is what the text rule implies for the archetype's unchanged members.
+
+| Update | Change | Archetype it touches (P's rules) | Implied direction | Why | z seen in P |
+|---|---|---|---|---|---|
+| v0.103.2 | Acrobatics Common → Uncommon | Silent `draw` | down | a draw-and-discard card is offered less often | yes |
+| v0.103.2 | Colossus Rare → Uncommon | Ironclad `debuff` | up | a Vulnerable payoff is offered more often | yes |
+| v0.103.2 | Follow Through reworked, Uncommon → Common | Silent `debuff`, Silent `skill_play` | down | its old text applied Weak after a Skill; the new text does neither | yes, both |
+| v0.103.2 | Not Yet added (Rare, "Heal … Exhaust") | Ironclad `exhaust` | up | one more card that exhausts itself | **no** |
+| v0.107.1 | Scare Common → Uncommon | Silent `debuff` | down | a Weak card is offered less often | yes |
+| v0.107.1 | Predator Uncommon → Common | Silent `draw` | up | a draw card is offered more often | **no** |
+
+  Changes that touch no archetype under P's text rules, listed and not scored: Rip and Tear
+  to Event and Grapple deprecated (no text or color on file); Hefty Tablet (it touches
+  Rares, a rarity and not an archetype; the Rares' mean z against the rest is reported as a
+  rarity row); Ascension 6; shop relic prices and pool; Kaleidoscope (other characters'
+  cards); the PRNG change; enemy, boss and ascension HP. Colorless pool and rarity shifts
+  touch Regent `create` (P: most of its cards make Colorless cards), which is already one
+  of the three post hoc rows. Not Yet is also the `hp_loss` enabler in Phil's list; under
+  P's text rule its own text ("Heal") is not in `hp_loss`, so that link is Phil's reading
+  and not a rule match, and is labeled so.
+  - **Beta builds.** R's beta units start at v0.104.0: every unit before it failed R's
+    3,000-run rule. So R's units can't show the first window's enablers, which arrived in
+    v0.101.0 (Arsenal) and v0.103.0 (Acrobatics, Not Yet). For those I fit fresh, with the
+    thin data said: beta builds before the enabler's build pooled as the before block, the
+    enabler's build through v0.103.1 pooled as the after block, the character's cards
+    unchanged across all of them, every eligible card (51 offers in each block), Q's model.
+    Reported: runs on each side, the archetype's mean z and mean β against the
+    character's other cards, and the same contrast at the stable release from the saved
+    fits. For Regalite the beta build is unknown (see above); Arsenal's v0.101.0 stands in
+    for Regent and that is said. For the second window's two rows, R's saved beta fits at
+    v0.105.0 → v0.106.0 (Scare and Predator arrive in v0.106.0) are used as they are.
+  - **Budget.** P's regression (z on a character-window intercept and archetype × window
+    indicators), with indicators only for (i) the three post hoc archetype-windows, (ii)
+    those plus the six rows above. Robust sd of the residuals per patch, next to P's 2.88
+    and 2.55, each with P's benchmark: the same number of terms with membership dealt to
+    other cards of the same character-window, 1,000 times. τ with the same terms: β in pp
+    regressed on them inside the likelihood. (i) is three terms chosen because they were
+    the largest, so some fall is selection; the benchmark doesn't remove that, and I say so
+    with the number.
+
+#### Also left open by the prompt, and how I take it (mine)
+
+- **Rarity in the triage tables is today's rarity** (`did.card_rarities` says so). Part 1's
+  tier table gives the list of cards whose rarity in either window differs from today's.
+  Where a T table uses rarity it is the rarity in that window.
+- **The PRNG change** could alter how offers within a run depend on each other, which the
+  run-clustered SE would see and a card's β would not. Not tested here beyond part 1's
+  per-build offer structure; listed as open.
+- **Timing and resuming.** Ten fits are timed before 2a, 2c and part 3's beta fits, and the
+  estimate is written in the results. Fits are appended per window as they finish, and a
+  rerun skips what is saved.
+- **Privacy.** Every `t_*.csv` is checked: no identifier column, no value that looks like a
+  hash or a key.
+
+### Results
+
+Everything below in section T was computed after the text above was written.
+
+### Answer
+
+**Nothing T looked at around an unchanged card produces the jump. What is left is the card
+itself, and for part of the first patch, its archetype.** The run files record offers and
+picks the same way on both sides of each major update, as far as the tables show. Offer
+sources can't be the cause, because the fits never used anything but combat, elite and boss
+rewards, and removing every trace of a relic effect leaves τ where it was (3.34 and 2.46 pp
+against 3.35 and 2.44). What a card is offered beside barely changes (0.4 pp of competitor
+strength) and doesn't track its β. Comparing a card only with the other cards on its own
+screens makes the spread larger, not smaller (1.27 and 1.29 times), which is what a shift
+in the card's own appeal predicts and the opposite of what a screen-level cause predicts.
+The three archetypes Phil tied to enablers do hold about a third of the first patch's τ²,
+but they were picked as the three largest, beta players show two of them at a third to a
+half of the stable size and the third reversed, and the changes listed without looking at z
+show nothing. The second patch's 2.4 pp has no explanation from any part. The factors stay
+as they are. [inferred]
+
+### Declared outcomes [computed]
+
+| Part | Result | Outcome under the rule |
+|---|---|---|
+| 1. Recording | `schema_version` 8 → 9 inside the first window, with no parsed field changing; two ids under two names, neither in a fit | **No artifact found**, within what the parser reads |
+| 2a. Source | τ 3.34 [2.94, 3.71] and 2.43 [2.15, 2.72] without event fights; 3.34 [2.93, 3.71] and 2.46 [2.16, 2.75] on one-screen-of-3 lists only; Q's 3.35 and 2.44 | **Not part of the jump** (ratios 0.996 to 1.009; every interval overlaps Q's) |
+| 2b. Competition | Spearman(β, delta_comp) −0.06 [−0.21, +0.09] and −0.05 [−0.19, +0.10] | **Not shown** |
+| 2c. Within screen | τ(screen FE) / τ(standard) 1.27 [1.23, 1.32] and 1.29 [1.25, 1.34] | **The miss is the card's own, not its screen's** (the rule needed ≤ 0.75) |
+| 3. Enablers | Post hoc and descriptive: no rule | Three named archetypes: robust sd 4.10 → 3.78, τ 3.34 → 2.69 pp, first patch only |
+
+### Checks and changes after the rules [computed]
+
+- **`--check` passed.** The likelihood with a design matrix returns Q's τ with an intercept
+  only and absorbs a planted group mean. In simulated screens, a card's own shift gives a
+  screen-FE to standard ratio of 1.15 and a rival's shift gives −0.16, as the rules said
+  they must (above 1, below 0.5). Gate: with no filter, the extra-column loader and fit
+  return the saved z for three pairs, averaging over the tweaks that share a pair (largest
+  |Δz| 2e-08).
+- Startup gate on every run: 463 pairs, robust sds 4.10 and 2.67, τ 3.35 and 2.44.
+- **Timing before each long part.** 2a: 2.15 s per fit, about 34 minutes for 926 fits; it
+  took 29 minutes while 2c ran beside it. 2c: 2.03 s per fit, about 16 minutes for 463, so
+  under the 1 h limit and **all 463 pairs were fit, not a sample of 100**; it took 15
+  minutes. Part 3's beta fits: 0.7 s per fit, about 2 minutes; they took 2. No fit failed
+  in any part (926, 463, 188).
+- **Saved fits.** `t_source_fits.csv`, `t_screen_fits.csv` and `t_beta_fits.csv` are
+  appended per window, and a rerun skips what is there. Part 3 exercised it: its first run
+  stopped after the beta fits on a bug of mine in the table step, and the rerun refit
+  nothing.
+- **Changes after the rules, each before the number it affects was read unless said:**
+  - v0.99.0-beta left the beta before-block. `card_versions.csv` has no version for any
+    card on it, so every card counted as changed and no fit was possible. It holds 52 to 94
+    runs a character. Found by the timing run, which returned no eligible card.
+  - Part 1's source table takes its runs from the primary population's filter, not from
+    "runs with a row in `primary_offers`", so runs abandoned before a first reward are in
+    its denominators. Per-run reward figures use runs with a reward offer, as declared.
+  - The under-offered-cards table is post hoc, added after reading the tier table.
+  - Part 3's bug: a lookup compared a DataFrame method with a string and found no row.
+    Fixed before any table printed.
+  - The privacy scan first read numbers as text and flagged 16-digit decimals as hashes.
+    Fixed; no table changed.
+- Tests: `pytest tests` gives 266 passed, 4 skipped. **Sandbox failures, separately:** the
+  other 47 (27 failed, 20 errors) are all `PermissionError` on `reference/raw/`, the same
+  47 as in Q, R and S. The run ignores the closed paths (`.spirometry_salt`, `.env`,
+  `sts2_snapshot`, `reference/raw`), since collection from the root stops on the salt file.
+  `t_around.py` has no tests of its own; `--check` and the gates are its checks.
+- Git was not attempted for any write. I did run `git status` once at the end to list
+  files, which reads only; it printed permission errors for `reference/raw/` and nothing
+  useful.
+
+### Part 1. Data format and recording at each release [computed]
+
+Tables: `t_builds.csv` (one row per build, 26 builds with data), `t_blocks.csv` (the same
+quantities on the blocks a fit uses at each stable boundary), `t_steps.csv` (every quantity's
+change at each stable boundary, with the flag), `t_null_shares.csv`, `t_card_ids.csv`,
+`t_id_pairs.csv`, `t_rarity_tiers.csv`, `t_placed_from_offers.csv`, and post hoc
+`t_under_offered.csv` and `t_under_offered_summary.csv`. v0.98.0-beta and v0.99.0-beta have
+no primary run.
+
+**On the blocks the fits use.** "Before" is the older build whole; "after" is the newer
+build's weeks 0–3.
+
+| | v0.99.1 | v0.103.2, weeks 0–3 | v0.103.3 | v0.107.1, weeks 0–3 |
+|---|---|---|---|---|
+| Primary runs | 110,495 | 79,211 | 62,180 | 112,375 |
+| `schema_version` | 8 | 9 | 9 | 9 |
+| Reward screens with a pick | 76.5% | 78.0% | 80.3% | 79.6% |
+| Screens with more than one pick | < 0.001% | < 0.001% | < 0.001% | < 0.001% |
+| Cards per screen | 3.006 | 3.015 | 3.015 | 3.014 |
+| Screens of 4 cards | 0.61% | **1.53%** | 1.45% | 1.41% |
+| Lists that are one screen of 3 | 97.1% | 96.3% | 96.4% | 96.5% |
+| Lists with several screens | 2.2% | 2.1% | 2.0% | 2.0% |
+| Lists that couldn't be split | 0.16% | 0.14% | 0.18% | 0.18% |
+| Reward offers per run | 39.0 | 39.2 | 37.0 | 37.7 |
+| Reward offers with an enchantment | 1.21% | 1.30% | 1.30% | **1.95%** |
+| Neow offers per run (pick share) | 0.24 (0.23) | **0.39 (0.13)** | 0.40 (0.13) | **0.66 (0.21)** |
+| Shop shelf cards per run | 12.2 | 12.8 | 12.3 | 12.3 |
+| Event offers per run | 1.01 | 1.20 | 1.07 | 1.14 |
+| Runs with the SlayTheStats tag | 23.7% | 23.4% | 9.1% | 14.3% |
+
+**Sources.** Over every `card_choices` row of a primary run, stable builds: combat 52–54%,
+elite 14–17%, boss 5.2–5.4%, shop 22–24%, event 1.3–2.2%, event-then-fight 0.33–0.45%, Neow
+0.45% (v0.99.1), 0.74% (v0.103.2), 1.23% (v0.107.1), other ancients 0.1–0.4%, rest site
+under 0.2%. Within the reward offers the fits use: combat 70–73%, elite 19–22%, boss
+7.1–7.4%, event-then-fight 0.45–0.59%; none of these moves by more than 0.9 points at a
+major update, and combat and elite move more than that at v0.98.3 → v0.99.1.
+
+**Offers per run per act**, among runs with an offer in the act: 22.0, 19.1, 17.1 (v0.99.1);
+21.9, 18.6, 16.7 (v0.103.2); 21.7, 18.1, 16.5 (v0.103.3); 21.5, 18.3, 16.6 (v0.107.1). They
+fall slowly through the snapshot, with no step at either major update larger than at the
+quiet boundaries.
+
+**Schema and fields.**
+- `schema_version` is 8 through v0.100.0, 9 from v0.101.0 to v0.109.1 and 10 from v0.110.0,
+  with no build mixing two. So the first window has schema 8 before and 9 after; the second
+  has 9 on both sides.
+- Of the 59 run-level and offer-level columns the parser fills, 48 have the same null share
+  in every build and block. The 11 that move: `killed_by_encounter` and `killed_by_event`
+  (who wins and loses), `uploader_tag` twice and `has_player_token` (who uploads, and when the
+  page was downloaded: both known), `room_model_id` (one beta build, 0.04%),
+  `screen_size`, `set_idx` and `set_picked_any` (the unsplit share, flat at 0.14–0.37%), and
+  `enchantment` with its amount. **None steps where the schema version does.**
+- **Limit.** That covers fields the parser reads. A field the parser doesn't read, or a
+  change in what a kept field means, can't be seen from the tables; the raw field tree per
+  build is in `sts2_snapshot/`. `notes/run_schema.md` (three pages) found the offer structure
+  the same across schemas 8, 9 and 10. The parser version is one value for the tables
+  (1.7.0), not per record.
+
+**Skips.** A skip is a screen with no pick, and nothing else marks one, in every build. Screens
+with more than one pick are under 0.001% of screens in every build. The unsplit share is
+flat. The share of screens with a pick rises at
+v0.103.2 (+1.6 points) and again at v0.103.3 (+1.8), which changed no card, and it moves
+together in combat, elite and boss rewards (+1.6, +1.5, +1.1; then +1.8, +2.3, +0.4). That
+is players skipping less on stable as the months pass, not a recording rule.
+
+**Card ids.**
+- New and vanished ids with more than 0.02% of a character's offers, stable branch: Grapple
+  out and Not Yet in at v0.103.2; Scare in at v0.107.1. On beta: the same three at v0.103.0
+  and v0.106.0, plus one more below.
+- **Ids seen under two names:**
+  - Follow Through → Scare (beta v0.106.0, stable v0.107.1) → Sidestep (beta v0.110.0): one
+    card's id changes with its name. The reference tables hold it as a removal and an
+    addition.
+  - `PREPARE` against `PREPARED`: on beta v0.100.0 only, Silent's Prepared is written
+    `PREPARE` (1,852 offers against 6); every other build, stable ones included, writes
+    `PREPARED`. The reference tables know it (`beta_only_card`).
+- **Neither reaches a placebo fit.** Follow Through, Grapple and `PREPARE` have no color on
+  file, so the fits never load them; Scare, Not Yet and Prepared changed in their windows
+  and so are neither pseudo cards nor controls. No pseudo card and no control is counted
+  under two ids.
+- **A bound on runs carried across an update** (not asked; it fell out of this table). A
+  removed card still appears a little on the next build: Grapple 9 times on v0.103.2, all on
+  release day; Follow Through 37 times on v0.107.1. At those cards' usual share of offers
+  that is about 900 and 1,400 old-pool offers, on the order of 0.1% of the character's
+  after-block offers. [computed
+  counts; inferred that these are runs started before the update]
+- The other 3,000-odd rows of `t_card_ids.csv` are other characters' and colorless cards
+  crossing my 20-offer line as builds grow, which is the threshold and not the game: cards
+  of another character are 0.34–0.45% of a character's reward offers on every stable build.
+
+**Rarity by build.** `t_rarity_tiers.csv`, 402 cards.
+- **No card changes tier at a major update without a rarity change on file.** The cards
+  whose tier differs across a window are the recorded ones: Acrobatics (ratio 0.99 → 0.37),
+  Colossus (0.17 → 0.36) and Follow Through (0.37 → 0.97) in the first, Predator (0.37 →
+  1.00) in the second. Three more cross my 0.25 line upward at v0.103.2 with ratios of
+  0.23–0.24 before and 0.26–0.30 after (Scavenge, Inferno, Veilpiercer; Lunar Blast hovers on
+  it). They are Uncommons offered less than other Uncommons, taken up below.
+- **Cards placed from their offers,** not guessed: Grapple was Ironclad's, an Uncommon by
+  tier (9,569 offers on v0.99.1, ratio 0.36). Follow Through is Silent's (Uncommon, then
+  Common). Rip and Tear has 3 offers on v0.99.1 and can't be placed; it was not in reward
+  screens in any volume before it moved to Event.
+- **Cards whose rarity in a window is not today's** (the triage tables, like `did.py`, use
+  today's, which here is stable v0.107.1's):
+
+| Card | First window (v0.99.1 → v0.103.2) | Second window (v0.103.3 → v0.107.1) | Today's |
+|---|---|---|---|
+| Acrobatics (Silent) | Common → Uncommon | Uncommon | Uncommon |
+| Colossus (Ironclad) | Rare → Uncommon | Uncommon | Uncommon |
+| Follow Through (Silent) | Uncommon → Common | Common → removed | none on file |
+| Predator (Silent) | **Uncommon** | Uncommon → Common | Common |
+| Scare (Silent) | not in the game | added, Uncommon | Uncommon |
+| Not Yet (Ironclad) | added, Rare | Rare | Rare |
+| Grapple (Ironclad) | Uncommon → removed | not in the game | none on file |
+| Rip and Tear | Uncommon → Event, by the notes | Event | Event |
+
+  Predator is the one that bites: unchanged in the first window, so it can be a pseudo card
+  or a control there, and a table that labels it by today's rarity calls it a Common when
+  it was an Uncommon. T's tables use the window's rarity. Rarity changes after v0.107.1 are
+  on beta only (twelve cards from v0.108.0 on, `change_events.csv`) and touch neither
+  window.
+
+**Under-offered cards, post hoc** (added after reading the tier table). Thirty cards are
+offered well below their rarity's typical rate: **exactly six per character**, two Commons,
+two Uncommons and two Rares each (Silent's are four Uncommons and two Rares). Their mean
+offer ratio to their rarity's median, by stable build:
+
+| | v0.98.1 | v0.98.2 | v0.98.3 | v0.99.1 | v0.103.2 | v0.103.3 | v0.107.1 |
+|---|---|---|---|---|---|---|---|
+| The 30 cards | 0.21 | 0.40 | 0.61 | 0.73 | 0.82 | 0.79 | 0.80 |
+| The other 357 | 1.00 | 1.00 | 1.00 | 1.00 | 1.01 | 1.00 | 1.00 |
+
+- They are the top 15 of the 20 cards in Q's first-window offer-rate tail (every one with
+  an offer z above 4; the five that aren't are the five smallest, z 3.1 to 3.8), and the
+  cards of Q's second-window tail that its table names (Blood Wall, TURBO, Sculpting
+  Strike). So **Q's open question, why some cards' offer share
+  rises across releases, has an answer in shape: a fixed set of six cards per character
+  that part of the population isn't offered, shrinking as the weeks pass.** That is what
+  cards unlocked through play would look like; the tables don't say that is what they are.
+  [computed set and ratios; inferred reading; unverified mechanism]
+- It is not the placebo jump. As pseudo cards these 30 have τ 4.4 pp (15 pairs) against 3.2
+  for the rest in the first patch, and 2.0 (20 pairs) against 2.5 in the second; without
+  them the robust sd is 4.09 and 2.84. Q found the same from the offer side.
+- It does mean that who is offered these cards changes over time (more of the population,
+  and so less experienced players on average), which is a change around an unchanged card.
+  It is gradual and largest in March, not a step at the major updates.
+
+**Flags at the major updates, sorted.** A quantity is flagged when its change at a major
+update is larger than at both quiet boundaries.
+
+| Flagged | At | Change | Kind | In the fits' data? |
+|---|---|---|---|---|
+| `schema_version` | v0.103.2 (beta v0.101.0) | 8 → 9 | recording format | yes, but no parsed field changes with it |
+| Screens of 4 cards | v0.103.2 (beta v0.101.0) | 0.61% → 1.53% of screens; runs with one 1.9% → 4.7% | game | yes, 2% of after-block offers |
+| Neow offers per run, and their pick share | v0.103.2 (beta v0.100.0) | 0.24 → 0.39; pick share 0.23 → 0.13 | game | no |
+| Neow offers per run, and their pick share | v0.107.1 (beta v0.105.0) | 0.40 → 0.66; pick share 0.13 → 0.21 | game | no |
+| Shop shelf, event and other-ancient offers per run | v0.103.2 | +0.65, +0.19, +0.04 | game or play | no |
+| Rest-site offers per run | v0.107.1 | 0.11 → 0.06 | game | no |
+| Runs with an act 2 offer | v0.103.2 | 60.2% → 62.3% (quiet: −2.0) | play | yes, as who reaches act 2 |
+| Boss screens with a pick; boss share of offers | v0.103.2 | +1.1 points; +0.2 points | play | yes |
+| Not flagged by the step rule, seen in the null shares: enchanted offers | v0.107.1 (beta v0.105.0) | 1.30% → 1.95%, all of it the Glam enchantment (0.6% → 1.2%) | game | yes, 0.65% of after-block offers |
+
+Reading. [inferred]
+- **Rule: no artifact found.** No field, id mapping or recording rule that touches pick or
+  offer counting changes at either major update, in what the run tables can show. The
+  schema version does change inside the first window, and nothing the parser reads changes
+  with it.
+- **The 4-card screens are the game, not the files.** They arrive on beta v0.101.0, the
+  build where the schema changes, which is why I looked hard at them. But the screens look
+  the same before and after (mean act 2.1–2.2, pick share within 1.3 points of 3-card
+  screens' on every stable build); what changes is how many runs have them, 1.9% to 4.7%. That reads as a relic
+  becoming more common, and 2a's strict version drops every such screen. [inferred;
+  the relic notes are in `reference/raw/wiki/`]
+- **The Neow steps match Phil's two Neow relics, and they date them.** Neow offers per run
+  jump on beta v0.100.0 (0.24 → 0.42, with the pick share halving, as three Rares for one
+  pick would do) and on beta v0.105.0 (0.36 → 0.79). So Hefty Tablet most likely arrived in
+  v0.100.0 and Kaleidoscope in v0.105.0. [computed steps; inferred attribution] Neither is
+  in a placebo fit, which reads reward screens only.
+- **The Glam enchantment** doubles in reward offers in the second window. It is 0.65% of
+  offers, and 2a's strict version doesn't remove it (it isn't a screen shape). Too small
+  to make a 2.4 pp spread; listed so it isn't lost.
+- What part 1 can't rule out: a change in a field the parser doesn't read.
+
+### Part 2b. Competition [computed]
+
+Tables: `t_comp_pairs.csv` (463 pairs with comp before and after), `t_comp_tests.csv`,
+`t_comp_size.csv`, `t_comp_groups.csv`. Runtime 47 s. Two cards took their after-block rate
+as strength (Not Yet in the first window, Scare in the second).
+
+| Test | First patch | Second patch |
+|---|---|---|
+| **Spearman(β, delta_comp), all pairs [rule]** | **−0.06 [−0.21, +0.09]** | **−0.05 [−0.19, +0.10]** |
+| Same, as deviations from the character-window mean | −0.08 [−0.23, +0.08] | −0.08 [−0.22, +0.07] |
+| Same, flagged competitors left out | −0.06 [−0.21, +0.09] | −0.04 [−0.19, +0.10] |
+| All-offers pairs only | −0.07 [−0.21, +0.08] | −0.06 [−0.20, +0.08] |
+| Groups whose pool changed (76 and 28 pairs), deviations from the group mean | +0.15 [−0.15, +0.41] | −0.19 [−0.54, +0.23] |
+| Groups whose pool didn't change (141 and 218 pairs), same | +0.03 [−0.14, +0.22] | −0.12 [−0.26, +0.04] |
+
+How much the measure moves:
+
+| | First | Second |
+|---|---|---|
+| Mean strength of a card's screen-mates before (pp) | 26.6 | 27.7 |
+| Its sd across cards | 3.1 | 2.9 |
+| sd of delta_comp across pairs | 0.41 | 0.42 |
+| sd of β across pairs | 3.8 | 3.3 |
+| Variance of β a line on delta_comp accounts for | 0.1% | 0.0% |
+
+Mean delta_comp by group, the largest: Silent Commons −0.55 pp and Silent Uncommons −0.47
+in the first window (Acrobatics, picked 47% of the time, left the Commons; Follow Through's
+pick rate fell from 19% to 7%, but strength is held at before-block values, so that part
+is not in the measure); Ironclad Rares +0.76 (Not Yet, picked 45% of the time, joined them).
+Every other group is within ±0.42.
+
+Reading. [inferred]
+- **Rule: not shown, in both patches.** The sign is the predicted one everywhere on all
+  pairs, and no interval clears 0; the largest correlation in size is −0.08. The
+  within-window version agrees, so there is no disagreement to report.
+- **The pool-changed groups don't stand out.** In the first patch their correlation is
+  positive (+0.15), the wrong sign; in the second it is −0.19 on 28 pairs with an interval
+  from −0.54 to +0.23.
+- **There is too little movement for this to matter.** The mix of what a card is offered
+  beside shifts by about 0.4 pp of competitor strength between blocks, where cards differ
+  from each other by 3 pp and the placebo β spreads by 3.3–3.8 pp. A pool change moves a
+  whole rarity's screens together (Silent Commons all lose Acrobatics), and the DiD's
+  same-character controls absorb most of a shared move.
+- Limit, as declared: strength is held at before-block rates, so a competitor that became
+  stronger *in place* (a buffed card) is not in delta_comp. That is M's exposure test and
+  P's ground, and 2c below covers the within-screen part of it.
+
+### Part 2a. Source [computed]
+
+Tables: `t_source_fits.csv` (926 fits), `t_source_windows.csv`, `t_source_tau.csv`.
+
+| Version | Patch | Offers kept | τ, pp [95%] | Q's τ [95%] | Ratio to the saved fits' τ [95%] | Robust sd z | Corr of β with the saved fit |
+|---|---|---|---|---|---|---|---|
+| **a1, as given: no event-then-fight offers [rule]** | first | 99.5% | **3.34 [2.94, 3.71]** | 3.35 [2.95, 3.72] | 0.998 [0.996, 1.001] | 4.11 | 0.9999 |
+| **a1 [rule]** | second | 99.5% | **2.43 [2.15, 2.72]** | 2.44 [2.15, 2.71] | 0.997 [0.994, 1.001] | 2.68 | 0.9997 |
+| a2, mine: lists that are one screen of 3 | first | 93.3% | 3.34 [2.93, 3.71] | 3.35 | 0.997 [0.979, 1.015] | 4.08 | 0.987 |
+| a2 | second | 93.8% | 2.46 [2.16, 2.75] | 2.44 | 1.009 [0.995, 1.023] | 2.68 | 0.972 |
+
+On pairs with ≥ 51 offers of the pseudo card in each block the figures are the same (all
+pairs qualify under a1; two drop under a2 in the second patch, τ 2.46).
+
+What a2 removes, as a share of a window's offers, before → after: 4-card screens 0.9–1.0%
+→ 2.1–2.3% in the first window and 2.0–2.3% → 2.0–2.1% in the second; floors with several
+screens 3.3% → 2.9–3.4% (Silent 7.5% → 7.2%); unsplit lists 0.2%; event-then-fight 0.5%.
+
+Reading. [inferred]
+- **Rule: not part of the jump, in both patches and both versions.** τ does not fall at
+  all, let alone by 25%.
+- **a1 could not have shown anything, and the prompt's premise needs correcting.** The
+  placebo fits never held Neow, shop or event offers. `primary_offers` is combat, elite and
+  boss rewards plus event-then-fight floors, which are 0.5% of it. So the Neow relics
+  (Hefty Tablet, Kaleidoscope) and the shop changes cannot act on the placebo spread through
+  the offers counted. They can act through the deck a player brings to a reward screen,
+  which is part 3's kind of question, not a composition one.
+- **a2 is the real test, and it is clean.** The one composition change inside the fits'
+  data is the 4-card screens, which double in the first window. Dropping them, with every
+  multi-screen and unsplit list, moves τ by under 1%.
+
+### Part 2c. Within-screen check [computed]
+
+Tables: `t_screen_fits.csv` (463 fits, all pairs), `t_screen_tau.csv`.
+
+| Patch | Pairs | τ, standard [95%] | τ, screen FE [95%] | **Ratio [95%]** | Median SE: standard → screen FE (pp) | Robust sd z: standard → screen FE | Corr of β | Singleton drop |
+|---|---|---|---|---|---|---|---|---|
+| First | 217 | 3.35 [2.95, 3.72] | 4.26 [3.77, 4.72] | **1.27 [1.23, 1.32]** | 0.82 → 1.22 | 4.10 → 3.60 | 0.90 | 6.5% |
+| Second | 246 | 2.44 [2.15, 2.72] | 3.16 [2.78, 3.54] | **1.29 [1.25, 1.34]** | 0.95 → 1.33 | 2.67 → 2.50 | 0.81 | 1.7% |
+
+Reading. [inferred]
+- **Rule: the miss is the card's own, not its screen's.** The ratio is above 1 in both
+  patches with intervals nowhere near 0.75. The singleton drop is far under half.
+- **1.27 and 1.29 are what a card's own shift predicts.** The rules put that case between 1
+  and about 1.5, because a card picked more takes picks from its screen-mates, and the
+  simulated own-shift case gave 1.15. A cause that sits on the screen and hits everything
+  on it alike (a stronger rival, a changed skip rate on that kind of screen) would have
+  pulled the ratio toward 0; the simulated rival gave −0.16.
+- So the within-screen comparison removes none of the spread. Anything that makes one
+  whole screen more or less attractive is ruled out as a source, in both patches. That
+  includes the shift in how often players take any card at all (part 1: +1.6 points at
+  v0.103.2), which the standard fit's block term already absorbed.
+- z narrows (4.10 → 3.60) only because the SE grows by half; τ, in pp, is the size.
+- Limit, as declared: a rival that takes from this card more than from its other
+  screen-mates is not absorbed. With 2b finding no link to the mix of screen-mates, and M
+  no link to exposure to changed cards, that leaves substitution by archetype (P) as the
+  only form of competition not excluded.
+
+### Part 3. Enablers — POST HOC, descriptive [computed]
+
+**Post hoc.** The mapping of patch notes to archetypes is Phil's, made after P's archetype z
+were seen; nothing here is a test. Tables: `t_enabler_list.csv` (both lists, saved before
+any z was loaded), `t_enabler_z.csv`, `t_rarity_rows.csv`, `t_beta_fits.csv` (188 fits),
+`t_enabler_beta.csv`, `t_budget.csv`. Check: the budget code returns P's 2.88 and 2.55 for
+P's own terms.
+
+**The three named enablers — post hoc.** All-offers pairs; "difference" is the archetype's
+mean against the character's other placebo cards in the same window. The beta column is
+the same contrast on beta players, between the beta builds before the enabler arrived and
+the builds from its arrival to v0.103.1.
+
+| Archetype (first window) | Enabler, and the beta build it arrived in | At the stable release: pairs, z > 0, difference in z, in pp | On beta, when the enabler arrived: pairs, difference in z, in pp (shuffle p) | Beta runs before / after |
+|---|---|---|---|---|
+| Regent `create` | Arsenal reworked to "whenever you create a card": **v0.101.0**. Regalite: not in the reference tables, blank | 7, 7 of 7, **+7.6**, +6.0 | 7, **−1.5, −3.1** (0.025) | 1,725 / 8,033 |
+| Silent `discard` | Acrobatics Common → Uncommon: **v0.103.0** | 13, 1 of 13, **−7.1**, −5.7 | 13, **−1.1, −1.8** (0.024) | 6,573 / 3,004 |
+| Ironclad `hp_loss` | Not Yet added: **v0.103.0** (v0.103.1 stopped potions generating it) | 6, 6 of 6, **+7.7**, +4.5 | 8, **+1.5, +2.3** (0.016) | 6,790 / 3,527 |
+
+**Every other change — the list written before reading z.** As declared, five of these
+seven rows were already printed in section P; the two marked blind were not.
+
+| Update | Change | Archetype | Implied | Pairs | Difference in z (pp) | As implied | On beta: pairs, difference in z (pp) |
+|---|---|---|---|---|---|---|---|
+| v0.103.2 | Acrobatics Common → Uncommon | Silent `draw` | down | 9 | −2.6 (−2.2) | yes | 9, +0.5 (+1.1) |
+| v0.103.2 | Colossus Rare → Uncommon | Ironclad `debuff` | up | 2 | +1.8 (+1.6) | yes | 8, +2.3 (+3.3) |
+| v0.103.2 | Follow Through reworked | Silent `debuff` | down | 6 | +2.9 (+2.2) | no | 6, +0.8 (+1.2) |
+| v0.103.2 | Follow Through reworked | Silent `skill_play` | down | 6 | −1.3 (−1.4) | yes | 6, −0.2 (−0.1) |
+| v0.103.2 | Not Yet added | Ironclad `exhaust` (**blind**) | up | 7 | +1.5 (+1.4) | yes | 13, −1.2 (−1.8) |
+| v0.107.1 | Scare Common → Uncommon | Silent `debuff` | down | 2 | +2.1 (+1.3) | no | 1 of R's 20 cards |
+| v0.107.1 | Predator Uncommon → Common | Silent `draw` (**blind**) | up | 2 | −0.5 (−0.2) | no | 2 of R's 20, −1.9 (−2.7) |
+
+No row's shuffle p is under 0.16 at the stable release. Four of seven go as implied; of
+the two blind rows, one does and one doesn't. On beta two rows stand out and disagree with
+each other: Ironclad `debuff` rises when Colossus becomes an Uncommon (+3.3 pp, shuffle p
+0.0003, as implied), and Ironclad `exhaust` falls when Not Yet arrives (−1.8 pp, p 0.02,
+against what was implied). Six beta rows were looked at.
+
+**Hefty Tablet as a rarity row.** Rares against the character's other placebo cards, first
+window, difference in z: Ironclad +0.1, Necrobinder +0.2, Regent −1.2, Silent −2.0 (shuffle
+p 0.14 to 0.96). Second window: −0.3 to +1.3. No shared move of Rares.
+
+**Budget.** Robust sd of z and τ per patch with archetype × window terms absorbed. "Shuffled"
+is the same number of terms with membership dealt to other cards of the same
+character-window (1,000 times for z, 200 for τ).
+
+| Terms absorbed | Patch | Terms | Pairs in a term | Robust sd z | Shuffled [95%] | τ, pp [95%] | Shuffled [95%] |
+|---|---|---|---|---|---|---|---|
+| None (character-window means only) | first | 0 | | 4.10 | | 3.34 | |
+| **The three post hoc archetypes** | first | 3 | 31 | **3.78** | 4.04 [3.82, 4.20] | **2.69 [2.34, 2.94]** | 3.31 [3.26, 3.34] |
+| Post hoc plus the list above | first | 8 | 58 | 3.58 | 4.00 [3.75, 4.25] | 2.64 [2.26, 2.83] | 3.26 [3.19, 3.32] |
+| P's: every archetype with a changed member | first | 26 | 155 | 2.88 | 3.85 [3.42, 4.28] | 2.21 [1.77, 2.32] | 3.11 [2.99, 3.20] |
+| None | second | 0 | | 2.67 | | 2.43 | |
+| The list above (the post hoc three are all first window) | second | 2 | 13 | 2.71 | 2.71 [2.64, 2.81] | 2.43 [2.08, 2.67] | 2.42 [2.40, 2.43] |
+| P's | second | 20 | 122 | 2.55 | 2.59 [2.35, 2.84] | 2.16 [1.78, 2.32] | 2.31 [2.25, 2.37] |
+
+In variance, the three post hoc terms take about a third of the first patch's τ²
+((3.31² − 2.69²) / 3.34² = 0.34), against 0.43 for all 26 of P's terms. The five further
+terms of my list add almost nothing (2.69 → 2.64).
+
+Reading. [inferred]
+- **Three archetypes hold most of what P's 26 terms absorbed in the first patch.** That is
+  the descriptive fact. It is also what choosing the three largest of P's rows guarantees:
+  P's table ranked these first, second and third by size, and a term fitted to the three
+  most extreme groups will absorb a lot whatever the cause. The shuffled benchmark fixes
+  the number of terms, not the choosing. So "a third of τ²" is an upper bound on what these
+  three enablers explain, not an estimate of it.
+- **The beta builds give the enabler story partial support, on two of three.** If an
+  enabler moves its archetype, beta players should show the move when the enabler reached
+  them, weeks before stable. Silent `discard` and Ironclad `hp_loss` do move the same way
+  on beta, by about a third and a half of the stable size in pp. Regent `create` moves
+  the *other* way on beta (−3.1 pp against +6.0). Three things limit this: beta players are
+  a different population (R); the beta contrast is thin (median SE 1.5–1.9 pp a card, and
+  1,725 runs before Arsenal's build); and Regalite's build isn't known, so if Regalite
+  changed only at v0.103.2 the Regent row tests Arsenal alone.
+- **A move on beta that is smaller than on stable fits R.** R found beta builds shake by
+  1.0–1.7 pp whatever they change and stable major updates by 2–3 pp. Here the same two
+  archetypes move 1.8–2.3 pp on beta and 4.5–5.7 on stable. An enabler alone would predict
+  about the same size in both; the extra on stable belongs to the release, or to stable
+  players.
+- **The list made without choosing by z shows nothing.** Seven rows, four as implied, none
+  distinguishable from shuffled labels, and the two rows I had not seen split one each. The
+  rarity and pool changes at the two updates (Acrobatics, Colossus, Follow Through, Scare,
+  Predator) do not visibly move the archetypes their text points to. Most rows have 2 to 9
+  pairs, so this is weak evidence of absence.
+- **Nothing here touches the second patch.** Its named changes reach 13 pairs and absorb
+  nothing (2.71 against 2.71), and P's 20 terms absorb little there. The second patch's
+  2.4 pp has no enabler story at all.
+
+### What this does and doesn't settle
+
+- **Settled, within limits:**
+  - The jump is not a recording change that the run tables can show. Schema, fields the
+    parser reads, skip recording, list structure and card ids are the same across both
+    major updates for every card a placebo fit uses.
+  - It is not offer-source composition. The fits were always on regular rewards, and the
+    stricter cut changes nothing.
+  - It is not what else is on the screen. The mix of screen-mates barely moves and doesn't
+    track β, and a within-screen comparison widens the spread by the amount a card's own
+    shift predicts.
+  - Q's one-sided offer-rate tail is a fixed set of 30 cards, six per character, offered
+    less than their peers and catching up over the builds. It is not the placebo jump.
+- **Fits but not shown:**
+  - A shift in the appeal of the card itself at a major update, shared in part by cards of
+    one archetype in the first patch. This is O's, P's and Q's reading again; T removes
+    three rivals to it and adds no direct evidence for it.
+  - Enablers as the cause of the three largest archetype moves. Two of three appear on
+    beta when the enabler does, smaller; one reverses; all three were chosen for their
+    size.
+  - That the 30 under-offered cards are unlocked through play.
+- **Not settled:**
+  - What moves a card's appeal at a major update. Left standing: the deck and relics a
+    player brings to a reward screen (Neow relics, shop and relic changes act there, and
+    the run tables hold no relic list), enemy and ascension changes, and players
+    re-reading the game after an update (R: the shift is within the same players).
+  - The second patch. None of T's parts explains any of its 2.4 pp.
+  - A change in a field the parser doesn't read.
+  - Regalite's and the other relics' beta timing, and any relic change not in Phil's list:
+    they need the wiki pages. If those are copied in later, the list in the rules can be
+    extended, but it will no longer be "before reading z".
+  - The PRNG change. Part 1 finds no step in offer structure at v0.107.1; whether offers
+    within a run depend on each other differently was not tested.
+- The factors, the numbers module, the guide and `results/` are untouched.
+
+### Proposed update to SPIROMETRY.md, open question 8 (text only, not applied)
+
+To go before "Not yet verified.":
+
+> Around the card, exploratory (triage T, final tables): no recording change at either major
+> update in what the parser reads; τ is unchanged on one-screen-of-3 reward lists only (3.34 /
+> 2.46 pp; the fits never held Neow, shop or event offers); a card's β does not track the
+> change in what it is offered beside (Spearman −0.06 / −0.05, intervals spanning 0); and with
+> a screen fixed effect τ is 1.27 / 1.29 times the standard τ, what a card's own shift
+> predicts, so the jump is not recording, offer composition or screen competition. Post hoc,
+> three archetypes with a named enabler hold about a third of the first patch's τ² (chosen as
+> the three largest; two of three show on beta at a third to half the size, one reverses),
+> and nothing explains the second patch.
+
+A second fact Phil may want under "Known data issues", also text only: thirty cards, six per
+character, are offered below their rarity's rate (0.21 of it on v0.98.1, 0.73 on v0.99.1,
+0.80–0.82 from v0.103.2), which is Q's one-sided offer-rate tail; the cause (unlocks?) is
+not verified.
+
+### Privacy check, files and runtime
+
+- **Privacy check, clean.** All 25 `triage/out_final/t_*.csv` tables pass the export's
+  `check_output`. No column name matches uploader, player, run_key, run_hash, screen_id,
+  hash, steam, start_time, token or seed. The 2,636 distinct text values were scanned for
+  hex strings of 12 or more characters and for run|floor|set keys: none. Text columns hold
+  card ids, characters, rarities, build, window and boundary labels, dates, sources, column
+  names and summary labels. The script uses `run_key` and `screen_id` in memory (clustering,
+  the screen fixed effect, co-offer sums) and writes neither.
+- **Tables** (also the tables for plotting; no figure was made):
+  - Part 1: `t_builds.csv`, `t_blocks.csv`, `t_steps.csv`, `t_null_shares.csv`,
+    `t_card_ids.csv`, `t_id_pairs.csv`, `t_rarity_tiers.csv`, `t_placed_from_offers.csv`,
+    `t_under_offered.csv`, `t_under_offered_summary.csv`.
+  - Part 2: `t_source_fits.csv`, `t_source_windows.csv`, `t_source_tau.csv`;
+    `t_comp_pairs.csv`, `t_comp_tests.csv`, `t_comp_size.csv`, `t_comp_groups.csv`;
+    `t_screen_fits.csv`, `t_screen_tau.csv`.
+  - Part 3: `t_enabler_list.csv`, `t_enabler_z.csv`, `t_rarity_rows.csv`,
+    `t_beta_fits.csv`, `t_enabler_beta.csv`, `t_budget.csv`.
+- **Files to commit:** `triage/TRIAGE.md`, `triage/scripts/t_around.py` (new), `README.md`
+  (repository table), `PLAN.md` (status line and decision log), and the 25 tables above.
+  `SPIROMETRY.md` is not edited.
+- **Runtime:** `--check` 42 s; part 1 46 s (peak memory 3.8 GB); 2a 29 minutes (5.3 GB); 2b
+  47 s; 2c 15 minutes (3.4 GB); part 3 2 minutes for the beta fits and 22 s for the tables;
+  `pytest tests` 3.6 minutes.

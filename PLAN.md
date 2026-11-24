@@ -317,6 +317,16 @@ counts are: README finding 1 and SPIROMETRY.md, "Placebo calibration of the DiD 
 give the first-patch count as between about 8 (additive) and 13 (multiplicative, the
 declared headline) and the second-patch count as between 0 and 2. Not committed (git not
 attempted, as instructed).*
+*Status (CC, 2026-11-11): triage section T (what changed around unchanged cards at the two
+major updates, `triage/scripts/t_around.py`) run on the final tables, exploratory, outputs in
+`triage/out_final/t_*.csv`; no factor, number or headline changes. No recording artifact
+found; offer sources, screen-mates and a within-screen comparison do not account for the
+jump (τ unchanged on one-screen-of-3 lists; screen fixed effects give 1.27 and 1.29 times the
+standard τ); post hoc, three archetypes with a named enabler hold about a third of the first
+patch's τ². Results in `triage/TRIAGE.md`; a line for SPIROMETRY.md's open question 8 is
+proposed there and not applied. Open: the wiki patch-note pages (`reference/raw/wiki/`) are
+needed for relic timing. Not committed (git not attempted, as instructed). Next: Phil
+reviews the section.*
 1. **Offer-rate check** (design validity): a patch shouldn't move how often a card is offered.
    If it does, something else changed (card pool, rarity) and that card's comparison is suspect.
 2. **Pick-rate DiD for numeric tweaks** — the minimum result.
@@ -1678,3 +1688,23 @@ is 112 pages (96 before). Waits on Phil's review of the pilot before phase 2 (ch
   first-patch count is between about 8 (additive) and 13 (multiplicative, the declared
   headline) and the second-patch count between 0 and 2, the difference coming from heavily
   offered Commons. The headline, factors, numbers module, guide and `results/` are unchanged.
+- Around the card (triage T, exploratory; CC's choices, open to review, 2026-11-11): no
+  factor, number or headline changes; SPIROMETRY.md not edited (proposed text only). Phil's
+  rules as given; mine where the prompt left a choice. Part 1 runs on the primary
+  population; a step is flagged when it is larger at a major update than at both quiet
+  boundaries (v0.98.3 → v0.99.1, v0.103.2 → v0.103.3) and is then sorted by hand into
+  recording, game or play; only recording counts as an artifact. Field presence is checked
+  through null shares of the parsed columns, since `sts2_snapshot/` stays closed. Part 2a as
+  given can only drop event-then-fight offers (the fits never held Neow, shop or event
+  offers), so a stricter version, lists that are one screen of 3, is reported beside it. In
+  2b a competitor's strength is its before-block pick rate on both sides, so delta_comp moves
+  only with the mix of screen-mates; the within-character-window version is reported beside
+  the declared one. 2c is a linear screen fixed effect, not a conditional logit, and the
+  rules state beforehand that a card's own shift predicts a ratio of 1 to 1.5. Part 3 is
+  post hoc: Phil's three enablers are labeled so; the list of other changes was written
+  before any z was loaded, but five of its seven rows had been printed in section P, and
+  that is said per row. Non-card patch-note items are Phil's list as given, since relic
+  lines are only in `reference/raw/wiki/`. Beta check for the first window uses fresh fits
+  on pooled beta builds (R's units start at v0.104.0); v0.99.0-beta is left out because no
+  card has a version on it. Rarity in T's tables is the window's, not today's. Added after
+  the rules: the under-offered-cards table (30 cards, six per character).

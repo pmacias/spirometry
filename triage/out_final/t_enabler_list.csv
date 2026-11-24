@@ -1,0 +1,20 @@
+label,update,patch,change,color,archetype,direction,enabler_build,why,z_seen_in_p
+post hoc,v0.103.2,first,Regalite and Arsenal now reward any created card,regent,create,up,v0.101.0 (Arsenal rework; Regalite's build is not in the reference tables),Phil's mapping; Arsenal's new text is a create payoff,yes
+post hoc,v0.103.2,first,Acrobatics Common -> Uncommon,silent,discard,down,v0.103.0,Phil's mapping; a draw-and-discard card is offered less often,yes
+post hoc,v0.103.2,first,"Not Yet added (Rare, heals)",ironclad,hp_loss,up,v0.103.0,Phil's mapping; a heal pays for HP loss. Not a text-rule match: Not Yet's own text is not in hp_loss,yes
+written before reading z,v0.103.2,first,Acrobatics Common -> Uncommon,silent,draw,down,v0.103.0,a draw-and-discard card is offered less often,yes
+written before reading z,v0.103.2,first,Colossus Rare -> Uncommon,ironclad,debuff,up,v0.103.0,a Vulnerable payoff is offered more often,yes
+written before reading z,v0.103.2,first,"Follow Through reworked, Uncommon -> Common",silent,debuff,down,v0.103.0,its old text applied Weak; the new text does not,yes
+written before reading z,v0.103.2,first,"Follow Through reworked, Uncommon -> Common",silent,skill_play,down,v0.103.0,its old text paid off playing a Skill; the new text does not,yes
+written before reading z,v0.103.2,first,"Not Yet added (Rare, 'Heal ... Exhaust')",ironclad,exhaust,up,v0.103.0,one more card that exhausts itself,no
+written before reading z,v0.107.1,second,Scare Common -> Uncommon,silent,debuff,down,v0.106.0,a Weak card is offered less often,yes
+written before reading z,v0.107.1,second,Predator Uncommon -> Common,silent,draw,up,v0.106.0,a draw card is offered more often,no
+written before reading z: not scored,v0.103.2,first,Rip and Tear -> Event,,,,,no text or color on file,
+written before reading z: not scored,v0.103.2,first,Grapple deprecated,,,,,no text or color on file,
+written before reading z: not scored,v0.103.2,first,Hefty Tablet (Neow: choose one of three Rare cards),,,,,"touches Rares, a rarity and not an archetype; reported as a rarity row",
+written before reading z: not scored,v0.103.2,first,Ascension 6: Gloom -> Inflation,,,,,no archetype under P's text rules,
+written before reading z: not scored,v0.103.2,first,Shop relic prices and pool,,,,,no archetype under P's text rules,
+written before reading z: not scored,v0.103.2,first,Colorless pool and rarity shifts,,,,,Regent create (P: most of its cards make Colorless cards): already a post hoc row,
+written before reading z: not scored,v0.107.1,second,Kaleidoscope (Neow: 2 card rewards from other characters),,,,,other characters' cards; no archetype under P's text rules,
+written before reading z: not scored,v0.107.1,second,PRNG replaced (xoshiro256**),,,,,no archetype; see part 1 and the open list,
+written before reading z: not scored,v0.107.1,second,"Enemy, boss and ascension HP changes",,,,,no archetype under P's text rules,

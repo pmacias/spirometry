@@ -1,0 +1,408 @@
+label,n_rows,column,null_share,table,kind
+v0.104.0,25801,killed_by_encounter,0.2832835936591605,runs_dedup,build
+v0.105.1,32950,killed_by_encounter,0.29833080424886194,runs_dedup,build
+v0.98.2 -> v0.98.3 | before,26768,killed_by_encounter,0.31063209802749553,runs_dedup,block
+v0.98.3 -> v0.99.1 | after,109216,killed_by_encounter,0.27370531790213887,runs_dedup,block
+v0.99.0,401,killed_by_encounter,0.2119700748129676,runs_dedup,build
+v0.103.2 -> v0.103.3 | before,128973,killed_by_encounter,0.26051964364634456,runs_dedup,block
+v0.105.0,2965,killed_by_encounter,0.29679595278246207,runs_dedup,build
+v0.103.3,69012,killed_by_encounter,0.2533907146583203,runs_dedup,build
+v0.106.0,3297,killed_by_encounter,0.24325144070367,runs_dedup,build
+v0.108.0,28850,killed_by_encounter,0.277157712305026,runs_dedup,build
+v0.103.1,1769,killed_by_encounter,0.28151498021481064,runs_dedup,build
+v0.98.1 -> v0.98.2 | before,8541,killed_by_encounter,0.2852125043905866,runs_dedup,block
+v0.102.0,13328,killed_by_encounter,0.27791116446578634,runs_dedup,build
+v0.99.1 -> v0.103.2 | before,117936,killed_by_encounter,0.2732838149504816,runs_dedup,block
+v0.110.1,31166,killed_by_encounter,0.28421998331515114,runs_dedup,build
+v0.107.1,330990,killed_by_encounter,0.26293241487658237,runs_dedup,build
+v0.109.0,20553,killed_by_encounter,0.283754196467669,runs_dedup,build
+v0.106.1,39391,killed_by_encounter,0.2483308369932218,runs_dedup,build
+v0.98.3,45119,killed_by_encounter,0.29827788736452493,runs_dedup,build
+v0.103.3 -> v0.107.1 | after,125192,killed_by_encounter,0.2573407246469423,runs_dedup,block
+v0.110.0,422,killed_by_encounter,0.2985781990521327,runs_dedup,build
+v0.107.0,42910,killed_by_encounter,0.25830808669307853,runs_dedup,build
+v0.101.0,11491,killed_by_encounter,0.29797232616830566,runs_dedup,build
+v0.98.2 -> v0.98.3 | after,44944,killed_by_encounter,0.29805980776076896,runs_dedup,block
+v0.109.1,11689,killed_by_encounter,0.2719650953888271,runs_dedup,build
+v0.98.1 -> v0.98.2 | after,26636,killed_by_encounter,0.31078239975972366,runs_dedup,block
+v0.98.1,8541,killed_by_encounter,0.2852125043905866,runs_dedup,build
+v0.99.1,117936,killed_by_encounter,0.2732838149504816,runs_dedup,build
+v0.103.2,128973,killed_by_encounter,0.26051964364634456,runs_dedup,build
+v0.111.0,101397,killed_by_encounter,0.2872964683373275,runs_dedup,build
+v0.103.2 -> v0.103.3 | after,68472,killed_by_encounter,0.2524827666783503,runs_dedup,block
+v0.98.3 -> v0.99.1 | before,45119,killed_by_encounter,0.29827788736452493,runs_dedup,block
+v0.103.0,13410,killed_by_encounter,0.2910514541387025,runs_dedup,build
+v0.99.1 -> v0.103.2 | after,84342,killed_by_encounter,0.26368831661568376,runs_dedup,block
+v0.103.3 -> v0.107.1 | before,69012,killed_by_encounter,0.2533907146583203,runs_dedup,block
+v0.100.0,8377,killed_by_encounter,0.26453384266443836,runs_dedup,build
+v0.98.2,26768,killed_by_encounter,0.31063209802749553,runs_dedup,build
+v0.104.0,25801,killed_by_event,0.9603116158288438,runs_dedup,build
+v0.105.1,32950,killed_by_event,0.9396965098634295,runs_dedup,build
+v0.98.2 -> v0.98.3 | before,26768,killed_by_event,0.9489689181111776,runs_dedup,block
+v0.98.3 -> v0.99.1 | after,109216,killed_by_event,0.9338375329622033,runs_dedup,block
+v0.99.0,401,killed_by_event,0.9800498753117207,runs_dedup,build
+v0.103.2 -> v0.103.3 | before,128973,killed_by_event,0.9266125468121235,runs_dedup,block
+v0.105.0,2965,killed_by_event,0.9477234401349073,runs_dedup,build
+v0.103.3,69012,killed_by_event,0.9007274097258448,runs_dedup,build
+v0.106.0,3297,killed_by_event,0.9469214437367304,runs_dedup,build
+v0.108.0,28850,killed_by_event,0.8983015597920277,runs_dedup,build
+v0.103.1,1769,killed_by_event,0.9525155455059355,runs_dedup,build
+v0.98.1 -> v0.98.2 | before,8541,killed_by_event,0.9584357803535886,runs_dedup,block
+v0.102.0,13328,killed_by_event,0.9618847539015606,runs_dedup,build
+v0.99.1 -> v0.103.2 | before,117936,killed_by_event,0.9337522045855379,runs_dedup,block
+v0.110.1,31166,killed_by_event,0.9028428415581082,runs_dedup,build
+v0.107.1,330990,killed_by_event,0.8852654158735913,runs_dedup,build
+v0.109.0,20553,killed_by_event,0.8930569746509025,runs_dedup,build
+v0.106.1,39391,killed_by_event,0.9309740803736894,runs_dedup,build
+v0.98.3,45119,killed_by_event,0.9427735543784215,runs_dedup,build
+v0.103.3 -> v0.107.1 | after,125192,killed_by_event,0.8994025177327625,runs_dedup,block
+v0.110.0,422,killed_by_event,0.909952606635071,runs_dedup,build
+v0.107.0,42910,killed_by_event,0.9251456536937777,runs_dedup,build
+v0.101.0,11491,killed_by_event,0.9631885823688103,runs_dedup,build
+v0.98.2 -> v0.98.3 | after,44944,killed_by_event,0.9432849768600926,runs_dedup,block
+v0.109.1,11689,killed_by_event,0.904867824450338,runs_dedup,build
+v0.98.1 -> v0.98.2 | after,26636,killed_by_event,0.9494293437453071,runs_dedup,block
+v0.98.1,8541,killed_by_event,0.9584357803535886,runs_dedup,build
+v0.99.1,117936,killed_by_event,0.9337522045855379,runs_dedup,build
+v0.103.2,128973,killed_by_event,0.9266125468121235,runs_dedup,build
+v0.111.0,101397,killed_by_event,0.9040109667938894,runs_dedup,build
+v0.103.2 -> v0.103.3 | after,68472,killed_by_event,0.9017116485570744,runs_dedup,block
+v0.98.3 -> v0.99.1 | before,45119,killed_by_event,0.9427735543784215,runs_dedup,block
+v0.103.0,13410,killed_by_event,0.9535421327367636,runs_dedup,build
+v0.99.1 -> v0.103.2 | after,84342,killed_by_event,0.937267316402267,runs_dedup,block
+v0.103.3 -> v0.107.1 | before,69012,killed_by_event,0.9007274097258448,runs_dedup,block
+v0.100.0,8377,killed_by_event,0.958577056225379,runs_dedup,build
+v0.98.2,26768,killed_by_event,0.9489689181111776,runs_dedup,build
+v0.104.0,25801,uploader_tag,0.6215262974303322,runs_dedup,build
+v0.105.1,32950,uploader_tag,0.6644309559939302,runs_dedup,build
+v0.98.2 -> v0.98.3 | before,26768,uploader_tag,0.7208607292289301,runs_dedup,block
+v0.98.3 -> v0.99.1 | after,109216,uploader_tag,0.7626904482859654,runs_dedup,block
+v0.99.0,401,uploader_tag,0.43640897755610975,runs_dedup,build
+v0.103.2 -> v0.103.3 | before,128973,uploader_tag,0.7982213331472479,runs_dedup,block
+v0.105.0,2965,uploader_tag,0.6107925801011804,runs_dedup,build
+v0.103.3,69012,uploader_tag,0.909320118240306,runs_dedup,build
+v0.106.0,3297,uploader_tag,0.6997270245677889,runs_dedup,build
+v0.108.0,28850,uploader_tag,0.7806585788561525,runs_dedup,build
+v0.103.1,1769,uploader_tag,0.6585641605426795,runs_dedup,build
+v0.98.1 -> v0.98.2 | before,8541,uploader_tag,0.7075283924598993,runs_dedup,block
+v0.102.0,13328,uploader_tag,0.604516806722689,runs_dedup,build
+v0.99.1 -> v0.103.2 | before,117936,uploader_tag,0.7635327635327636,runs_dedup,block
+v0.110.1,31166,uploader_tag,0.7983058461143554,runs_dedup,build
+v0.107.1,330990,uploader_tag,0.9068219583673223,runs_dedup,build
+v0.109.0,20553,uploader_tag,0.7873303167420814,runs_dedup,build
+v0.106.1,39391,uploader_tag,0.7567464649285369,runs_dedup,build
+v0.98.3,45119,uploader_tag,0.7282519559387398,runs_dedup,build
+v0.103.3 -> v0.107.1 | after,125192,uploader_tag,0.8570755319828743,runs_dedup,block
+v0.110.0,422,uploader_tag,0.7725118483412322,runs_dedup,build
+v0.107.0,42910,uploader_tag,0.7583546958750874,runs_dedup,build
+v0.101.0,11491,uploader_tag,0.6265773213819511,runs_dedup,build
+v0.98.2 -> v0.98.3 | after,44944,uploader_tag,0.7272828408686365,runs_dedup,block
+v0.109.1,11689,uploader_tag,0.7615707075027804,runs_dedup,build
+v0.98.1 -> v0.98.2 | after,26636,uploader_tag,0.7194773990088602,runs_dedup,block
+v0.98.1,8541,uploader_tag,0.7075283924598993,runs_dedup,build
+v0.99.1,117936,uploader_tag,0.7635327635327636,runs_dedup,build
+v0.103.2,128973,uploader_tag,0.7982213331472479,runs_dedup,build
+v0.111.0,101397,uploader_tag,0.8334960600412241,runs_dedup,build
+v0.103.2 -> v0.103.3 | after,68472,uploader_tag,0.9086195817268372,runs_dedup,block
+v0.98.3 -> v0.99.1 | before,45119,uploader_tag,0.7282519559387398,runs_dedup,block
+v0.103.0,13410,uploader_tag,0.6284862043251305,runs_dedup,build
+v0.99.1 -> v0.103.2 | after,84342,uploader_tag,0.7657750586896208,runs_dedup,block
+v0.103.3 -> v0.107.1 | before,69012,uploader_tag,0.909320118240306,runs_dedup,block
+v0.100.0,8377,uploader_tag,0.665870836815089,runs_dedup,build
+v0.98.2,26768,uploader_tag,0.7208607292289301,runs_dedup,build
+v0.104.0,25801,has_player_token,0.6622999108561684,runs_dedup,build
+v0.105.1,32950,has_player_token,0.6552655538694993,runs_dedup,build
+v0.98.2 -> v0.98.3 | before,26768,has_player_token,0.5605200239091452,runs_dedup,block
+v0.98.3 -> v0.99.1 | after,109216,has_player_token,0.559762305889247,runs_dedup,block
+v0.99.0,401,has_player_token,0.7306733167082294,runs_dedup,build
+v0.103.2 -> v0.103.3 | before,128973,has_player_token,0.6510897629736456,runs_dedup,block
+v0.105.0,2965,has_player_token,0.6627318718381113,runs_dedup,build
+v0.103.3,69012,has_player_token,0.8316959369385034,runs_dedup,build
+v0.106.0,3297,has_player_token,0.7191386108583561,runs_dedup,build
+v0.108.0,28850,has_player_token,0.6877642980935875,runs_dedup,build
+v0.103.1,1769,has_player_token,0.6596947427925381,runs_dedup,build
+v0.98.1 -> v0.98.2 | before,8541,has_player_token,0.5741716426647934,runs_dedup,block
+v0.102.0,13328,has_player_token,0.6404561824729892,runs_dedup,build
+v0.99.1 -> v0.103.2 | before,117936,has_player_token,0.5611518111518111,runs_dedup,block
+v0.110.1,31166,has_player_token,0.0,runs_dedup,build
+v0.107.1,330990,has_player_token,0.36021329949545305,runs_dedup,build
+v0.109.0,20553,has_player_token,0.6133897727825621,runs_dedup,build
+v0.106.1,39391,has_player_token,0.7382143129141174,runs_dedup,build
+v0.98.3,45119,has_player_token,0.5635319931736076,runs_dedup,build
+v0.103.3 -> v0.107.1 | after,125192,has_player_token,0.7853776599143715,runs_dedup,block
+v0.110.0,422,has_player_token,0.0,runs_dedup,build
+v0.107.0,42910,has_player_token,0.774131903985085,runs_dedup,build
+v0.101.0,11491,has_player_token,0.6317117744321643,runs_dedup,build
+v0.98.2 -> v0.98.3 | after,44944,has_player_token,0.5637904948380207,runs_dedup,block
+v0.109.1,11689,has_player_token,0.016596800410642484,runs_dedup,build
+v0.98.1 -> v0.98.2 | after,26636,has_player_token,0.5616834359513441,runs_dedup,block
+v0.98.1,8541,has_player_token,0.5741716426647934,runs_dedup,build
+v0.99.1,117936,has_player_token,0.5611518111518111,runs_dedup,build
+v0.103.2,128973,has_player_token,0.6510897629736456,runs_dedup,build
+v0.111.0,101397,has_player_token,0.0,runs_dedup,build
+v0.103.2 -> v0.103.3 | after,68472,has_player_token,0.8352027105970323,runs_dedup,block
+v0.98.3 -> v0.99.1 | before,45119,has_player_token,0.5635319931736076,runs_dedup,block
+v0.103.0,13410,has_player_token,0.6360178970917226,runs_dedup,build
+v0.99.1 -> v0.103.2 | after,84342,has_player_token,0.5991439614901235,runs_dedup,block
+v0.103.3 -> v0.107.1 | before,69012,has_player_token,0.8316959369385034,runs_dedup,block
+v0.100.0,8377,has_player_token,0.6959532052047273,runs_dedup,build
+v0.98.2,26768,has_player_token,0.5605200239091452,runs_dedup,build
+v0.98.3 -> v0.99.1 | before,1744597,room_model_id,0.0,primary_offers,block
+v0.99.1 -> v0.103.2 | after,3101704,room_model_id,0.0,primary_offers,block
+v0.103.0,527629,room_model_id,0.0,primary_offers,build
+v0.98.2 -> v0.98.3 | after,1739373,room_model_id,0.0,primary_offers,block
+v0.101.0,470371,room_model_id,0.0,primary_offers,build
+v0.107.0,1524243,room_model_id,7.872760445676969e-06,primary_offers,build
+v0.105.1,1271332,room_model_id,1.5731531968046113e-05,primary_offers,build
+v0.104.0,1030510,room_model_id,9.70393300404654e-06,primary_offers,build
+v0.99.0,15483,room_model_id,0.0,primary_offers,build
+v0.103.2 -> v0.103.3 | before,4613621,room_model_id,0.0,primary_offers,block
+v0.105.0,117618,room_model_id,0.0,primary_offers,build
+v0.103.3,2302888,room_model_id,0.0,primary_offers,build
+v0.98.2 -> v0.98.3 | before,1079710,room_model_id,0.0,primary_offers,block
+v0.98.3 -> v0.99.1 | after,4000204,room_model_id,7.499617519506506e-07,primary_offers,block
+v0.98.3,1744597,room_model_id,0.0,primary_offers,build
+v0.106.1,1416154,room_model_id,4.236827350697735e-06,primary_offers,build
+v0.109.0,695827,room_model_id,1.2934249461432224e-05,primary_offers,build
+v0.98.2,1079710,room_model_id,0.0,primary_offers,build
+v0.100.0,324291,room_model_id,0.0,primary_offers,build
+v0.103.3 -> v0.107.1 | before,2302888,room_model_id,0.0,primary_offers,block
+v0.103.3 -> v0.107.1 | after,4234070,room_model_id,0.0,primary_offers,block
+v0.110.0,15119,room_model_id,0.00039685164362722404,primary_offers,build
+v0.99.1 -> v0.103.2 | before,4314499,room_model_id,6.953298633282798e-07,primary_offers,block
+v0.107.1,10797723,room_model_id,0.0,primary_offers,build
+v0.110.1,1072729,room_model_id,0.0,primary_offers,build
+v0.98.1 -> v0.98.2 | after,1075567,room_model_id,0.0,primary_offers,block
+v0.109.1,400160,room_model_id,0.0,primary_offers,build
+v0.103.2,4613621,room_model_id,0.0,primary_offers,build
+v0.103.1,68960,room_model_id,0.0,primary_offers,build
+v0.106.0,122708,room_model_id,0.0,primary_offers,build
+v0.108.0,981911,room_model_id,0.0,primary_offers,build
+v0.103.2 -> v0.103.3 | after,2287298,room_model_id,0.0,primary_offers,block
+v0.111.0,3524242,room_model_id,0.0,primary_offers,build
+v0.98.1 -> v0.98.2 | before,342242,room_model_id,0.0,primary_offers,block
+v0.102.0,529512,room_model_id,0.0,primary_offers,build
+v0.98.1,342242,room_model_id,0.0,primary_offers,build
+v0.99.1,4314499,room_model_id,6.953298633282798e-07,primary_offers,build
+v0.98.3 -> v0.99.1 | before,1744597,screen_size,0.001712143262885354,primary_offers,block
+v0.99.1 -> v0.103.2 | after,3101704,screen_size,0.0019866499188832976,primary_offers,block
+v0.103.0,527629,screen_size,0.0020260448155806445,primary_offers,build
+v0.98.2 -> v0.98.3 | after,1739373,screen_size,0.0017080867645985077,primary_offers,block
+v0.101.0,470371,screen_size,0.002130233368978955,primary_offers,build
+v0.107.0,1524243,screen_size,0.002009522103759046,primary_offers,build
+v0.105.1,1271332,screen_size,0.0019113811341176026,primary_offers,build
+v0.104.0,1030510,screen_size,0.002125161327886192,primary_offers,build
+v0.99.0,15483,screen_size,0.0032293483175095264,primary_offers,build
+v0.103.2 -> v0.103.3 | before,4613621,screen_size,0.002069307383506361,primary_offers,block
+v0.105.0,117618,screen_size,0.0016919179037222195,primary_offers,build
+v0.103.3,2302888,screen_size,0.0024317292026359945,primary_offers,build
+v0.98.2 -> v0.98.3 | before,1079710,screen_size,0.0023886043474636706,primary_offers,block
+v0.98.3 -> v0.99.1 | after,4000204,screen_size,0.0023523800286185405,primary_offers,block
+v0.98.3,1744597,screen_size,0.001712143262885354,primary_offers,build
+v0.106.1,1416154,screen_size,0.0018656163100905692,primary_offers,build
+v0.109.0,695827,screen_size,0.002933200350087019,primary_offers,build
+v0.98.2,1079710,screen_size,0.0023886043474636706,primary_offers,build
+v0.100.0,324291,screen_size,0.002710528506804074,primary_offers,build
+v0.103.3 -> v0.107.1 | before,2302888,screen_size,0.0024317292026359945,primary_offers,block
+v0.103.3 -> v0.107.1 | after,4234070,screen_size,0.002513893251646761,primary_offers,block
+v0.110.0,15119,screen_size,0.0018519743369270454,primary_offers,build
+v0.99.1 -> v0.103.2 | before,4314499,screen_size,0.0022929661126355576,primary_offers,block
+v0.107.1,10797723,screen_size,0.0020860879650274416,primary_offers,build
+v0.110.1,1072729,screen_size,0.002993300265024997,primary_offers,build
+v0.98.1 -> v0.98.2 | after,1075567,screen_size,0.0019096904237485904,primary_offers,block
+v0.109.1,400160,screen_size,0.003713514594162335,primary_offers,build
+v0.103.2,4613621,screen_size,0.002069307383506361,primary_offers,build
+v0.103.1,68960,screen_size,0.002523201856148492,primary_offers,build
+v0.106.0,122708,screen_size,0.0025100237963294977,primary_offers,build
+v0.108.0,981911,screen_size,0.003542072550363526,primary_offers,build
+v0.103.2 -> v0.103.3 | after,2287298,screen_size,0.002086741648880032,primary_offers,block
+v0.111.0,3524242,screen_size,0.0029453141980601786,primary_offers,build
+v0.98.1 -> v0.98.2 | before,342242,screen_size,0.0013966725299641774,primary_offers,block
+v0.102.0,529512,screen_size,0.00224357521642569,primary_offers,build
+v0.98.1,342242,screen_size,0.0013966725299641774,primary_offers,build
+v0.99.1,4314499,screen_size,0.0022929661126355576,primary_offers,build
+v0.98.3 -> v0.99.1 | before,1744597,set_idx,0.001712143262885354,primary_offers,block
+v0.99.1 -> v0.103.2 | after,3101704,set_idx,0.0019866499188832976,primary_offers,block
+v0.103.0,527629,set_idx,0.0020260448155806445,primary_offers,build
+v0.98.2 -> v0.98.3 | after,1739373,set_idx,0.0017080867645985077,primary_offers,block
+v0.101.0,470371,set_idx,0.002130233368978955,primary_offers,build
+v0.107.0,1524243,set_idx,0.002009522103759046,primary_offers,build
+v0.105.1,1271332,set_idx,0.0019113811341176026,primary_offers,build
+v0.104.0,1030510,set_idx,0.002125161327886192,primary_offers,build
+v0.99.0,15483,set_idx,0.0032293483175095264,primary_offers,build
+v0.103.2 -> v0.103.3 | before,4613621,set_idx,0.002069307383506361,primary_offers,block
+v0.105.0,117618,set_idx,0.0016919179037222195,primary_offers,build
+v0.103.3,2302888,set_idx,0.0024317292026359945,primary_offers,build
+v0.98.2 -> v0.98.3 | before,1079710,set_idx,0.0023886043474636706,primary_offers,block
+v0.98.3 -> v0.99.1 | after,4000204,set_idx,0.0023523800286185405,primary_offers,block
+v0.98.3,1744597,set_idx,0.001712143262885354,primary_offers,build
+v0.106.1,1416154,set_idx,0.0018656163100905692,primary_offers,build
+v0.109.0,695827,set_idx,0.002933200350087019,primary_offers,build
+v0.98.2,1079710,set_idx,0.0023886043474636706,primary_offers,build
+v0.100.0,324291,set_idx,0.002710528506804074,primary_offers,build
+v0.103.3 -> v0.107.1 | before,2302888,set_idx,0.0024317292026359945,primary_offers,block
+v0.103.3 -> v0.107.1 | after,4234070,set_idx,0.002513893251646761,primary_offers,block
+v0.110.0,15119,set_idx,0.0018519743369270454,primary_offers,build
+v0.99.1 -> v0.103.2 | before,4314499,set_idx,0.0022929661126355576,primary_offers,block
+v0.107.1,10797723,set_idx,0.0020860879650274416,primary_offers,build
+v0.110.1,1072729,set_idx,0.002993300265024997,primary_offers,build
+v0.98.1 -> v0.98.2 | after,1075567,set_idx,0.0019096904237485904,primary_offers,block
+v0.109.1,400160,set_idx,0.003713514594162335,primary_offers,build
+v0.103.2,4613621,set_idx,0.002069307383506361,primary_offers,build
+v0.103.1,68960,set_idx,0.002523201856148492,primary_offers,build
+v0.106.0,122708,set_idx,0.0025100237963294977,primary_offers,build
+v0.108.0,981911,set_idx,0.003542072550363526,primary_offers,build
+v0.103.2 -> v0.103.3 | after,2287298,set_idx,0.002086741648880032,primary_offers,block
+v0.111.0,3524242,set_idx,0.0029453141980601786,primary_offers,build
+v0.98.1 -> v0.98.2 | before,342242,set_idx,0.0013966725299641774,primary_offers,block
+v0.102.0,529512,set_idx,0.00224357521642569,primary_offers,build
+v0.98.1,342242,set_idx,0.0013966725299641774,primary_offers,build
+v0.99.1,4314499,set_idx,0.0022929661126355576,primary_offers,build
+v0.98.3 -> v0.99.1 | before,1744597,enchantment,0.986696641115398,primary_offers,block
+v0.99.1 -> v0.103.2 | after,3101704,enchantment,0.9870100435115665,primary_offers,block
+v0.103.0,527629,enchantment,0.9844379289235429,primary_offers,build
+v0.98.2 -> v0.98.3 | after,1739373,enchantment,0.9866940558465608,primary_offers,block
+v0.101.0,470371,enchantment,0.9859174991655523,primary_offers,build
+v0.107.0,1524243,enchantment,0.9791444015160312,primary_offers,build
+v0.105.1,1271332,enchantment,0.9774834582941356,primary_offers,build
+v0.104.0,1030510,enchantment,0.985283015206063,primary_offers,build
+v0.99.0,15483,enchantment,0.9879222372925144,primary_offers,build
+v0.103.2 -> v0.103.3 | before,4613621,enchantment,0.987129632017888,primary_offers,block
+v0.105.0,117618,enchantment,0.9770528320495162,primary_offers,build
+v0.103.3,2302888,enchantment,0.986950298928997,primary_offers,build
+v0.98.2 -> v0.98.3 | before,1079710,enchantment,0.9860082800011114,primary_offers,block
+v0.98.3 -> v0.99.1 | after,4000204,enchantment,0.9879356152836205,primary_offers,block
+v0.98.3,1744597,enchantment,0.986696641115398,primary_offers,build
+v0.106.1,1416154,enchantment,0.979197883845966,primary_offers,build
+v0.109.0,695827,enchantment,0.9795653229897662,primary_offers,build
+v0.98.2,1079710,enchantment,0.9860082800011114,primary_offers,build
+v0.100.0,324291,enchantment,0.9867495551834617,primary_offers,build
+v0.103.3 -> v0.107.1 | before,2302888,enchantment,0.986950298928997,primary_offers,block
+v0.103.3 -> v0.107.1 | after,4234070,enchantment,0.9805263021159311,primary_offers,block
+v0.110.0,15119,enchantment,0.9837290826112838,primary_offers,build
+v0.99.1 -> v0.103.2 | before,4314499,enchantment,0.9879357950946333,primary_offers,block
+v0.107.1,10797723,enchantment,0.9810174793333742,primary_offers,build
+v0.110.1,1072729,enchantment,0.979624863315898,primary_offers,build
+v0.98.1 -> v0.98.2 | after,1075567,enchantment,0.9859822772546945,primary_offers,block
+v0.109.1,400160,enchantment,0.9791283486605358,primary_offers,build
+v0.103.2,4613621,enchantment,0.987129632017888,primary_offers,build
+v0.103.1,68960,enchantment,0.9871809744779583,primary_offers,build
+v0.106.0,122708,enchantment,0.9788277862894025,primary_offers,build
+v0.108.0,981911,enchantment,0.9790612387477072,primary_offers,build
+v0.103.2 -> v0.103.3 | after,2287298,enchantment,0.9869243098188343,primary_offers,block
+v0.111.0,3524242,enchantment,0.9796117860237747,primary_offers,build
+v0.98.1 -> v0.98.2 | before,342242,enchantment,0.9869770513262546,primary_offers,block
+v0.102.0,529512,enchantment,0.9859814319599933,primary_offers,build
+v0.98.1,342242,enchantment,0.9869770513262546,primary_offers,build
+v0.99.1,4314499,enchantment,0.9879357950946333,primary_offers,build
+v0.98.3 -> v0.99.1 | before,1744597,enchantment_amount,0.986696641115398,primary_offers,block
+v0.99.1 -> v0.103.2 | after,3101704,enchantment_amount,0.9870100435115665,primary_offers,block
+v0.103.0,527629,enchantment_amount,0.9844379289235429,primary_offers,build
+v0.98.2 -> v0.98.3 | after,1739373,enchantment_amount,0.9866940558465608,primary_offers,block
+v0.101.0,470371,enchantment_amount,0.9859174991655523,primary_offers,build
+v0.107.0,1524243,enchantment_amount,0.9791444015160312,primary_offers,build
+v0.105.1,1271332,enchantment_amount,0.9774834582941356,primary_offers,build
+v0.104.0,1030510,enchantment_amount,0.985283015206063,primary_offers,build
+v0.99.0,15483,enchantment_amount,0.9879222372925144,primary_offers,build
+v0.103.2 -> v0.103.3 | before,4613621,enchantment_amount,0.987129632017888,primary_offers,block
+v0.105.0,117618,enchantment_amount,0.9770528320495162,primary_offers,build
+v0.103.3,2302888,enchantment_amount,0.986950298928997,primary_offers,build
+v0.98.2 -> v0.98.3 | before,1079710,enchantment_amount,0.9860082800011114,primary_offers,block
+v0.98.3 -> v0.99.1 | after,4000204,enchantment_amount,0.9879356152836205,primary_offers,block
+v0.98.3,1744597,enchantment_amount,0.986696641115398,primary_offers,build
+v0.106.1,1416154,enchantment_amount,0.979197883845966,primary_offers,build
+v0.109.0,695827,enchantment_amount,0.9795653229897662,primary_offers,build
+v0.98.2,1079710,enchantment_amount,0.9860082800011114,primary_offers,build
+v0.100.0,324291,enchantment_amount,0.9867495551834617,primary_offers,build
+v0.103.3 -> v0.107.1 | before,2302888,enchantment_amount,0.986950298928997,primary_offers,block
+v0.103.3 -> v0.107.1 | after,4234070,enchantment_amount,0.9805263021159311,primary_offers,block
+v0.110.0,15119,enchantment_amount,0.9837290826112838,primary_offers,build
+v0.99.1 -> v0.103.2 | before,4314499,enchantment_amount,0.9879357950946333,primary_offers,block
+v0.107.1,10797723,enchantment_amount,0.9810174793333742,primary_offers,build
+v0.110.1,1072729,enchantment_amount,0.979624863315898,primary_offers,build
+v0.98.1 -> v0.98.2 | after,1075567,enchantment_amount,0.9859822772546945,primary_offers,block
+v0.109.1,400160,enchantment_amount,0.9791283486605358,primary_offers,build
+v0.103.2,4613621,enchantment_amount,0.987129632017888,primary_offers,build
+v0.103.1,68960,enchantment_amount,0.9871809744779583,primary_offers,build
+v0.106.0,122708,enchantment_amount,0.9788277862894025,primary_offers,build
+v0.108.0,981911,enchantment_amount,0.9790612387477072,primary_offers,build
+v0.103.2 -> v0.103.3 | after,2287298,enchantment_amount,0.9869243098188343,primary_offers,block
+v0.111.0,3524242,enchantment_amount,0.9796117860237747,primary_offers,build
+v0.98.1 -> v0.98.2 | before,342242,enchantment_amount,0.9869770513262546,primary_offers,block
+v0.102.0,529512,enchantment_amount,0.9859814319599933,primary_offers,build
+v0.98.1,342242,enchantment_amount,0.9869770513262546,primary_offers,build
+v0.99.1,4314499,enchantment_amount,0.9879357950946333,primary_offers,build
+v0.98.3 -> v0.99.1 | before,1744597,set_picked_any,0.001712143262885354,primary_offers,block
+v0.99.1 -> v0.103.2 | after,3101704,set_picked_any,0.0019866499188832976,primary_offers,block
+v0.103.0,527629,set_picked_any,0.0020260448155806445,primary_offers,build
+v0.98.2 -> v0.98.3 | after,1739373,set_picked_any,0.0017080867645985077,primary_offers,block
+v0.101.0,470371,set_picked_any,0.002130233368978955,primary_offers,build
+v0.107.0,1524243,set_picked_any,0.002009522103759046,primary_offers,build
+v0.105.1,1271332,set_picked_any,0.0019113811341176026,primary_offers,build
+v0.104.0,1030510,set_picked_any,0.002125161327886192,primary_offers,build
+v0.99.0,15483,set_picked_any,0.0032293483175095264,primary_offers,build
+v0.103.2 -> v0.103.3 | before,4613621,set_picked_any,0.002069307383506361,primary_offers,block
+v0.105.0,117618,set_picked_any,0.0016919179037222195,primary_offers,build
+v0.103.3,2302888,set_picked_any,0.0024317292026359945,primary_offers,build
+v0.98.2 -> v0.98.3 | before,1079710,set_picked_any,0.0023886043474636706,primary_offers,block
+v0.98.3 -> v0.99.1 | after,4000204,set_picked_any,0.0023523800286185405,primary_offers,block
+v0.98.3,1744597,set_picked_any,0.001712143262885354,primary_offers,build
+v0.106.1,1416154,set_picked_any,0.0018656163100905692,primary_offers,build
+v0.109.0,695827,set_picked_any,0.002933200350087019,primary_offers,build
+v0.98.2,1079710,set_picked_any,0.0023886043474636706,primary_offers,build
+v0.100.0,324291,set_picked_any,0.002710528506804074,primary_offers,build
+v0.103.3 -> v0.107.1 | before,2302888,set_picked_any,0.0024317292026359945,primary_offers,block
+v0.103.3 -> v0.107.1 | after,4234070,set_picked_any,0.002513893251646761,primary_offers,block
+v0.110.0,15119,set_picked_any,0.0018519743369270454,primary_offers,build
+v0.99.1 -> v0.103.2 | before,4314499,set_picked_any,0.0022929661126355576,primary_offers,block
+v0.107.1,10797723,set_picked_any,0.0020860879650274416,primary_offers,build
+v0.110.1,1072729,set_picked_any,0.002993300265024997,primary_offers,build
+v0.98.1 -> v0.98.2 | after,1075567,set_picked_any,0.0019096904237485904,primary_offers,block
+v0.109.1,400160,set_picked_any,0.003713514594162335,primary_offers,build
+v0.103.2,4613621,set_picked_any,0.002069307383506361,primary_offers,build
+v0.103.1,68960,set_picked_any,0.002523201856148492,primary_offers,build
+v0.106.0,122708,set_picked_any,0.0025100237963294977,primary_offers,build
+v0.108.0,981911,set_picked_any,0.003542072550363526,primary_offers,build
+v0.103.2 -> v0.103.3 | after,2287298,set_picked_any,0.002086741648880032,primary_offers,block
+v0.111.0,3524242,set_picked_any,0.0029453141980601786,primary_offers,build
+v0.98.1 -> v0.98.2 | before,342242,set_picked_any,0.0013966725299641774,primary_offers,block
+v0.102.0,529512,set_picked_any,0.00224357521642569,primary_offers,build
+v0.98.1,342242,set_picked_any,0.0013966725299641774,primary_offers,build
+v0.99.1,4314499,set_picked_any,0.0022929661126355576,primary_offers,build
+v0.98.3 -> v0.99.1 | before,1744597,uploader_tag,0.6845305821344414,primary_offers,block
+v0.99.1 -> v0.103.2 | after,3101704,uploader_tag,0.7275513717621024,primary_offers,block
+v0.103.0,527629,uploader_tag,0.5843291403618831,primary_offers,build
+v0.98.2 -> v0.98.3 | after,1739373,uploader_tag,0.6836227767132179,primary_offers,block
+v0.101.0,470371,uploader_tag,0.5930488911943976,primary_offers,build
+v0.107.0,1524243,uploader_tag,0.7069043453045216,primary_offers,build
+v0.105.1,1271332,uploader_tag,0.6231401396330778,primary_offers,build
+v0.104.0,1030510,uploader_tag,0.5843873421897895,primary_offers,build
+v0.99.0,15483,uploader_tag,0.4222695859975457,primary_offers,build
+v0.103.2 -> v0.103.3 | before,4613621,uploader_tag,0.7599763829755414,primary_offers,block
+v0.105.0,117618,uploader_tag,0.5810250131782551,primary_offers,build
+v0.103.3,2302888,uploader_tag,0.8865702543936136,primary_offers,build
+v0.98.2 -> v0.98.3 | before,1079710,uploader_tag,0.6707412175491567,primary_offers,block
+v0.98.3 -> v0.99.1 | after,4000204,uploader_tag,0.7230793729519794,primary_offers,block
+v0.98.3,1744597,uploader_tag,0.6845305821344414,primary_offers,build
+v0.106.1,1416154,uploader_tag,0.7095097002162194,primary_offers,build
+v0.109.0,695827,uploader_tag,0.7326706207146316,primary_offers,build
+v0.98.2,1079710,uploader_tag,0.6707412175491567,primary_offers,build
+v0.100.0,324291,uploader_tag,0.6268999139661601,primary_offers,build
+v0.103.3 -> v0.107.1 | before,2302888,uploader_tag,0.8865702543936136,primary_offers,block
+v0.103.3 -> v0.107.1 | after,4234070,uploader_tag,0.819930232613065,primary_offers,block
+v0.110.0,15119,uploader_tag,0.731529863086183,primary_offers,build
+v0.99.1 -> v0.103.2 | before,4314499,uploader_tag,0.7236198223710331,primary_offers,block
+v0.107.1,10797723,uploader_tag,0.8781721850060424,primary_offers,build
+v0.110.1,1072729,uploader_tag,0.7419096528573386,primary_offers,build
+v0.98.1 -> v0.98.2 | after,1075567,uploader_tag,0.6694729384594358,primary_offers,block
+v0.109.1,400160,uploader_tag,0.7028038784486206,primary_offers,build
+v0.103.2,4613621,uploader_tag,0.7599763829755414,primary_offers,build
+v0.103.1,68960,uploader_tag,0.6318155452436195,primary_offers,build
+v0.106.0,122708,uploader_tag,0.6662238810835479,primary_offers,build
+v0.108.0,981911,uploader_tag,0.7308360941062887,primary_offers,build
+v0.103.2 -> v0.103.3 | after,2287298,uploader_tag,0.8858154905919561,primary_offers,block
+v0.111.0,3524242,uploader_tag,0.7875316167277957,primary_offers,build
+v0.98.1 -> v0.98.2 | before,342242,uploader_tag,0.6676474541406373,primary_offers,block
+v0.102.0,529512,uploader_tag,0.5717434165797942,primary_offers,build
+v0.98.1,342242,uploader_tag,0.6676474541406373,primary_offers,build
+v0.99.1,4314499,uploader_tag,0.7236198223710331,primary_offers,build
